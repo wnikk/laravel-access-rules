@@ -1,0 +1,99 @@
+<?php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+return new class extends Migration
+{
+    /**
+     * Return name of tables
+     *
+     * @return stdClass{role:string, linkage:string, owners:string, inheritance:string}
+     */
+    protected function getTableNames(): stdClass
+    {
+
+        $tables = config('access.table_names');
+
+        if (empty($tables)) {
+            throw new \Exception('Error: config/access.php not loaded. Run [php artisan config:clear] and try again.');
+        }
+
+        return (object)($tables);
+    }
+
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        $tableNames = $this->getTableNames();
+
+        Schema::create($tableNames->role, function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('guard_name')->unique();
+            $table->string('options')->nullable();
+            $table->string('name')->unique()->nullable();
+            $table->softDeletes();
+        });
+        Schema::create($tableNames->linkage, function (Blueprint $table) use ($tableNames) {
+            $table->increments('id');
+            $table->integer('owner_id');
+            $table->integer('role_id');
+            $table->boolean('permission');
+            $table->string('option')->nullable();
+            $table->timestamp('created_at');
+
+            //$table->foreign('owner_id')
+            //    ->references('id') // owners id
+            //    ->on($tableNames->owners)
+            //    ->onDelete('cascade');
+
+            //$table->foreign('role_id')
+            //    ->references('id') // role id
+            //    ->on($tableNames->role)
+            //    ->onDelete('cascade');
+        });
+
+        Schema::create($tableNames->owners, function (Blueprint $table) {
+            $table->increments('id');
+            $table->tinyInteger('type')->default(0);
+            $table->integer('original_id')->nullable();
+            $table->string('name')->nullable();
+            $table->timestamp('created_at');
+
+            //$table->primary(['type', 'original_id']);
+        });
+
+        Schema::create($tableNames->inheritance, function (Blueprint $table) use ($tableNames) {
+            $table->increments('id');
+            $table->integer('owner_id');
+            $table->integer('owner_id_parent');
+            $table->timestamp('created_at');
+
+            //$table->foreign('owner_id')
+            //    ->references('id') // owners id
+            //    ->on($tableNames->owners)
+            //    ->onDelete('cascade');
+        });
+
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        $tableNames = $this->getTableNames();
+
+        Schema::drop($tableNames->role);
+        Schema::drop($tableNames->linkage);
+        Schema::drop($tableNames->owners);
+        Schema::drop($tableNames->inheritance);
+    }
+};
