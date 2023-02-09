@@ -2,18 +2,18 @@
 namespace Wnikk\LaravelAccessRules\Models;
 
 use Wnikk\LaravelAccessRules\Contracts\{
-    Role as RoleContract,
+    Rule as RuleContract,
     Inheritance as InheritanceContract,
     Linkage as LinkageContract,
     Owners as OwnersContract
 };
 
-class Helper
+class Assay
 {
     /**
-     * @var RoleContract
+     * @var RuleContract
      */
-    protected $role;
+    protected $rule;
 
     /**
      * @var InheritanceContract
@@ -35,7 +35,7 @@ class Helper
      */
     public function __construct()
     {
-        $this->role = app(RoleContract::class);
+        $this->rule = app(RuleContract::class);
         $this->inheritance = app(InheritanceContract::class);
         $this->linkage = app(LinkageContract::class);
         $this->owners  = app(OwnersContract::class);
@@ -52,10 +52,11 @@ class Helper
         // At your leisure, replace to "WITH RECURSIVE "
         $listIds  = $this->inheritance->where('owner_id', $ownersId)->pluck('owner_id_parent')->toArray();
         $checkIds = $listIds;
-        $listIds  = array_flip( $listIds );
-        $limit    = 1000;
-        while( count($checkIds) && $limit-- ){
-            $tmp = $this->inheritance->where('owner_id', array_shift($checkIds))->pluck('owner_id_parent')->toArray();
+        $listIds  = array_flip($listIds);
+        $limit    = 100;
+        while( count($checkIds) && --$limit ){
+            $tmp = $this->inheritance->whereIn('owner_id', $checkIds)->pluck('owner_id_parent')->toArray();
+            $checkIds = [];
             foreach( $tmp as $id )
             {
                 if (isset($listIds[$id])) continue;
@@ -63,21 +64,21 @@ class Helper
                 $listIds[$id] = $id;
             }
         }
-        return array_keys( $listIds );
+        return array_keys($listIds);
     }
 
     /**
      * @param array $list
      * @return array
      */
-    private function dbRolesToArray(array $list): array
+    private function dbRulesToArray(array $list): array
     {
-        $roles = [];
+        $rules = [];
         foreach ($list as $item) {
-            $key = $item['role_id'].($item['option']?'.'.$item['option']:null);
-            $roles[$key] = $item;
+            $key = $item['rule_id'].($item['option']?'.'.$item['option']:null);
+            $rules[$key] = $item;
         }
-        return $roles;
+        return $rules;
     }
 
     /**
@@ -86,14 +87,11 @@ class Helper
      *
      * @param int $type
      * @param int $originalId
-     * @return array<array{role_id:int, option:string|null}>
+     * @return array<array{rule_id:int, option:string|null}>
      */
-    public function getAllRoleIDs(int $type, int $originalId = null): array
+    public function getAllRuleIDs(int $type, int $originalId = null): array
     {
-        $owner = $this->owners
-            ->where('type', $type)
-            ->where('original_id', $originalId)
-            ->first();
+        $owner = $this->owners->findOwner($type, $originalId);
 
         if (!$owner) return [];
 
@@ -101,15 +99,15 @@ class Helper
 
         $parentIds[] = $owner->id;
 
-        $allow    = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['role_id', 'option'])->toArray();
-        $disallow = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['role_id', 'option'])->toArray();
-        $allow    = $this->dbRolesToArray($allow);
-        $disallow = $this->dbRolesToArray($disallow);
+        $allow    = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
+        $disallow = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['rule_id', 'option'])->toArray();
+        $allow    = $this->dbRulesToArray($allow);
+        $disallow = $this->dbRulesToArray($disallow);
 
         $allow = array_diff_key($allow, $disallow);
 
-        $personally = $this->linkage->where('owner_id', $owner->id)->where('permission', 1)->get(['role_id', 'option'])->toArray();
-        $personally = $this->dbRolesToArray($personally);
+        $personally = $this->linkage->where('owner_id', $owner->id)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
+        $personally = $this->dbRulesToArray($personally);
 
         $allow = array_merge($allow, $personally);
 
@@ -128,20 +126,20 @@ class Helper
      * @param int $originalId
      * @return array
      */
-    public function getAllPermittedRole(int $type, int $originalId = null): array
+    public function getAllPermittedRule(int $type, int $originalId = null): array
     {
-        $allow = $this->getAllRoleIDs($type, $originalId);
-        $roleIds = [];
-        foreach ($allow as $item) $roleIds[] = $item['role_id'];
+        $allow = $this->getAllRuleIDs($type, $originalId);
+        $ruleIds = [];
+        foreach ($allow as $item) $ruleIds[] = $item['rule_id'];
 
-        $roles = $this->role->find($roleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
+        $rules = $this->rule->find($ruleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
 
         foreach ($allow as $k => &$item) {
-            if (empty($roles[$item['role_id']])) {
+            if (empty($rules[$item['rule_id']])) {
                 unset($item[$k]);
                 continue;
             }
-            $item = $roles[$item['role_id']].($item['option']?'.'.$item['option']:null);
+            $item = $rules[$item['rule_id']].($item['option']?'.'.$item['option']:null);
         } unset($item);
 
         return array_values($allow);
@@ -154,7 +152,7 @@ class Helper
      * @param string $permission
      * @return bool
      */
-    public function filterPermission(array $PermittedList, $permission)
+    public function filterPermission(array $PermittedList, $permission, $args = null)
     {
         return in_array($permission, $PermittedList);
     }

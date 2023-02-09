@@ -8,7 +8,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
 use Wnikk\LaravelAccessRules\Contracts\{
-    Role as RoleContract,
+    Rule as RuleContract,
     Inheritance as InheritanceContract,
     Linkage as LinkageContract,
     Owners as OwnersContract
@@ -55,6 +55,46 @@ class AccessRulesServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register console commands
+     *
+     * @return void
+     */
+    protected function registerCommands()
+    {
+        if ($this->app->runningInConsole()) {
+            //$this->commands([
+            //]);
+        }
+    }
+    protected function registerModelBindings()
+    {
+        /** @var array{rule:string, linkage:string, owners:string, inheritance:string} */
+        $config = config('access.models');
+
+        if (!$config) {
+            return;
+        }
+
+        $this->app->bind(RuleContract::class, $config['rule']);
+        $this->app->bind(InheritanceContract::class, $config['inheritance']);
+        $this->app->bind(LinkageContract::class, $config['linkage']);
+        $this->app->bind(OwnersContract::class, $config['owners']);
+    }
+
+
+    /**
+     * Register permissions to Laravel Gate
+     *
+     * @return bool
+     */
+    public function registerPermissionsToGate(): bool
+    {
+        app(Gate::class)->before([app(AccessRules::class), 'checkOwnerPermission']);
+        return true;
+    }
+
+
+    /**
      * Setup the resource publishing groups
      *
      * @return void
@@ -94,45 +134,4 @@ class AccessRulesServiceProvider extends ServiceProvider
             ->push($this->app->databasePath()."/migrations/{$timestamp}_{$migrationFileName}")
             ->first();
     }
-
-    /**
-     * Register console commands
-     *
-     * @return void
-     */
-    protected function registerCommands()
-    {
-        if ($this->app->runningInConsole()) {
-            //$this->commands([
-            //]);
-        }
-    }
-
-    protected function registerModelBindings()
-    {
-        /** @var array{role:string, linkage:string, owners:string, inheritance:string} */
-        $config = config('access.models');
-
-        if (!$config) {
-            return;
-        }
-
-        $this->app->bind(RoleContract::class, $config['role']);
-        $this->app->bind(InheritanceContract::class, $config['inheritance']);
-        $this->app->bind(LinkageContract::class, $config['linkage']);
-        $this->app->bind(OwnersContract::class, $config['owners']);
-    }
-
-
-    /**
-     * Register permissions to Laravel Gate
-     *
-     * @return bool
-     */
-    public function registerPermissionsToGate(): bool
-    {
-        app(Gate::class)->before([AccessRules::class, 'checkPermission']);
-        return true;
-    }
-
 }

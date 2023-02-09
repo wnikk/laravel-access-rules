@@ -32,7 +32,7 @@ return new class extends Migration
     {
         $tableNames = $this->getTableNames();
 
-        Schema::create($tableNames->role, function (Blueprint $table) {
+        Schema::create($tableNames->rule, function (Blueprint $table) {
             $table->increments('id');
             $table->string('guard_name')->unique();
             $table->string('options')->nullable();
@@ -42,7 +42,7 @@ return new class extends Migration
         Schema::create($tableNames->linkage, function (Blueprint $table) use ($tableNames) {
             $table->increments('id');
             $table->integer('owner_id');
-            $table->integer('role_id');
+            $table->integer('rule_id');
             $table->boolean('permission');
             $table->string('option')->nullable();
             $table->timestamp('created_at');
@@ -53,8 +53,8 @@ return new class extends Migration
             //    ->onDelete('cascade');
 
             //$table->foreign('role_id')
-            //    ->references('id') // role id
-            //    ->on($tableNames->role)
+            //    ->references('id') // rule id
+            //    ->on($tableNames->rule)
             //    ->onDelete('cascade');
         });
 
@@ -91,7 +91,7 @@ return new class extends Migration
     {
         $tableNames = $this->getTableNames();
 
-        Schema::drop($tableNames->role);
+        Schema::drop($tableNames->rule);
         Schema::drop($tableNames->linkage);
         Schema::drop($tableNames->owners);
         Schema::drop($tableNames->inheritance);

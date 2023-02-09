@@ -2,10 +2,11 @@
 
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Contracts\Role as RoleContract;
+use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Contracts\Owners as OwnersContract;
 use Wnikk\LaravelAccessRules\Contracts\Linkage as LinkageContract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -17,6 +18,20 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Linkage extends Model implements LinkageContract
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'id',
+        'owner_id',
+        'role_id',
+        'permission',
+        'option',
+        'created_at',
+    ];
+
     /**
      * @inherited
      */
@@ -33,15 +48,15 @@ class Linkage extends Model implements LinkageContract
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function rule()
+    public function rule(): BelongsTo
     {
-        return $this->belongsTo(RoleContract::class, 'role_id');
+        return $this->belongsTo(RuleContract::class, 'rule_id');
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function owner()
+    public function owner(): BelongsTo
     {
         return $this->belongsTo(OwnersContract::class, 'owner_id');
     }

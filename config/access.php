@@ -12,7 +12,7 @@ return [
     'owner_types' => [
         'Root',
         'Groups',
-        'User',
+        App\Models\User::class,
     ],
 
     /*
@@ -25,17 +25,17 @@ return [
     'models' => [
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          *
          * The model you want to use as a Permission model needs to implement the
          * `Wnikk\LaravelAccessRules\Contracts\Role` contract.
          */
-        'role' => Wnikk\LaravelAccessRules\Models\Role::class,
+        'rule' => Wnikk\LaravelAccessRules\Models\Rule::class,
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          *
@@ -45,7 +45,7 @@ return [
         'linkage' => Wnikk\LaravelAccessRules\Models\Linkage::class,
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          *
@@ -55,7 +55,7 @@ return [
         'owners' => Wnikk\LaravelAccessRules\Models\Owners::class,
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          *
@@ -68,28 +68,28 @@ return [
     'table_names' => [
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
-        'role' => 'access_rules_role',
+        'rule' => 'access_rules',
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
         'linkage' => 'access_rules_linkage',
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
         'owners' => 'access_rules_owners',
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
+         * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
