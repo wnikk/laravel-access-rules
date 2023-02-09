@@ -16,7 +16,7 @@
     ];
     ```
 
-4. You should publish the migration and the config/access.php config file with:
+4. You should publish the migration and the **config/access.php** config file with:
 
     ```bash
     php artisan vendor:publish --provider="Wnikk\LaravelAccessRules\AccessRulesServiceProvider"
@@ -57,23 +57,3 @@ by indicating the list of possible types of users.
     ```
 
    Consult the **Basic Usage** section of the docs to get started using the features of this package.
-
-```bash
-php artisan laratrust:setup
-```
-
-This command will generate the migrations, create the `Role` and `Permission` models (if you are using the teams feature it will also create a `Team` model) and will add the trait to the configured user models.
-
-4. Dump the autoloader:
-```bash
-composer dump-autoload
-```
-
-5. Run the migrations:
-```bash
-php artisan migrate
-```
-
-::: tip IMPORTANT
-**If you did the steps above you are done with the configuration, if not, please read and follow the whole configuration process**
-:::
