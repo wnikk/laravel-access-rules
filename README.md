@@ -1,7 +1,9 @@
 
 # Laravel Access Rules (Laravel Permissions Package)
 
-
+[![License](https://poser.pugx.org/wnikk/larar/license)](//packagist.org/packages/wnikk/larar)
+[![Latest Stable Version](https://poser.pugx.org/wnikk/larar/v)](//packagist.org/packages/wnikk/larar)
+[![Total Downloads](https://poser.pugx.org/wnikk/larar/downloads)](//packagist.org/packages/wnikk/larar)
 
 ## What does Access Rules support?
 
@@ -34,8 +36,8 @@ $user->can('articles.edit');
 
 ## Alternatives
 
-- [Povilas Korop](https://github.com/spatie/laravel-permission) takes a slightly different approach to its features.
-- [ultraware/roles](https://github.com/ultraware/roles) For several years it has not been supported and transferred to the archive.
+- [spatie/laravel-permission](https://github.com/spatie/laravel-permission) takes a slightly different approach to its features.
+- [ultraware/roles](https://github.com/ultraware/roles) It not supported and transferred to archive.
 - [santigarcor/laratrust](https://github.com/santigarcor/laratrust) implements team support.
 - [zizaco/entrust](https://github.com/zizaco/entrust) offers some wildcard pattern matching.
 

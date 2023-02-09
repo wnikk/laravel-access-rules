@@ -1,5 +1,5 @@
 {
-    "name": "wnikk/larar",
+    "name": "wnikk/laravel-access-rules",
     "description": "Permission handling for Laravel 7 and up",
     "license": "MIT",
     "keywords": [
@@ -19,7 +19,7 @@
             "role": "Developer"
         }
     ],
-    "homepage": "https://github.com/wnikk/larar",
+    "homepage": "https://github.com/wnikk/laravel-access-rules",
     "require": {
         "php": "^7.3|^8.0",
         "illuminate/auth": "^7.0|^8.0|^9.0|^10.0",
