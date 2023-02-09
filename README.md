@@ -2,8 +2,9 @@
 # Laravel Access Rules (Laravel Permissions Package)
 
 [![License](https://poser.pugx.org/wnikk/laravel-access-rules/license)](//packagist.org/packages/wnikk/laravel-access-rules)
+[![PHP Version Require](http://poser.pugx.org/wnikk/laravel-access-rules/require/php)](https://packagist.org/packages/wnikk/laravel-access-rules)
 [![Latest Stable Version](https://poser.pugx.org/wnikk/laravel-access-rules/v)](//packagist.org/packages/wnikk/laravel-access-rules)
-[![Total Downloads](https://poser.pugx.org/wnikk/laravel-access-rules/downloads)](//packagist.org/packages/wnikk/laravel-access-rules)
+[![Latest Unstable Version](http://poser.pugx.org/wnikk/laravel-access-rules/v/unstable)](https://packagist.org/packages/wnikk/laravel-access-rules)
 
 ## What does Access Rules support?
 
