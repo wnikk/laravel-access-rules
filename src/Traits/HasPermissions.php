@@ -18,6 +18,6 @@ trait HasPermissions
             $this->arClass = app(AccessRules::class);
             $this->arClass->setOwner($this);
         }
-        return $this->arClass->hasPermissions($permission);
+        return $this->arClass->hasPermission($permission);
     }
 }

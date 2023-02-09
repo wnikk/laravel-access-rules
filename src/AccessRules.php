@@ -4,6 +4,7 @@ namespace Wnikk\LaravelAccessRules;
 
 use Illuminate\Cache\CacheManager;
 
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\Eloquent\Collection;
@@ -93,12 +94,12 @@ class AccessRules extends Helper
     {
         if ($type instanceof \Illuminate\Database\Eloquent\Model) {
             $ownerTypes = config('access.owner_types');
-            $class      = basename(get_class($type));
+            $class      = get_class($type);
+            $id         = $type->getKey();
             $type       = array_search($class, $ownerTypes, true);
             if ($type === false) {
                 throw new \Exception('Error: config/access.php not find on owner_types class "'.$class.'".');
             }
-            $id = $id->getKey();
         }
 
         if ($id instanceof \Illuminate\Database\Eloquent\Model) {
@@ -155,9 +156,25 @@ class AccessRules extends Helper
      * @param $permission
      * @return bool
      */
-    public function hasPermissions($permission): bool
+    public function hasPermission($permission): bool
     {
         $this->loadPermissions();
         return $this->filterPermission($this->permissions, $permission);
+    }
+
+    /**
+     * @param Authorizable $user
+     * @param string $ability
+     * @param $args
+     * @return bool
+     */
+    public static function checkPermission(Authorizable $user, string $ability, $args): bool
+    {
+        if (method_exists($user, 'hasPermission')) {
+            return $user->hasPermission($ability) ?: false;
+        }
+        $self = app(__CLASS__);
+        $self->setOwner($user);
+        return $self->hasPermission($ability);
     }
 }

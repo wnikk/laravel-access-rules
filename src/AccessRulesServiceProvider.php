@@ -2,7 +2,6 @@
 
 namespace Wnikk\LaravelAccessRules;
 
-use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
@@ -132,13 +131,7 @@ class AccessRulesServiceProvider extends ServiceProvider
      */
     public function registerPermissionsToGate(): bool
     {
-        app(Gate::class)->before(function (Authorizable $user, string $ability) {
-            if (method_exists($user, 'hasPermission')) {
-                return $user->hasPermission($ability) ?: null;
-            }
-            return null;
-        });
-
+        app(Gate::class)->before([AccessRules::class, 'checkPermission']);
         return true;
     }
 
