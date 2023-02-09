@@ -9,9 +9,8 @@ return [
      * It is important in series of elements,
      * after the appointment of rights it is undesirable to change
      */
-    'owner_types' => [
-        'Root',
-        'Groups',
+    'owner_types' => [,
+        'Group',
         App\Models\User::class,
     ],
 

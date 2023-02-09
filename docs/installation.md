@@ -32,7 +32,7 @@ by indicating the list of possible types of users.
      * or pseudo names like "group".
      */
     'owner_types' => [
-        'Groups',
+        'Group',
         App\Models\User::class,
         ...
     ],
@@ -56,4 +56,4 @@ by indicating the list of possible types of users.
         use HasPermissions;
     ```
 
-   Consult the **Basic Usage** section of the docs to get started using the features of this package.
+Consult the **Basic Usage** section of the docs to get started using the features of this package.

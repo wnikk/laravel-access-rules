@@ -4,7 +4,7 @@ Laravel Access Rules is a package that lets you handle very easily roles and per
 
 ### For work correctly
 
-1. It is necessary to carry out [installation](https://github.com/wnikk/laravel-access-rules/blob/master/docs/installation.md).
+1. It is necessary to carry out [installation](https://github.com/wnikk/laravel-access-rules/blob/main/docs/installation.md).
 
 2. Add the necessary trait to your User model:
 
@@ -21,7 +21,7 @@ Laravel Access Rules is a package that lets you handle very easily roles and per
 ###  Checking through standard **Gate**:
 Here you can see some examples
 ```php
-$user->can('articles.edit');
+$user->can('news.edit');
 ```
 
 ### Management permission
@@ -30,7 +30,7 @@ Get such a right, you can assign a rally:
 
 ```php
 // Adding permissions to a user
-$user->givePermissionTo('articles.edit');
+$user->givePermissionTo('news.edit');
 ```
 
 Or you can inherit the rights from another user or groups
