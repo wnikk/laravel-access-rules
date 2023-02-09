@@ -1,5 +1,5 @@
 <?php
-namespace Wnikk\LaravelAccessRules\Trait;
+namespace Wnikk\LaravelAccessRules\Traits;
 
 use Wnikk\LaravelAccessRules\AccessRules;
 
