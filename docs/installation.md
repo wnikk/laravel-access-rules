@@ -9,10 +9,10 @@
 
 3. Optional: The service provider will automatically get registered. Or you may manually add the service provider in your `config/app.php` file:
 
-    ```
+    ```php
     'providers' => [
         // ...
-        Spatie\Permission\PermissionServiceProvider::class,
+        Wnikk\LaravelAccessRules\AccessRulesServiceProvider::class,
     ];
     ```
 
