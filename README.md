@@ -23,6 +23,16 @@
 
 See the [documentation](https://github.com/wnikk/laravel-access-rules/tree/master/docs) for detailed installation and usage instructions.
 
+
+## You can install the package using composer:
+
+```bash
+composer require wnikk/laravel-access-rules
+```
+
+See the [installation page](https://github.com/wnikk/laravel-access-rules/blob/main/docs/installation.md) for detailed.
+
+
 ## What It Does
 This package allows you to manage user permissions and groups (instead roles) in a database.
 
