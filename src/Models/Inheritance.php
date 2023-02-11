@@ -2,7 +2,7 @@
 
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Contracts\Owners as OwnersContract;
+use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $owner_id
- * @property int $owner_id_parent
+ * @property int $owner_parent_id
  * @property ?\Illuminate\Support\Carbon $created_at
  */
 class Inheritance extends Model implements InheritanceContract
@@ -24,7 +24,7 @@ class Inheritance extends Model implements InheritanceContract
     protected $fillable = [
         'id',
         'owner_id',
-        'owner_id_parent',
+        'owner_parent_id',
         'created_at',
     ];
 
@@ -46,7 +46,7 @@ class Inheritance extends Model implements InheritanceContract
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(OwnersContract::class, 'owner_id');
+        return $this->belongsTo(OwnerContract::class, 'owner_id');
     }
 
     /**
@@ -54,6 +54,6 @@ class Inheritance extends Model implements InheritanceContract
      */
     public function ownerParent(): BelongsTo
     {
-        return $this->belongsTo(OwnersContract::class, 'owner_id_parent');
+        return $this->belongsTo(OwnerContract::class, 'owner_id_parent');
     }
 }

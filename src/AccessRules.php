@@ -9,6 +9,8 @@ use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\Eloquent\Collection;
+use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
+use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Models\Assay;
 
 class AccessRules extends Assay
@@ -95,9 +97,11 @@ class AccessRules extends Assay
     {
         if ($typeOrModel instanceof Model) {
             if ($id === null) $id = $typeOrModel->getKey();
+            $typeOrModel = get_class($typeOrModel);
+        }
+        if (!is_numeric($typeOrModel)) {
             $ownerTypes  = config('access.owner_types');
-            $class       = get_class($typeOrModel);
-            $typeOrModel = array_search($class, $ownerTypes, true);
+            $typeOrModel = $class = array_search($typeOrModel, $ownerTypes, true);
             if ($typeOrModel === false) {
                 throw new \LogicException('Error: config/access.php not find on owner_types class "'.$class.'".');
             }
@@ -105,7 +109,7 @@ class AccessRules extends Assay
 
         $this->thisOwnerType = $typeOrModel;
         $this->thisOwnerId   = $id;
-        $this->cacheKey      = self::$cacheParams['key'].'.'.$type.'.'.$id;
+        $this->cacheKey      = self::$cacheParams['key'].'.'.$this->thisOwnerType.'.'.$this->thisOwnerId;
     }
 
     /**
@@ -115,7 +119,6 @@ class AccessRules extends Assay
     {
         if ($this->permissions) return;
         if ($this->loadCachePermissions()) return;
-
 
         $this->permissions = $this->getAllPermittedRule(
             $this->thisOwnerType,
@@ -157,7 +160,6 @@ class AccessRules extends Assay
             self::$cacheParams['expiration_time'] * 60
         );
     }
-
 
     /**
      * Save all keys list, for clean
@@ -219,14 +221,22 @@ class AccessRules extends Assay
     /**
      * Checks what is right for the current user
      *
-     * @param $permission
+     * @param $ability
      * @param $args
      * @return bool
      */
-    public function hasPermission($permission, $args = null): bool
+    public function hasPermission($ability, $args = null): bool
     {
         $this->loadPermissions();
-        return $this->filterPermission($this->permissions, $permission, $args);
+        return $this->filterPermission($this->permissions, $ability, $args);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getOwner()
+    {
+        return $this->getOwnerModel($this->thisOwnerType, $this->thisOwnerId);
     }
 
     /**

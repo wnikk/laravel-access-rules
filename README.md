@@ -30,7 +30,7 @@ Once installed you can do stuff like this:
 
 ```php
 // Adding permissions to a user
-$user->givePermissionTo('articles.edit');
+$user->addPermission('articles.edit');
 ```
 
 

@@ -29,7 +29,7 @@ return [
          * basic default value but you may easily change it to any table you like.
          *
          * The model you want to use as a Permission model needs to implement the
-         * `Wnikk\LaravelAccessRules\Contracts\Role` contract.
+         * `Wnikk\LaravelAccessRules\Contracts\Rule` contract.
          */
         'rule' => Wnikk\LaravelAccessRules\Models\Rule::class,
 
@@ -39,9 +39,9 @@ return [
          * basic default value but you may easily change it to any table you like.
          *
          * The model you want to use as a Role model needs to implement the
-         * `Wnikk\LaravelAccessRules\Contracts\Linkage` contract.
+         * `Wnikk\LaravelAccessRules\Contracts\Permission` contract.
          */
-        'linkage' => Wnikk\LaravelAccessRules\Models\Linkage::class,
+        'permission' => Wnikk\LaravelAccessRules\Models\Permission::class,
 
         /*
          * When using the "hasPermission" trait from this package, we need to know which
@@ -49,9 +49,9 @@ return [
          * basic default value but you may easily change it to any table you like.
          *
          * The model you want to use as a Role model needs to implement the
-         * `Wnikk\LaravelAccessRules\Contracts\Owners` contract.
+         * `Wnikk\LaravelAccessRules\Contracts\Owner` contract.
          */
-        'owners' => Wnikk\LaravelAccessRules\Models\Owners::class,
+        'owner' => Wnikk\LaravelAccessRules\Models\Owner::class,
 
         /*
          * When using the "hasPermission" trait from this package, we need to know which
@@ -78,14 +78,14 @@ return [
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
-        'linkage' => 'access_rules_linkage',
+        'permission' => 'access_rules_permission',
 
         /*
          * When using the "hasPermission" trait from this package, we need to know which
          * table should be used to retrieve your roles permissions. We have chosen a
          * basic default value but you may easily change it to any table you like.
          */
-        'owners' => 'access_rules_owners',
+        'owner' => 'access_rules_owner',
 
         /*
          * When using the "hasPermission" trait from this package, we need to know which

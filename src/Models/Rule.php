@@ -2,19 +2,24 @@
 
 namespace Wnikk\LaravelAccessRules\Models;
 
+use Wnikk\LaravelAccessRules\Casts\PermissionOption;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property string $name
+ * @property string $parent_id
  * @property string $guard_name
  * @property string $options
+ * @property string $description
  * @property ?\Illuminate\Support\Carbon $deleted_at
  */
 class Rule extends Model implements RuleContract
 {
+    use SoftDeletes;
     /**
      * The attributes that are mass assignable.
      *
@@ -22,9 +27,10 @@ class Rule extends Model implements RuleContract
      */
     protected $fillable = [
         'id',
-        'name',
+        'parent_id',
         'guard_name',
         'options',
+        'description',
         'deleted_at',
     ];
 
@@ -32,6 +38,33 @@ class Rule extends Model implements RuleContract
      * @inherited
      */
     protected $guarded = [];
+
+
+    /**
+     * Find a rule by name
+     *
+     * @param string $ability
+     * @param $option
+     * @return RuleContract|null
+     */
+    public static function findRule(string $ability, &$option = null)
+    {
+        $rule = static::where('guard_name', $ability)->first();
+
+        if (!$rule && !$n = strrpos($ability, '.')) return null;
+
+        $option  = substr($ability, $n+1);
+        $ability = substr($ability, 0, $n);
+
+        $rule = static::where('guard_name', $ability)->first();
+        if (!$rule) return null;
+
+        if ($rule->options) {
+            $option = app(PermissionOption::class)->set($rule, 'option', $option, []);
+        }
+
+        return $rule;
+    }
 
     /**
      * @inherited
@@ -42,10 +75,34 @@ class Rule extends Model implements RuleContract
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return $this
      */
-    public function linkage(): HasMany
+    public function rule()
     {
-        return $this->hasMany(Linkage::class, 'rule_id');
+        return $this;
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function permission(): HasMany
+    {
+        return $this->hasMany(Permission::class, 'rule_id');
     }
 }

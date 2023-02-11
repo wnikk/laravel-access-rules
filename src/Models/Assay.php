@@ -4,8 +4,8 @@ namespace Wnikk\LaravelAccessRules\Models;
 use Wnikk\LaravelAccessRules\Contracts\{
     Rule as RuleContract,
     Inheritance as InheritanceContract,
-    Linkage as LinkageContract,
-    Owners as OwnersContract
+    Permission as PermissionContract,
+    Owner as OwnerContract
 };
 
 class Assay
@@ -21,12 +21,12 @@ class Assay
     protected $inheritance;
 
     /**
-     * @var LinkageContract
+     * @var PermissionContract
      */
-    protected $linkage;
+    protected $permission;
 
     /**
-     * @var OwnersContract
+     * @var OwnerContract
      */
     protected $owners;
 
@@ -35,27 +35,48 @@ class Assay
      */
     public function __construct()
     {
-        $this->rule = app(RuleContract::class);
+        $this->rule        = app(RuleContract::class);
         $this->inheritance = app(InheritanceContract::class);
-        $this->linkage = app(LinkageContract::class);
-        $this->owners  = app(OwnersContract::class);
+        $this->permission  = app(PermissionContract::class);
+        $this->owners      = app(OwnerContract::class);
+    }
+
+
+    /**
+     * @param int $type
+     * @param $originalId
+     * @return mixed
+     */
+    public function getOwnerModel(int $type, $originalId = null)
+    {
+        return $this->owners::findOwner($type, $originalId);
+    }
+
+    /**
+     * @param string $ability
+     * @param $option
+     * @return mixed
+     */
+    public function getRuleModel(string $ability, &$option = null)
+    {
+        return $this->rule::findRule($ability, $option);
     }
 
     /**
      * Returns all owners with inheritance
      *
-     * @param $ownersId
-     * @return array<int>
+     * @param int $ownersId
+     * @return array<int, int>
      */
-    protected function getAllParentOwners($ownersId): array
+    protected function getAllParentOwners(int $ownersId): array
     {
         // At your leisure, replace to "WITH RECURSIVE "
-        $listIds  = $this->inheritance->where('owner_id', $ownersId)->pluck('owner_id_parent')->toArray();
+        $listIds  = $this->inheritance->where('owner_id', $ownersId)->pluck('owner_parent_id')->toArray();
         $checkIds = $listIds;
         $listIds  = array_flip($listIds);
         $limit    = 100;
         while( count($checkIds) && --$limit ){
-            $tmp = $this->inheritance->whereIn('owner_id', $checkIds)->pluck('owner_id_parent')->toArray();
+            $tmp = $this->inheritance->whereIn('owner_id', $checkIds)->pluck('owner_parent_id')->toArray();
             $checkIds = [];
             foreach( $tmp as $id )
             {
@@ -69,7 +90,7 @@ class Assay
 
     /**
      * @param array $list
-     * @return array
+     * @return array<float, mixed>
      */
     private function dbRulesToArray(array $list): array
     {
@@ -89,9 +110,9 @@ class Assay
      * @param int $originalId
      * @return array<array{rule_id:int, option:string|null}>
      */
-    public function getAllRuleIDs(int $type, int $originalId = null): array
+    protected function getAllRuleIDs(int $type, $originalId = null): array
     {
-        $owner = $this->owners->findOwner($type, $originalId);
+        $owner = $this->getOwnerModel($type, $originalId);
 
         if (!$owner) return [];
 
@@ -99,14 +120,14 @@ class Assay
 
         $parentIds[] = $owner->id;
 
-        $allow    = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
-        $disallow = $this->linkage->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['rule_id', 'option'])->toArray();
+        $allow    = $this->permission->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
+        $disallow = $this->permission->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['rule_id', 'option'])->toArray();
         $allow    = $this->dbRulesToArray($allow);
         $disallow = $this->dbRulesToArray($disallow);
 
         $allow = array_diff_key($allow, $disallow);
 
-        $personally = $this->linkage->where('owner_id', $owner->id)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
+        $personally = $this->permission->where('owner_id', $owner->id)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
         $personally = $this->dbRulesToArray($personally);
 
         $allow = array_merge($allow, $personally);
@@ -124,9 +145,9 @@ class Assay
      *
      * @param int $type
      * @param int $originalId
-     * @return array
+     * @return array<int, string>
      */
-    public function getAllPermittedRule(int $type, int $originalId = null): array
+    public function getAllPermittedRule(int $type, $originalId = null): array
     {
         $allow = $this->getAllRuleIDs($type, $originalId);
         $ruleIds = [];

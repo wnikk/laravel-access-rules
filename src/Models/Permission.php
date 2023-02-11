@@ -3,8 +3,9 @@
 namespace Wnikk\LaravelAccessRules\Models;
 
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Contracts\Owners as OwnersContract;
-use Wnikk\LaravelAccessRules\Contracts\Linkage as LinkageContract;
+use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
+use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
+use Wnikk\LaravelAccessRules\Casts\PermissionOption;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $option
  * @property ?\Illuminate\Support\Carbon $created_at
  */
-class Linkage extends Model implements LinkageContract
+class Permission extends Model implements PermissionContract
 {
     /**
      * The attributes that are mass assignable.
@@ -38,11 +39,20 @@ class Linkage extends Model implements LinkageContract
     protected $guarded = [];
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'option' => PermissionOption::class,
+    ];
+
+    /**
      * @inherited
      */
     public function getTable()
     {
-        return config('access.table_names.linkage', parent::getTable());
+        return config('access.table_names.permission', parent::getTable());
     }
 
     /**
@@ -58,6 +68,6 @@ class Linkage extends Model implements LinkageContract
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(OwnersContract::class, 'owner_id');
+        return $this->belongsTo(OwnerContract::class, 'owner_id');
     }
 }

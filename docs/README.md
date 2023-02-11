@@ -30,7 +30,7 @@ Get such a right, you can assign a rally:
 
 ```php
 // Adding permissions to a user
-$user->givePermissionTo('news.edit');
+$user->addPermission('news.edit');
 ```
 
 Or you can inherit the rights from another user or groups

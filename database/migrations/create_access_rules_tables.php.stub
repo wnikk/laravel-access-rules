@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Return name of tables
      *
-     * @return stdClass{role:string, linkage:string, owners:string, inheritance:string}
+     * @return stdClass{role:string, Permission:string, owners:string, inheritance:string}
      */
     protected function getTableNames(): stdClass
     {
@@ -34,12 +34,13 @@ return new class extends Migration
 
         Schema::create($tableNames->rule, function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('parent_id')->default(0);
             $table->string('guard_name')->unique();
             $table->string('options')->nullable();
-            $table->string('name')->unique()->nullable();
+            $table->string('description')->unique()->nullable();
             $table->softDeletes();
         });
-        Schema::create($tableNames->linkage, function (Blueprint $table) use ($tableNames) {
+        Schema::create($tableNames->permission, function (Blueprint $table) use ($tableNames) {
             $table->increments('id');
             $table->integer('owner_id');
             $table->integer('rule_id');
@@ -58,7 +59,7 @@ return new class extends Migration
             //    ->onDelete('cascade');
         });
 
-        Schema::create($tableNames->owners, function (Blueprint $table) {
+        Schema::create($tableNames->owner, function (Blueprint $table) {
             $table->increments('id');
             $table->tinyInteger('type')->default(0);
             $table->integer('original_id')->nullable();
@@ -71,7 +72,7 @@ return new class extends Migration
         Schema::create($tableNames->inheritance, function (Blueprint $table) use ($tableNames) {
             $table->increments('id');
             $table->integer('owner_id');
-            $table->integer('owner_id_parent');
+            $table->integer('owner_parent_id');
             $table->timestamp('created_at');
 
             //$table->foreign('owner_id')
@@ -92,8 +93,8 @@ return new class extends Migration
         $tableNames = $this->getTableNames();
 
         Schema::drop($tableNames->rule);
-        Schema::drop($tableNames->linkage);
-        Schema::drop($tableNames->owners);
+        Schema::drop($tableNames->permission);
+        Schema::drop($tableNames->owner);
         Schema::drop($tableNames->inheritance);
     }
 };

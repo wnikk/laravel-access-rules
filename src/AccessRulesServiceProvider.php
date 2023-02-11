@@ -10,8 +10,8 @@ use Illuminate\Support\ServiceProvider;
 use Wnikk\LaravelAccessRules\Contracts\{
     Rule as RuleContract,
     Inheritance as InheritanceContract,
-    Linkage as LinkageContract,
-    Owners as OwnersContract
+    Permission as PermissionContract,
+    Owner as OwnerContract
 };
 
 class AccessRulesServiceProvider extends ServiceProvider
@@ -77,8 +77,8 @@ class AccessRulesServiceProvider extends ServiceProvider
 
         $this->app->bind(RuleContract::class, $config['rule']);
         $this->app->bind(InheritanceContract::class, $config['inheritance']);
-        $this->app->bind(LinkageContract::class, $config['linkage']);
-        $this->app->bind(OwnersContract::class, $config['owners']);
+        $this->app->bind(PermissionContract::class, $config['permission']);
+        $this->app->bind(OwnerContract::class, $config['owner']);
     }
 
 

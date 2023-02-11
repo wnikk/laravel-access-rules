@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $option
  * @property ?\Illuminate\Support\Carbon $created_at
  */
-interface Linkage
+interface Permission
 {
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
