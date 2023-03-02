@@ -39,6 +39,12 @@ This package allows you to manage user permissions and groups (instead roles) in
 Once installed you can do stuff like this:
 
 ```php
+use Wnikk\LaravelAccessRules\AccessRules;
+
+// Add new rule permission
+app(AccessRules::class)->newRule('articles.edit', 'Access to editing articles');
+```
+```php
 // Adding permissions to a user
 $user->addPermission('articles.edit');
 ```
