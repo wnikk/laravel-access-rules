@@ -4,7 +4,7 @@ return [
     /**
      * List of user types.
      * The list can be both the real name of the classes
-     * or pseudo names like "group".
+     * or pseudonyms like "group".
      *
      * It is important in series of elements,
      * after the appointment of rights it is undesirable to change

@@ -38,6 +38,7 @@ return new class extends Migration
             $table->string('guard_name')->unique();
             $table->string('options')->nullable();
             $table->string('description')->unique()->nullable();
+            $table->timestamp('created_at');
             $table->softDeletes();
         });
         Schema::create($tableNames->permission, function (Blueprint $table) use ($tableNames) {

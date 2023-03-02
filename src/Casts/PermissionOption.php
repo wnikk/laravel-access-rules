@@ -32,7 +32,7 @@ class PermissionOption implements CastsAttributes
      */
     public function set($model, $key, $value, $attributes)
     {
-        $rules = $model->rule()->options;
+        $rules = $model->rule->options;
 
         if ($rules) {
             Validator::make(

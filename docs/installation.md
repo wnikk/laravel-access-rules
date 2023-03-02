@@ -1,3 +1,8 @@
+---
+title: Installation
+weight: 1
+---
+
 # Installation
 
 1. This package **publishes a `config/access.php` file**. If you already have a file by that name, you must rename or remove it.
@@ -29,7 +34,7 @@ by indicating the list of possible types of users.
     /**
      * List of user types.
      * The list can be both the real name of the classes
-     * or pseudo names like "group".
+     * or pseudonyms like "group".
      */
     'owner_types' => [
         'Group',

@@ -4,6 +4,8 @@ namespace Wnikk\LaravelAccessRules\Models;
 
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
+use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
+use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -16,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Owner extends Model implements OwnerContract
 {
+    const UPDATED_AT = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -58,9 +62,9 @@ class Owner extends Model implements OwnerContract
      */
     public function addPermission(RuleContract $rule, $option = null, bool $access = true): bool
     {
-        $per = new Permission;
+        $per = app(PermissionContract::class);
         $per->owner_id   = $this->getKey();
-        $per->role_id    = $rule->getKey();
+        $per->rule_id    = $rule->getKey();
         $per->permission = $access;
         $per->option     = $option;
         return $per->save();
@@ -88,7 +92,7 @@ class Owner extends Model implements OwnerContract
     public function remPermission(RuleContract $rule, $option = null, $access = true): bool
     {
         $deleted =$this->permission()
-            ->where('role_id', $rule->getKey())
+            ->where('rule_id', $rule->getKey())
             ->where('option', $option)
             ->where('permission', $access)
             ->delete();
@@ -122,7 +126,7 @@ class Owner extends Model implements OwnerContract
             ->first();
         if ($check) return true;
 
-        $add = new Inheritance;
+        $add = app(InheritanceContract::class);
         $add->owner_id = $this->getKey();
         $add->owner_parent_id = $parent->getKey();
         return $add->save();
@@ -137,7 +141,7 @@ class Owner extends Model implements OwnerContract
      */
     public function remInheritance(OwnerContract $parent)
     {
-        return $this->hasMany('inheritance')
+        return $this->inheritance
             ->where('owner_parent_id', $parent->getKey())
             ->delete();
     }

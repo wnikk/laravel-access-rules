@@ -2,11 +2,9 @@
 
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
 
 /**
  * @property int $id
@@ -16,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Inheritance extends Model implements InheritanceContract
 {
+    const UPDATED_AT = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -46,7 +46,7 @@ class Inheritance extends Model implements InheritanceContract
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(OwnerContract::class, 'owner_id');
+        return $this->belongsTo(Owner::class, 'owner_id');
     }
 
     /**
@@ -54,6 +54,6 @@ class Inheritance extends Model implements InheritanceContract
      */
     public function ownerParent(): BelongsTo
     {
-        return $this->belongsTo(OwnerContract::class, 'owner_id_parent');
+        return $this->belongsTo(Owner::class, 'owner_id_parent');
     }
 }

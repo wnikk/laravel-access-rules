@@ -20,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Rule extends Model implements RuleContract
 {
     use SoftDeletes;
+
+    const UPDATED_AT = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -49,9 +52,10 @@ class Rule extends Model implements RuleContract
      */
     public static function findRule(string $ability, &$option = null)
     {
-        $rule = static::where('guard_name', $ability)->first();
+        $rule = static::firstWhere('guard_name', $ability);
 
-        if (!$rule && !$n = strrpos($ability, '.')) return null;
+        if ($rule) return $rule;
+        if (!$n = strrpos($ability, '.')) return null;
 
         $option  = substr($ability, $n+1);
         $ability = substr($ability, 0, $n);
@@ -87,7 +91,7 @@ class Rule extends Model implements RuleContract
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(static::class, 'parent_id');
+        return $this->belongsTo(Rule::class, 'parent_id');
     }
 
     /**
@@ -95,7 +99,7 @@ class Rule extends Model implements RuleContract
      */
     public function children(): HasMany
     {
-        return $this->hasMany(static::class, 'parent_id');
+        return $this->hasMany(Rule::class, 'parent_id');
     }
 
     /**

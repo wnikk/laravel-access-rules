@@ -3,11 +3,23 @@ namespace Wnikk\LaravelAccessRules\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 
 trait HasPermissions
 {
     /** @var AccessRules */
     protected $arClass;
+
+    /** @var string */
+    protected $ownerName;
+
+    /**
+     * @return AccessRules
+     */
+    protected function getAccessRulesModel()
+    {
+        return app(AccessRules::class);
+    }
 
     /**
      * Initialize the trait
@@ -16,95 +28,56 @@ trait HasPermissions
      */
     protected function initializeHasPermissions()
     {
-        $this->arClass = app(AccessRules::class);
+        $ar = $this->arClass = $this->getAccessRulesModel();
 
-        if ($this instanceof Model) {
-            $this->arClass->setOwner($this);
-        }
+        static::retrieved(function ($model) use ($ar) {
+            $ar->setOwner($model);
+        });
+        static::created(function ($model) {
+            $model->getOwner();
+        });
+        static::deleting(function ($model) {
+            $owner = $model->getOwner();
+            $owner->delete();
+        });
     }
 
     /**
-     * Add a permission to owner
-     *
-     * @param $ability
-     * @param $option
-     * @param bool $access
-     * @return bool
+     * @return OwnerContract
      */
-    protected function addLinkToRule($ability, $option, $access): bool
+    public function getOwner()
     {
         $owner = $this->arClass->getOwner();
-        $rule  = $this->arClass->getRuleModel($ability, $option);
-        if (!$rule) {
-            throw new \LogicException(
-                'Rule "'.$ability.'" is absent in the database. Before adding a permission, add rule to DB.'
-            );
-        }
-        return $owner->addPermission($rule, $option, $access);
+        if ($owner) return $owner;
+
+        return $this->arClass->newOwner(
+            $this,
+            $this->getKey(),
+            $this->ownerName??
+            $this->name??
+            $this->fullname??
+            $this->email??
+            $this->realname??
+            $this->login??
+            $this->phone??
+            null
+        );
     }
 
     /**
-     * Add blocking resolution to owner
+     * Adds the user to inherit
      *
-     * @param $ability
-     * @param $option
-     * @param bool $access
-     * @return bool
+     * @param  int|\Illuminate\Database\Eloquent\Model  $typeOrModel
+     * @param  null|int  $id
      */
-    protected function remLinkToRule($ability, $option, $access): bool
+    public function inheritPermissionFrom($typeOrModel, $id = null): bool
     {
-        $owner = $this->arClass->getOwner();
-        $rule  = $this->arClass->getRuleModel($ability, $option);
-        if (!$rule) return false;
-        return $owner->remPermission($rule, $option, $access);
-    }
+        $parentAr = $this->getAccessRulesModel();
+        $parentAr->setOwner($typeOrModel, $id);
+        $parent   = $parentAr->getOwner();
+        $owner    = $this->arClass->getOwner();
 
-    /**
-     * Add a permission to owner
-     *
-     * @param $ability
-     * @param $option
-     * @return bool
-     */
-    public function addPermission($ability, $option = null): bool
-    {
-        return $this->addLinkToRule($ability, $option, true);
-    }
-
-    /**
-     * Add blocking resolution to owner
-     *
-     * @param $ability
-     * @param $option
-     * @return bool
-     */
-    public function addProhibition($ability, $option = null): bool
-    {
-        return $this->addLinkToRule($ability, $option, false);
-    }
-
-    /**
-     * Remove resolution from owner
-     *
-     * @param $ability
-     * @param $option
-     * @return bool
-     */
-    public function remPermission($ability, $option = null): bool
-    {
-        return $this->remLinkToRule($ability, $option, true);
-    }
-
-    /**
-     * Remove blocking resolution from owner
-     *
-     * @param $ability
-     * @param $option
-     * @return bool
-     */
-    public function remProhibition($ability, $option = null): bool
-    {
-        return $this->remLinkToRule($ability, $option, false);
+        return $owner->addInheritance($parent);
     }
 
     /**
@@ -117,18 +90,52 @@ trait HasPermissions
     }
 
     /**
-     * Adds the user to inherit
+     * Add a permission to owner
      *
-     * @param  int|\Illuminate\Database\Eloquent\Model  $typeOrModel
-     * @param  null|int|\Illuminate\Database\Eloquent\Model  $id
+     * @param $ability
+     * @param $option
+     * @return bool
      */
-    public function inheritPermissionFrom($typeOrModel, $id = null): bool
+    public function addPermission($ability, $option = null): bool
     {
-        $parent = app(AccessRules::class)
-            ->setOwner($typeOrModel, $id)
-            ->getOwner();
-        $owner = $this->arClass->getOwner();
-
-        return $owner->addInheritance($parent);
+        $this->getOwner();
+        return $this->arClass->addPermission($ability, $option);
     }
+
+    /**
+     * Add blocking resolution to owner
+     *
+     * @param $ability
+     * @param $option
+     * @return bool
+     */
+    public function addProhibition($ability, $option = null): bool
+    {
+        return $this->arClass->addProhibition($ability, $option);
+    }
+
+    /**
+     * Remove resolution from owner
+     *
+     * @param $ability
+     * @param $option
+     * @return bool
+     */
+    public function remPermission($ability, $option = null): bool
+    {
+        return $this->arClass->remPermission($ability, $option);
+    }
+
+    /**
+     * Remove blocking resolution from owner
+     *
+     * @param $ability
+     * @param $option
+     * @return bool
+     */
+    public function remProhibition($ability, $option = null): bool
+    {
+        return $this->arClass->remProhibition($ability, $option);
+    }
+
 }
