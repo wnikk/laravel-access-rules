@@ -2,11 +2,14 @@
 
 namespace Wnikk\LaravelAccessRules;
 
-use Illuminate\Contracts\Auth\Access\Gate;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
+use Wnikk\LaravelAccessRules\Exceptions\AccessAuthorizationException;
 use Wnikk\LaravelAccessRules\Contracts\{
     Rule as RuleContract,
     Inheritance as InheritanceContract,
@@ -36,6 +39,7 @@ class AccessRulesServiceProvider extends ServiceProvider
     public function register()
     {
         $this->registerModelBindings();
+        $this->registerExceptions();
     }
 
     /**
@@ -66,6 +70,12 @@ class AccessRulesServiceProvider extends ServiceProvider
             //]);
         }
     }
+
+    /**
+     * Register Model Bindings
+     *
+     * @return void
+     */
     protected function registerModelBindings()
     {
         /** @var array{rule:string, linkage:string, owners:string, inheritance:string} */
@@ -81,6 +91,18 @@ class AccessRulesServiceProvider extends ServiceProvider
         $this->app->bind(OwnerContract::class, $config['owner']);
     }
 
+    /**
+     * Register Exceptions
+     *
+     * @return void
+     */
+    protected function registerExceptions()
+    {
+        $this->app->make(ExceptionHandlerContract::class)->map(
+            AuthorizationException::class,
+            AccessAuthorizationException::class
+        );
+    }
 
     /**
      * Register permissions to Laravel Gate
@@ -89,7 +111,7 @@ class AccessRulesServiceProvider extends ServiceProvider
      */
     public function registerPermissionsToGate(): bool
     {
-        app(Gate::class)->before([app(AccessRules::class), 'checkOwnerPermission']);
+        $this->app->make(Gate::class)->before([app(AccessRules::class), 'checkOwnerPermission']);
         return true;
     }
 

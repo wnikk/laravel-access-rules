@@ -8,7 +8,7 @@ use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 trait HasPermissions
 {
     /** @var AccessRules */
-    protected $arClass;
+    protected $accessRules;
 
     /** @var string */
     protected $ownerName;
@@ -16,7 +16,7 @@ trait HasPermissions
     /**
      * @return AccessRules
      */
-    protected function getAccessRulesModel()
+    protected function appAccessRulesModel()
     {
         return app(AccessRules::class);
     }
@@ -28,7 +28,7 @@ trait HasPermissions
      */
     protected function initializeHasPermissions()
     {
-        $ar = $this->arClass = $this->getAccessRulesModel();
+        $ar = $this->accessRules = $this->appAccessRulesModel();
 
         static::retrieved(function ($model) use ($ar) {
             $ar->setOwner($model);
@@ -47,19 +47,20 @@ trait HasPermissions
      */
     public function getOwner()
     {
-        $owner = $this->arClass->getOwner();
+        $owner = $this->accessRules->getOwner();
         if ($owner) return $owner;
 
-        return $this->arClass->newOwner(
+        return $this->accessRules->newOwner(
             $this,
             $this->getKey(),
             $this->ownerName??
             $this->name??
             $this->fullname??
-            $this->email??
             $this->realname??
             $this->login??
+            $this->email??
             $this->phone??
+            $this->getKey()??
             null
         );
     }
@@ -70,12 +71,16 @@ trait HasPermissions
      * @param  int|\Illuminate\Database\Eloquent\Model  $typeOrModel
      * @param  null|int  $id
      */
-    public function inheritPermissionFrom($typeOrModel, $id = null): bool
+    public function inheritPermissionFrom($type, $id = null): bool
     {
-        $parentAr = $this->getAccessRulesModel();
-        $parentAr->setOwner($typeOrModel, $id);
-        $parent   = $parentAr->getOwner();
-        $owner    = $this->arClass->getOwner();
+        if (is_object($type) && method_exists($type, 'getOwner')) {
+            $parent = $type->getOwner();
+        } else {
+            $parentAr = $this->appAccessRulesModel();
+            $parentAr->setOwner($type, $id);
+            $parent = $parentAr->getOwner();
+        }
+        $owner = $this->accessRules->getOwner();
 
         return $owner->addInheritance($parent);
     }
@@ -86,7 +91,7 @@ trait HasPermissions
      */
     public function hasPermission($ability, $args = null): bool
     {
-        return $this->arClass->hasPermission($ability, $args = null);
+        return $this->accessRules->hasPermission($ability, $args = null);
     }
 
     /**
@@ -99,7 +104,7 @@ trait HasPermissions
     public function addPermission($ability, $option = null): bool
     {
         $this->getOwner();
-        return $this->arClass->addPermission($ability, $option);
+        return $this->accessRules->addPermission($ability, $option);
     }
 
     /**
@@ -111,7 +116,7 @@ trait HasPermissions
      */
     public function addProhibition($ability, $option = null): bool
     {
-        return $this->arClass->addProhibition($ability, $option);
+        return $this->accessRules->addProhibition($ability, $option);
     }
 
     /**
@@ -123,7 +128,7 @@ trait HasPermissions
      */
     public function remPermission($ability, $option = null): bool
     {
-        return $this->arClass->remPermission($ability, $option);
+        return $this->accessRules->remPermission($ability, $option);
     }
 
     /**
@@ -135,7 +140,7 @@ trait HasPermissions
      */
     public function remProhibition($ability, $option = null): bool
     {
-        return $this->arClass->remProhibition($ability, $option);
+        return $this->accessRules->remProhibition($ability, $option);
     }
 
 }

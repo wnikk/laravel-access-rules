@@ -23,6 +23,9 @@ class AccessRules extends Assay
     /** @var array<string> */
     protected $permissions;
 
+    /** @var string|null */
+    protected static $lastDisallow;
+
     /**
      * PermissionRegistrar constructor.
      */
@@ -98,6 +101,16 @@ class AccessRules extends Assay
     }
 
     /**
+     * Returns the name of the last prohibited rule
+     *
+     * @return string|null
+     */
+    public static function getLastDisallowPermission()
+    {
+        return (self::$lastDisallow);
+    }
+
+    /**
      * Checks what is right for the current user
      *
      * @param $ability
@@ -108,7 +121,10 @@ class AccessRules extends Assay
     {
         $this->loadPermissions();
 
-        return $this->filterPermission($this->permissions, $ability, $args);
+        $check = $this->filterPermission($this->permissions, $ability, $args);
+
+        if (!$check) $this::$lastDisallow = $ability;
+        return $check;
     }
 
     /**
@@ -124,6 +140,6 @@ class AccessRules extends Assay
         }
 
         $this->setOwner($user);
-        return $this->hasPermission($ability);
+        return $this->hasPermission($ability, $args);
     }
 }
