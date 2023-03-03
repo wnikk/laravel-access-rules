@@ -7,7 +7,7 @@ use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 trait AccessRulesPermission
 {
     /**
-     * Create a permission
+     * Create a rule
      *
      * @param string $guardName
      * @param string|null $description
@@ -25,6 +25,19 @@ trait AccessRulesPermission
         if ($parentRuleID) $rule->parent_id = $this->getRuleModel()::findOrFail($parentRuleID)->id;
 
         return $rule->save()?$rule->id:false;
+    }
+
+    /**
+     * Soft remove rule
+     *
+     * @param string $guardName
+     * @return mixed
+     */
+    public function delRule(string $guardName)
+    {
+        return $this->getRuleModel()
+            ->where('guard_name', $guardName)
+            ->delete();
     }
 
 
