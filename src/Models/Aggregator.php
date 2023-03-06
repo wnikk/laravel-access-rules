@@ -8,7 +8,7 @@ use Wnikk\LaravelAccessRules\Contracts\{
     Owner as OwnerContract
 };
 
-class Assay
+class Aggregator
 {
     /**
      * @return OwnerContract
@@ -99,7 +99,7 @@ class Assay
     {
         $rules = [];
         foreach ($list as $item) {
-            $key = $item['rule_id'].($item['option']?'.'.$item['option']:null);
+            $key = 'R'.$item['rule_id'].'n'.($item['option']?'.'.$item['option']:null);
             $rules[$key] = $item;
         }
         return $rules;
@@ -137,8 +137,8 @@ class Assay
         $allow = array_merge($allow, $personally);
 
         //return [
-        //    'allow'    => array_unique($allow),
-        //    'disallow' => array_unique($disallow),
+        //    'allow'    => $allow,
+        //    'disallow' => $disallow,
         //];
 
         return $allow;

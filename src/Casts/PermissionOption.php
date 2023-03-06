@@ -4,6 +4,7 @@ namespace Wnikk\LaravelAccessRules\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Support\Facades\Validator;
+use LogicException;
 
 class PermissionOption implements CastsAttributes
 {
@@ -34,11 +35,24 @@ class PermissionOption implements CastsAttributes
     {
         $rules = $model->rule->options;
 
-        if ($rules) {
-            Validator::make(
+        if ($rules)
+        {
+            $validator = Validator::make(
                 ['option' => $value],
                 ['option' => $rules]
-            )->validate();
+            );
+
+            if ($validator->fails()) {
+                throw new LogicException(
+                    'Specified option "'.$value.'" does not comply with the permissible rule.'
+                );
+            }
+
+        } elseif ($value)
+        {
+            throw new LogicException(
+                'Role has no permissible option "'.$value.'". Before adding a permission, adjust rule option validator.'
+            );
         }
 
         return $value;

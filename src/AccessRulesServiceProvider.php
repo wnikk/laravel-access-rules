@@ -9,8 +9,10 @@ use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Wnikk\LaravelAccessRules\Exceptions\AccessAuthorizationException;
 use Wnikk\LaravelAccessRules\Contracts\{
+    AccessRules as AccessRulesContract,
     Rule as RuleContract,
     Inheritance as InheritanceContract,
     Permission as PermissionContract,
@@ -78,6 +80,8 @@ class AccessRulesServiceProvider extends ServiceProvider
      */
     protected function registerModelBindings()
     {
+        $this->app->bind(AccessRulesContract::class, AccessRules::class);
+
         /** @var array{rule:string, linkage:string, owners:string, inheritance:string} */
         $config = config('access.models');
 
@@ -98,9 +102,15 @@ class AccessRulesServiceProvider extends ServiceProvider
      */
     protected function registerExceptions()
     {
-        $this->app->make(ExceptionHandlerContract::class)->map(
-            AuthorizationException::class,
-            AccessAuthorizationException::class
+        $handler = $this->app->make(ExceptionHandlerContract::class);
+
+        if (!method_exists($handler,'map')) {
+            return;
+        }
+
+        $handler->map(
+                AuthorizationException::class,
+                AccessAuthorizationException::class
         );
     }
 
@@ -111,7 +121,12 @@ class AccessRulesServiceProvider extends ServiceProvider
      */
     public function registerPermissionsToGate(): bool
     {
-        $this->app->make(Gate::class)->before([app(AccessRules::class), 'checkOwnerPermission']);
+        $this->app
+            ->make(Gate::class)
+            ->before([
+                app(AccessRulesContract::class),
+                'checkOwnerPermission'
+            ]);
         return true;
     }
 

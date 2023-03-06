@@ -8,6 +8,7 @@ use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
 
 /**
  * @property int $id
@@ -63,10 +64,27 @@ class Owner extends Model implements OwnerContract
     public function addPermission(RuleContract $rule, $option = null, bool $access = true): bool
     {
         $per = app(PermissionContract::class);
-        $per->owner_id   = $this->getKey();
-        $per->rule_id    = $rule->getKey();
-        $per->permission = $access;
-        $per->option     = $option;
+        $perData = [
+            'owner_id'   => $this->getKey(),
+            'rule_id'    => $rule->getKey(),
+            'permission' => $access,
+            'option'     => $option,
+        ];
+
+        $check = $per->where(
+            array_map(function($key, $value){
+                return [$key, $value];
+            }, array_keys($perData), $perData
+        ))->first();
+
+        if ($check) {
+            throw new LogicException(
+                'Role "'.$rule->guard_name.'" has already been previously added to the owner.'
+            );
+        };
+
+        $per = $per::create($perData);
+
         return $per->save();
     }
     /**

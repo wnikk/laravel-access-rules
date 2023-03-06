@@ -4,13 +4,14 @@ namespace Wnikk\LaravelAccessRules;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Auth\Access\Authorizable;
+use Wnikk\LaravelAccessRules\Contracts\AccessRules as AccessRulesContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
-use Wnikk\LaravelAccessRules\Models\Assay;
+use Wnikk\LaravelAccessRules\Models\Aggregator;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesCache;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesTypeOwner;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesPermission;
 
-class AccessRules extends Assay
+class AccessRules extends Aggregator implements AccessRulesContract
 {
     use AccessRulesCache, AccessRulesTypeOwner, AccessRulesPermission;
 
