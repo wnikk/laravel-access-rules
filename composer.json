@@ -1,6 +1,6 @@
 {
     "name": "wnikk/laravel-access-rules",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Simple system of access rights for Laravel, with roles, groups, unlimited inheritance and possibility of multiplayer use.",
     "license": "MIT",
     "keywords": [
