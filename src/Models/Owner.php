@@ -2,6 +2,7 @@
 
 namespace Wnikk\LaravelAccessRules\Models;
 
+use Wnikk\LaravelAccessRules\Helper\AccessRulesTypeOwner;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
@@ -19,6 +20,8 @@ use LogicException;
  */
 class Owner extends Model implements OwnerContract
 {
+    use AccessRulesTypeOwner;
+
     const UPDATED_AT = null;
 
     /**
