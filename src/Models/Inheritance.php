@@ -54,6 +54,6 @@ class Inheritance extends Model implements InheritanceContract
      */
     public function ownerParent(): BelongsTo
     {
-        return $this->belongsTo(Owner::class, 'owner_id_parent');
+        return $this->belongsTo(Owner::class, 'owner_parent_id');
     }
 }

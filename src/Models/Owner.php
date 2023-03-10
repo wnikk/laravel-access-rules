@@ -142,7 +142,7 @@ class Owner extends Model implements OwnerContract
      */
     public function addInheritance(OwnerContract $parent): bool
     {
-        $check = $this->hasMany('inheritance')
+        $check = $this->inheritance()
             ->where('owner_parent_id', $parent->getKey())
             ->first();
         if ($check) return true;
@@ -162,7 +162,7 @@ class Owner extends Model implements OwnerContract
      */
     public function remInheritance(OwnerContract $parent)
     {
-        return $this->inheritance
+        return $this->inheritance()
             ->where('owner_parent_id', $parent->getKey())
             ->delete();
     }

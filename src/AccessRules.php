@@ -38,11 +38,16 @@ class AccessRules extends Aggregator implements AccessRulesContract
     /**
      * Set the owner id for user/groups support, this id is used when querying roles
      *
-     * @param  int|\Illuminate\Database\Eloquent\Model  $type
-     * @param  null|int|\Illuminate\Database\Eloquent\Model  $id
+     * @param  int|Model|OwnerContract  $type
+     * @param  null|int  $id
      */
     public function setOwner($type, $id = null)
     {
+        if ($type instanceof OwnerContract && $type->id)
+        {
+            $id   = $type->original_id;
+            $type = $type->type;
+        }
         if ($type instanceof Model)
         {
             if ($id === null) $id = $type->getKey();

@@ -2,23 +2,23 @@
 namespace Wnikk\LaravelAccessRules\Traits;
 
 use Illuminate\Database\Eloquent\Model;
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Contracts\AccessRules as AccessRulesContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 
 trait HasPermissions
 {
-    /** @var AccessRules */
+    /** @var AccessRulesContract */
     protected $accessRules;
 
     /** @var string */
     protected $ownerName;
 
     /**
-     * @return AccessRules
+     * @return AccessRulesContract
      */
     protected function appAccessRulesModel()
     {
-        return app(AccessRules::class);
+        return app(AccessRulesContract::class);
     }
 
     /**
@@ -66,23 +66,59 @@ trait HasPermissions
     }
 
     /**
+     * Get owner object from mixed type
+     *
+     * @param $type
+     * @param $id
+     * @return OwnerContract|null
+     */
+    private function getOwnerFrom($type, $id = null): ?OwnerContract
+    {
+        $owner = null;
+
+        if (is_object($type)) {
+            if ($type instanceof OwnerContract && $type->id) {
+                $owner = $type;
+            } elseif (method_exists($type, 'getOwner')) {
+                $owner = $type->getOwner();
+            }
+        }
+
+        if (!$owner) {
+            $accessRules = $this->appAccessRulesModel();
+            $accessRules->setOwner($type, $id);
+            $owner = $accessRules->getOwner();
+        }
+        return $owner;
+    }
+
+    /**
      * Adds the user to inherit
      *
-     * @param  int|\Illuminate\Database\Eloquent\Model  $typeOrModel
+     * @param  int|Model|OwnerContract  $type
      * @param  null|int  $id
      */
     public function inheritPermissionFrom($type, $id = null): bool
     {
-        if (is_object($type) && method_exists($type, 'getOwner')) {
-            $parent = $type->getOwner();
-        } else {
-            $parentAr = $this->appAccessRulesModel();
-            $parentAr->setOwner($type, $id);
-            $parent = $parentAr->getOwner();
-        }
-        $owner = $this->accessRules->getOwner();
+        $owner  = $this->accessRules->getOwner();
+        $parent = $this->getOwnerFrom($type, $id);
 
-        return $owner->addInheritance($parent);
+        return $parent?$owner->addInheritance($parent):false;
+    }
+
+    /**
+     * Remove inherit from parent owner
+     *
+     * @param  int|Model|OwnerContract  $type
+     * @param  null|int  $id
+     * @return bool
+     */
+    public function remInheritFrom($type, $id = null): bool
+    {
+        $owner  = $this->accessRules->getOwner();
+        $parent = $this->getOwnerFrom($type, $id);
+
+        return $parent?$owner->remInheritance($parent):false;
     }
 
     /**
