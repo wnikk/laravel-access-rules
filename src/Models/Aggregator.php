@@ -93,7 +93,7 @@ class Aggregator
 
     /**
      * @param array $list
-     * @return array<float, mixed>
+     * @return array<float, array>
      */
     private function dbRulesToArray(array $list): array
     {

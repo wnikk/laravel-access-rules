@@ -84,7 +84,7 @@ class Owner extends Model implements OwnerContract
             throw new LogicException(
                 'Role "'.$rule->guard_name.'" has already been previously added to the owner.'
             );
-        };
+        }
 
         $per = $per::create($perData);
 

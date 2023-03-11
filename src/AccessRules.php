@@ -103,7 +103,6 @@ class AccessRules extends Aggregator implements AccessRulesContract
         );
 
         $this->saveCachePermissions();
-        return;
     }
 
     /**

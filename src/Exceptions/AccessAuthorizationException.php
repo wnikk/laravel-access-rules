@@ -13,7 +13,7 @@ class AccessAuthorizationException extends AuthorizationException
      *
      * @param  string|null  $message
      * @param  mixed  $code
-     * @param  \Throwable|null  $previous
+     * @param  Throwable|null  $previous
      * @return void
      */
     public function __construct($message = null, $code = null, Throwable $previous = null)

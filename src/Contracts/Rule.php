@@ -27,7 +27,7 @@ interface Rule
     public function children(): HasMany;
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function permission(): HasMany;
 }

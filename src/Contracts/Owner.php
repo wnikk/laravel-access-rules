@@ -22,7 +22,6 @@ interface Owner
      *
      * @param RuleContract $rule
      * @param $option
-     * @param bool $access
      * @return bool
      */
     public function addPermission(RuleContract $rule, $option = null): bool;
@@ -41,7 +40,6 @@ interface Owner
      *
      * @param RuleContract $rule
      * @param $option
-     * @param bool $access
      * @return bool
      */
     public function remPermission(RuleContract $rule, $option = null): bool;
