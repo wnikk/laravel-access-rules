@@ -35,10 +35,6 @@ weight: 2
 3. Now we are creating basic rules:
 
     ```php
-    $user->newRule('articles.edit', 'Access to editing articles');
-    ```
-    or
-    ```php
     use Wnikk\LaravelAccessRules\AccessRules;
     // Add new rule permission
     app(AccessRules::class)->newRule('articles.edit', 'Access to editing articles');
@@ -99,3 +95,46 @@ weight: 2
         public function destroy(Article $article)  {...}
     }
     ```
+
+## Magic method "self"
+
+If you need to check that the user is the author - for this there is a magic method "self".
+
+An example, we allow the author to edit his comments:
+
+1. To do this, add a rule with a magic suffix "self"
+
+    ```php
+    use Wnikk\LaravelAccessRules\AccessRules;
+    // Add new rule permission
+   app(AccessRules::class)->newRule('comments.edit'); // for root
+    app(AccessRules::class)->newRule('comments.edit.self'); // for only author
+    ```
+2. How is the resolution check:
+
+   ```php
+    $user = User::find(1);
+    $comment = Comment::where('user_id', 1)->first();
+
+    $check = $user->can(
+        'comments.edit',
+        $comment
+    );
+    dd($check); // check($user.id === $comment.user_id) result bool:true
+    ```
+    In this example, the extension checks the presence of the author’s field.
+
+3. The magical method can work with other user models. example:
+
+   ```php
+    $moderator = Moderator::find('ffffffff-ffff-4fff-a000-000000000001');
+    $comment = Comment::where('moderator_uuid', $moderator->getKey())->first();
+
+    $check = $moderator->can(
+        'comments.edit',
+        $comment
+    );
+    dd($check); // check($moderator.uuid === $comment.moderator_uuid) result bool:true
+    ```
+
+This magic method will be conveniently used in Laravel policies.

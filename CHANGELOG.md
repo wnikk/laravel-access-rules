@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.0 - 2023-03-11
+
+- Add magic rule "self"
+- Fix bug on hasPermission method
+
 ## 1.0.4 - 2023-03-10
 
 - Add support OwnerContract on setOwner method

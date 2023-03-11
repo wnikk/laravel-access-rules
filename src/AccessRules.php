@@ -119,24 +119,79 @@ class AccessRules extends Aggregator implements AccessRulesContract
     /**
      * Checks what is right for the current user
      *
-     * @param $ability
-     * @param $args
+     * @param string  $ability
+     * @param array|null  $args
      * @return bool
      */
     public function hasPermission($ability, $args = null): bool
     {
         $this->loadPermissions();
 
-        $check = $this->filterPermission($this->permissions, $ability, $args);
+        $check = $this->filterPermission($this->permissions, $ability);
 
         if (!$check) $this::$lastDisallow = $ability;
+
+        return $check;
+    }
+
+    /**
+     * Check that owner is the author
+     *
+     * @param  Model  $user
+     * @param  mixed|Model  $model
+     * @return bool
+     */
+    public function checkUserIsAuthor($user, $model): bool
+    {
+        if (
+            !$user->getKey() ||
+            !is_object($model) ||
+            !method_exists($model, 'getKey') ||
+            !$model->getKey()
+        ) return false;
+
+        // object to name
+        $property = strtolower(class_basename($user));
+
+        // remove last letter "s"
+        if (substr($property, -1) === 's') $property = substr($property, 0, -1);
+
+        // "user" to "user_id"
+        $property .= '_'.$user->primaryKey;
+
+        return (isset($model->$property) && $model->$property === $user->getKey());
+    }
+
+    /**
+     * Checks that the user is available
+     * for permission to edit self records
+     *
+     * @param $user
+     * @param string $ability
+     * @param $args
+     * @return bool
+     */
+    public function checkMagicRuleSelf($user, string $ability, $args): bool
+    {
+        $check = false;
+        // Check magic permission {rule}.self
+        if ($ability && !empty($args[0]) && is_object($args[0]))
+        {
+            if ($this->hasPermission($ability.'.self', $args))
+            {
+                $check = $this->checkUserIsAuthor($user, $args[0]);
+            } else {
+                // update last permission that was checked for display in messages
+                $this::$lastDisallow = $ability;
+            }
+        }
         return $check;
     }
 
     /**
      * @param Authorizable $user
-     * @param string $ability
-     * @param $args
+     * @param string  $ability
+     * @param array|null  $args
      * @return bool
      */
     public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): bool
@@ -145,7 +200,13 @@ class AccessRules extends Aggregator implements AccessRulesContract
             return $user->hasPermission($ability, $args) ?: false;
         }
 
+        // if $user not inherited trait HasPermissions
         $this->setOwner($user);
-        return $this->hasPermission($ability, $args);
+        $check = $this->hasPermission($ability, $args);
+        if (!$check && $args) {
+            $check = $this->checkMagicRuleSelf($user, $ability, $args);
+        }
+
+        return $check;
     }
 }

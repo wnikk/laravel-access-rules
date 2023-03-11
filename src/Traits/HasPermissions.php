@@ -70,9 +70,9 @@ trait HasPermissions
      *
      * @param $type
      * @param $id
-     * @return OwnerContract|null
+     * @return OwnerContract
      */
-    private function getOwnerFrom($type, $id = null): ?OwnerContract
+    private function getOwnerFrom($type, $id = null): OwnerContract
     {
         $owner = null;
 
@@ -121,14 +121,6 @@ trait HasPermissions
         return $parent?$owner->remInheritance($parent):false;
     }
 
-    /**
-     * Determine if the model may perform the given permission.
-     *
-     */
-    public function hasPermission($ability, $args = null): bool
-    {
-        return $this->accessRules->hasPermission($ability, $args = null);
-    }
 
     /**
      * Add a permission to owner
@@ -179,4 +171,22 @@ trait HasPermissions
         return $this->accessRules->remProhibition($ability, $option);
     }
 
+    /**
+     * Determine if the model may perform the given permission.
+     *
+     * @param string  $ability
+     * @param array|null  $args
+     * @return bool
+     */
+    public function hasPermission($ability, $args = null): bool
+    {
+        $check = $this->accessRules->hasPermission($ability, $args);
+
+        // Check magic permission {rule}.self
+        if (!$check && $args){
+            $check = $this->accessRules->checkMagicRuleSelf($this, $ability, $args);
+        }
+
+        return $check;
+    }
 }

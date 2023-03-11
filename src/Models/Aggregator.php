@@ -179,7 +179,7 @@ class Aggregator
      * @param string $permission
      * @return bool
      */
-    public function filterPermission(array $PermittedList, $permission, $args = null)
+    public function filterPermission(array $PermittedList, $permission)
     {
         return in_array($permission, $PermittedList);
     }
