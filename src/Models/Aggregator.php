@@ -93,9 +93,9 @@ class Aggregator
 
     /**
      * @param array $list
-     * @return array<float, array>
+     * @return array<string, array{rule_id:int, option:string|null}>
      */
-    private function dbRulesToArray(array $list): array
+    private function dbPermToArray(array $list): array
     {
         $rules = [];
         foreach ($list as $item) {
@@ -106,14 +106,37 @@ class Aggregator
     }
 
     /**
+     * @param array $list
+     * @return array<int, string>
+     */
+    private function permArrayToRules(array $list): array
+    {
+        $rule    = $this->getRuleModel();
+        $ruleIds = [];
+        foreach ($list as $item) $ruleIds[] = $item['rule_id'];
+
+        $rules = $rule->find($ruleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
+
+        foreach ($list as $k => &$item) {
+            if (empty($rules[$item['rule_id']])) {
+                unset($item[$k]);
+                continue;
+            }
+            $item = $rules[$item['rule_id']].($item['option']?'.'.$item['option']:null);
+        } unset($item);
+
+        return array_values($list);
+    }
+
+    /**
      * We get all the allowed rights for the specified user,
      * taking into account inheritance.
      *
      * @param int $type
      * @param int $originalId
-     * @return array<array{rule_id:int, option:string|null}>
+     * @return array{ allow:array{rule_id:int, option:string|null}, disallow: array{rule_id:int, option:string|null} }
      */
-    protected function getAllRuleIDs(int $type, $originalId = null): array
+    protected function getAllRuleIDMap(int $type, $originalId = null): array
     {
         $permission = $this->getPermissionModel();
         $owner      = $this->findOwner($type, $originalId);
@@ -126,22 +149,20 @@ class Aggregator
 
         $allow    = $permission->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
         $disallow = $permission->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['rule_id', 'option'])->toArray();
-        $allow    = $this->dbRulesToArray($allow);
-        $disallow = $this->dbRulesToArray($disallow);
+        $allow    = $this->dbPermToArray($allow);
+        $disallow = $this->dbPermToArray($disallow);
 
         $allow = array_diff_key($allow, $disallow);
 
         $personally = $permission->where('owner_id', $owner->id)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
-        $personally = $this->dbRulesToArray($personally);
+        $personally = $this->dbPermToArray($personally);
 
         $allow = array_merge($allow, $personally);
 
-        //return [
-        //    'allow'    => $allow,
-        //    'disallow' => $disallow,
-        //];
-
-        return $allow;
+        return [
+            'allow'    => array_values($allow),
+            'disallow' => array_values($disallow),
+        ];
     }
 
     /**
@@ -153,23 +174,23 @@ class Aggregator
      */
     public function getAllPermittedRule(int $type, $originalId = null): array
     {
-        $rule    = app(RuleContract::class);
-        $allow   = $this->getAllRuleIDs($type, $originalId);
+        $perms = $this->getAllRuleIDMap($type, $originalId);
 
-        $ruleIds = [];
-        foreach ($allow as $item) $ruleIds[] = $item['rule_id'];
+        return $this->permArrayToRules($perms['allow']);
+    }
 
-        $rules = $rule->find($ruleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
+    /**
+     * Returns the name of valid rules
+     *
+     * @param int $type
+     * @param int $originalId
+     * @return array<int, string>
+     */
+    public function getAllProhibitedRule(int $type, $originalId = null): array
+    {
+        $perms = $this->getAllRuleIDMap($type, $originalId);
 
-        foreach ($allow as $k => &$item) {
-            if (empty($rules[$item['rule_id']])) {
-                unset($item[$k]);
-                continue;
-            }
-            $item = $rules[$item['rule_id']].($item['option']?'.'.$item['option']:null);
-        } unset($item);
-
-        return array_values($allow);
+        return $this->permArrayToRules($perms['disallow']);
     }
 
     /**

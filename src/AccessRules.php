@@ -106,6 +106,19 @@ class AccessRules extends Aggregator implements AccessRulesContract
     }
 
     /**
+     * Returns a technical map of permits without the rules.
+     *
+     * @return array{ allow:array{rule_id:int, option:string|null}, disallow: array{rule_id:int, option:string|null} }
+     */
+    public function getThisPermitMap(): array
+    {
+        return $this->getAllRuleIDMap(
+            $this->thisOwnerType,
+            $this->thisOwnerId
+        );
+    }
+
+    /**
      * Returns the name of the last prohibited rule
      *
      * @return string|null
