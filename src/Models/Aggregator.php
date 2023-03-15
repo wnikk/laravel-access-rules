@@ -13,7 +13,7 @@ class Aggregator
     /**
      * @return OwnerContract
      */
-    protected function getOwnerModel()
+    protected static function getOwnerModel()
     {
         return app(OwnerContract::class);
     }
@@ -21,7 +21,7 @@ class Aggregator
     /**
      * @return RuleContract
      */
-    protected function getRuleModel()
+    protected static function getRuleModel()
     {
         return app(RuleContract::class);
     }
@@ -29,7 +29,7 @@ class Aggregator
     /**
      * @return InheritanceContract
      */
-    protected function getInheritanceModel()
+    protected static function getInheritanceModel()
     {
         return app(InheritanceContract::class);
     }
@@ -37,7 +37,7 @@ class Aggregator
     /**
      * @return PermissionContract
      */
-    protected function getPermissionModel()
+    protected static function getPermissionModel()
     {
         return app(PermissionContract::class);
     }

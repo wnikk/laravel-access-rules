@@ -16,7 +16,7 @@ trait AccessRulesPermission
      * @param mixed $options
      * @return int|false
      */
-    public function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null)
+    public static function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null)
     {
         if (is_array($guardName)) {
             $title        = $guardName['title']??null;
@@ -26,13 +26,16 @@ trait AccessRulesPermission
             $guardName    = $guardName['guard_name']??null;
         }
 
-        $rule = $this->getRuleModel();
+        $rule = self::getRuleModel();
 
         $rule->guard_name  = $guardName;
         $rule->title       = $title;
         $rule->description = $description;
         $rule->options     = $options;
-        if ($parentRuleID) $rule->parent_id = $this->getRuleModel()::findOrFail($parentRuleID)->id;
+        if ($parentRuleID) {
+            $parent = self::getRuleModel();
+            $rule->parent_id = $parent::findOrFail($parentRuleID)->id;
+        }
 
         return $rule->save()?$rule->id:false;
     }
@@ -43,9 +46,9 @@ trait AccessRulesPermission
      * @param string $guardName
      * @return mixed
      */
-    public function delRule(string $guardName)
+    public static function delRule(string $guardName)
     {
-        return $this->getRuleModel()
+        return self::getRuleModel()
             ->where('guard_name', $guardName)
             ->delete();
     }
