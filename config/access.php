@@ -10,8 +10,9 @@ return [
      * after the appointment of rights it is undesirable to change
      */
     'owner_types' => [
-        'Group',
         App\Models\User::class,
+        'Group',
+        'Role',
     ],
 
     /*

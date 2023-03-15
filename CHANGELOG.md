@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.1 - 2023-03-15
+
+- Add support change the list of existing types on a running project
+- Add title to rules
+
 ## 2.0.0 - 2023-03-11
 
 - Add magic rule "self"

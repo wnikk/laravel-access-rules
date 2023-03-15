@@ -141,7 +141,10 @@ class Aggregator
         $permission = $this->getPermissionModel();
         $owner      = $this->findOwner($type, $originalId);
 
-        if (!$owner) return [];
+        if (!$owner) return [
+            'allow'    => [],
+            'disallow' => [],
+        ];
 
         $parentIds = $this->getAllParentOwnersID($owner->id);
 

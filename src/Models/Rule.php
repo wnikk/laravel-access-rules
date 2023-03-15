@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $parent_id
  * @property string $guard_name
  * @property string $options
+ * @property string $title
  * @property string $description
  * @property ?\Illuminate\Support\Carbon $deleted_at
  */
@@ -33,6 +34,7 @@ class Rule extends Model implements RuleContract
         'parent_id',
         'guard_name',
         'options',
+        'title',
         'description',
         'deleted_at',
     ];

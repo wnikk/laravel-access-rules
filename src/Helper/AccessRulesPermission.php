@@ -9,19 +9,29 @@ trait AccessRulesPermission
     /**
      * Create a rule
      *
-     * @param string $guardName
+     * @param mixed $guardName
+     * @param string|null $title
      * @param string|null $description
      * @param int|null $parentRuleID
      * @param mixed $options
      * @return int|false
      */
-    public function newRule(string $guardName, string $description = null, int $parentRuleID = null, $options = null)
+    public function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null)
     {
+        if (is_array($guardName)) {
+            $title        = $guardName['title']??null;
+            $description  = $guardName['description']??null;
+            $parentRuleID = $guardName['parent_id']??null;
+            $options      = $guardName['options']??null;
+            $guardName    = $guardName['guard_name']??null;
+        }
+
         $rule = $this->getRuleModel();
 
-        $rule->guard_name = $guardName;
+        $rule->guard_name  = $guardName;
+        $rule->title       = $title;
         $rule->description = $description;
-        $rule->options = $options;
+        $rule->options     = $options;
         if ($parentRuleID) $rule->parent_id = $this->getRuleModel()::findOrFail($parentRuleID)->id;
 
         return $rule->save()?$rule->id:false;

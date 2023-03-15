@@ -6,6 +6,24 @@ use LogicException;
 trait AccessRulesTypeOwner
 {
     /**
+     * CRC-16 CCITT
+     *
+     * @param string $data
+     * @return int
+     */
+    protected static function crc16(string $data)
+    {
+        $crc = 0xFFFF;
+        for ($i = 0; $i < strlen($data); $i++)
+        {
+            $x = (($crc >> 8) ^ ord($data[$i])) & 0xFF;
+            $x ^= $x >> 4;
+            $crc = (($crc << 8) ^ ($x << 12) ^ ($x << 5) ^ $x) & 0xFFFF;
+        }
+        return $crc;
+    }
+
+    /**
      * @param int $type
      * @return void
      */
@@ -45,6 +63,10 @@ trait AccessRulesTypeOwner
      */
     public static function getListTypes()
     {
-        return config('access.owner_types');
+        $list = [];
+        foreach (config('access.owner_types')??[] as $item) {
+            $list[self::crc16((string)$item)] = $item;
+        }
+        return $list;
     }
 }

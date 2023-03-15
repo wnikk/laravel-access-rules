@@ -32,13 +32,14 @@ interface AccessRules
     /**
      * Create a rule
      *
-     * @param string $guardName
+     * @param mixed $guardName
+     * @param string|null $title
      * @param string|null $description
      * @param int|null $parentRuleID
      * @param mixed $options
      * @return int|false
      */
-    public function newRule(string $guardName, string $description = null, int $parentRuleID = null, $options = null);
+    public function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null);
 
     /**
      * Soft remove rule
