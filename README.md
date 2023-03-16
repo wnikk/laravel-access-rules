@@ -1,5 +1,7 @@
 
-# Laravel Access Rules (Laravel Permissions Package)
+![Laravel Access Control Rules](/wnikk/laravel-access-rules/raw/main/docs/art/laravel-access-control-rules-logo.png)
+
+# Access Control Rules (Laravel Permissions Package)
 
 [![License](https://poser.pugx.org/wnikk/laravel-access-rules/license)](//packagist.org/packages/wnikk/laravel-access-rules)
 [![Code Climate](https://codeclimate.com/github/wnikk/laravel-access-rules/badges/gpa.svg)](https://codeclimate.com/github/wnikk/laravel-access-rules)
@@ -8,7 +10,7 @@
 [![Latest Stable Version](https://poser.pugx.org/wnikk/laravel-access-rules/v)](//packagist.org/packages/wnikk/laravel-access-rules)
 [![Latest Unstable Version](http://poser.pugx.org/wnikk/laravel-access-rules/v/unstable)](https://packagist.org/packages/wnikk/laravel-access-rules)
 
-## What does Access Rules support?
+## What does Access Control Rules support?
 
 - Multiple user models.
 - Multiple permissions can be attached to users.
@@ -79,9 +81,20 @@ $user->can('articles.edit');
 - [santigarcor/laratrust](https://github.com/santigarcor/laratrust) implements team support.
 - [zizaco/entrust](https://github.com/zizaco/entrust) offers some wildcard pattern matching.
 
-## Contributing
 
-Please report any issue you find in the issues page. Pull requests are more than welcome.
+## Opening an Issue
+
+Before opening an issue there are a couple of considerations:
+* You are all awesome!
+* Pull requests are more than welcome.
+* **Read the instructions** and make sure all steps were *followed correctly*.
+* **Check** that the issue is not *specific to your development environment* setup.
+* **Provide** *duplication steps*.
+* **Attempt to look into the issue**, and if you *have a solution, make a pull request*.
+* **Show that you have made an attempt** to *look into the issue*.
+* **Check** to see if the issue you are *reporting is a duplicate* of a previous reported issue.
+* **Following these instructions show me that you have tried.**
+* Please be considerate that this is an open source project that I provide to the community for FREE when opening an issue.
 
 
 ## License
