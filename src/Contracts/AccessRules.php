@@ -39,7 +39,7 @@ interface AccessRules
      * @param mixed $options
      * @return int|false
      */
-    public function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null);
+    public static function newRule($guardName, string $title = null, string $description = null, int $parentRuleID = null, $options = null);
 
     /**
      * Soft remove rule
@@ -47,7 +47,7 @@ interface AccessRules
      * @param string $guardName
      * @return mixed
      */
-    public function delRule(string $guardName);
+    public static function delRule(string $guardName);
 
     /**
      * Add a permission to owner
