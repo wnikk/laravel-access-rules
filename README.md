@@ -2,6 +2,7 @@
 # Laravel Access Rules (Laravel Permissions Package)
 
 [![License](https://poser.pugx.org/wnikk/laravel-access-rules/license)](//packagist.org/packages/wnikk/laravel-access-rules)
+[![Code Climate](https://codeclimate.com/github/wnikk/laravel-access-rules/badges/gpa.svg)](https://codeclimate.com/github/wnikk/laravel-access-rules)
 [![PHP Version Require](http://poser.pugx.org/wnikk/laravel-access-rules/require/php)](https://packagist.org/packages/wnikk/laravel-access-rules)
 [![Total Downloads](http://poser.pugx.org/wnikk/laravel-access-rules/downloads)](https://packagist.org/packages/wnikk/laravel-access-rules)
 [![Latest Stable Version](https://poser.pugx.org/wnikk/laravel-access-rules/v)](//packagist.org/packages/wnikk/laravel-access-rules)
