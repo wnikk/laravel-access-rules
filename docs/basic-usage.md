@@ -37,7 +37,7 @@ weight: 2
     ```php
     use Wnikk\LaravelAccessRules\AccessRules;
     // Add new rule permission
-    app(AccessRules::class)->newRule('articles.edit', 'Access to editing articles');
+    AccessRules::newRule('articles.edit', 'Access to editing articles');
     ```
 
 4. Fill them with permission:
@@ -107,8 +107,8 @@ An example, we allow the author to edit his comments:
     ```php
     use Wnikk\LaravelAccessRules\AccessRules;
     // Add new rule permission
-   app(AccessRules::class)->newRule('comments.edit'); // for root
-    app(AccessRules::class)->newRule('comments.edit.self'); // for only author
+    AccessRules::newRule('comments.edit'); // for root
+    AccessRules::newRule('comments.edit.self'); // for only author
     ```
 2. How is the resolution check:
 

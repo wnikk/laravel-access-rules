@@ -37,13 +37,13 @@ by indicating the list of possible types of users.
      * or pseudonyms like "group".
      */
     'owner_types' => [
-        'Group',
         App\Models\User::class,
+        'Group',
+        'Role',
         ...
     ],
     ...
     ```
-    **IMPORTANT**: After installation, this list can only be supplemented.
 
 6. **Run the migrations**: After the config and migration have been published and configured, you can create the tables for this package by running:
 

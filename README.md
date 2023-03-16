@@ -43,7 +43,7 @@ Once installed you can do stuff like this:
 use Wnikk\LaravelAccessRules\AccessRules;
 
 // Add new rule permission
-app(AccessRules::class)->newRule('articles.edit', 'Access to editing articles');
+AccessRules::newRule('articles.edit', 'Access to editing articles');
 ```
 ```php
 // Adding permissions to a user
