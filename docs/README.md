@@ -47,4 +47,4 @@ $user->inheritPermissionFrom('Group', 1);
 ```
 
 
-Examples of how can be used in more detail described in **Basic Usage** section.
+Examples of how can be used in more detail described in [Basic Usage](https://github.com/wnikk/laravel-access-rules/blob/main/docs/basic-usage.md) section.

@@ -68,19 +68,13 @@ $user->inheritPermissionFrom('Group', 1);
 ```
 
 
-Because all permissions will be registered on [Laravel's gate](https://laravel.com/docs/authorization), you can check if a user has a permission with Laravel's default `can` function:
+Because all permissions will be registered on **Laravel's gate**, you can check if a user has a permission with Laravel's default `can` function:
 
 ```php
 $user->can('articles.edit');
 ```
 
-## Alternatives
-
-- [spatie/laravel-permission](https://github.com/spatie/laravel-permission) takes a slightly different approach to its features.
-- [ultraware/roles](https://github.com/ultraware/roles) It not supported and transferred to archive.
-- [santigarcor/laratrust](https://github.com/santigarcor/laratrust) implements team support.
-- [zizaco/entrust](https://github.com/zizaco/entrust) offers some wildcard pattern matching.
-
+Examples of how can be used in more detail described in [Basic Usage](https://github.com/wnikk/laravel-access-rules/blob/main/docs/basic-usage.md) section.
 
 ## Opening an Issue
 
@@ -96,6 +90,12 @@ Before opening an issue there are a couple of considerations:
 * **Following these instructions show me that you have tried.**
 * Please be considerate that this is an open source project that I provide to the community for FREE when opening an issue.
 
+## Alternatives
+
+- [spatie/laravel-permission](https://github.com/spatie/laravel-permission) takes a slightly different approach to its features.
+- [ultraware/roles](https://github.com/ultraware/roles) It not supported and transferred to archive.
+- [santigarcor/laratrust](https://github.com/santigarcor/laratrust) implements team support.
+- [zizaco/entrust](https://github.com/zizaco/entrust) offers some wildcard pattern matching.
 
 ## License
 
