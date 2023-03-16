@@ -1,5 +1,5 @@
 
-![Laravel Access Control Rules](//raw.githubusercontent.com/wnikk/laravel-access-rules/main/docs/art/laravel-access-control-rules-logo.png)
+![Laravel Access Control Rules](https://raw.githubusercontent.com/wnikk/laravel-access-rules/main/docs/art/laravel-access-control-rules-logo.png)
 
 # Access Control Rules (Laravel Permissions Package)
 
