@@ -9,6 +9,13 @@ use Throwable;
 class AccessAuthorizationException extends AuthorizationException
 {
     /**
+     * Name of last disallow permission
+     *
+     * @var string
+     */
+    protected $nameRule;
+
+    /**
      * Create a new authorization exception instance.
      *
      * @param  string|null  $message
@@ -18,10 +25,23 @@ class AccessAuthorizationException extends AuthorizationException
      */
     public function __construct($message = null, $code = null, Throwable $previous = null)
     {
-        if (!$message) {
-            $message = AccessRules::getLastDisallowPermission();
-            if($message) $message = 'Action "'.$message.'" is unauthorized.';
+        $this->nameRule = AccessRules::getLastDisallowPermission();
+
+        if (!$message && $this->nameRule)
+        {
+            $message = 'Action "'.$this->nameRule.'" is unauthorized.';
         }
+
         parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Return name of last disallow permission
+     *
+     * @return string|null
+     */
+    public function getLastRule(): ?string
+    {
+        return $this->nameRule;
     }
 }
