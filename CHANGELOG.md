@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.2 - 2023-03-27
+
+- Fix bug of add inherit to new user
+
 ## 2.0.1 - 2023-03-15
 
 - Add support change the list of existing types on a running project
