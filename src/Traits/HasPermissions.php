@@ -100,7 +100,7 @@ trait HasPermissions
      */
     public function inheritPermissionFrom($type, $id = null): bool
     {
-        $owner  = $this->accessRules->getOwner();
+        $owner  = $this->getOwner();
         $parent = $this->getOwnerFrom($type, $id);
 
         return $parent && $owner->addInheritance($parent);
