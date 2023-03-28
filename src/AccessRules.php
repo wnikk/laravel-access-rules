@@ -169,7 +169,7 @@ class AccessRules extends Aggregator implements AccessRulesContract
         if (substr($property, -1) === 's') $property = substr($property, 0, -1);
 
         // "user" to "user_id"
-        $property .= '_'.$user->primaryKey;
+        $property .= '_'.$user->getKeyName();
 
         return (isset($model->$property) && $model->$property === $user->getKey());
     }

@@ -2,10 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
-## 2.0.3 - 2023-03-27
+## 2.0.8 - 2023-03-27
 
-- Fix bug of add inherit to new user
 - Add method getLastRule on Exception
+- Fix bug of add inherit to new user
+- Fix of checkUserIsAuthor
 
 ## 2.0.1 - 2023-03-15
 
