@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.9 - 2023-03-28
+
+- Fix support policies
+
 ## 2.0.8 - 2023-03-27
 
 - Add method getLastRule on Exception
