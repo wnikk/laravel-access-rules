@@ -91,9 +91,9 @@ interface AccessRules
      *
      * @param $ability
      * @param $args
-     * @return bool
+     * @return bool|null
      */
-    public function hasPermission($ability, $args = null): bool;
+    public function hasPermission($ability, $args = null): ?bool;
 
     /**
      * Checks what is right for the authorizable user
@@ -101,7 +101,7 @@ interface AccessRules
      * @param Authorizable $user
      * @param string $ability
      * @param $args
-     * @return bool
+     * @return bool|null
      */
-    public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): bool;
+    public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): ?bool;
 }

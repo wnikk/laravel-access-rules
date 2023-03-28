@@ -176,9 +176,9 @@ trait HasPermissions
      *
      * @param string  $ability
      * @param array|null  $args
-     * @return bool
+     * @return bool|null
      */
-    public function hasPermission($ability, $args = null): bool
+    public function hasPermission($ability, $args = null): ?bool
     {
         $check = $this->accessRules->hasPermission($ability, $args);
 

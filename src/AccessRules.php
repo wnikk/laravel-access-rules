@@ -133,9 +133,9 @@ class AccessRules extends Aggregator implements AccessRulesContract
      *
      * @param string  $ability
      * @param array|null  $args
-     * @return bool
+     * @return bool|null
      */
-    public function hasPermission($ability, $args = null): bool
+    public function hasPermission($ability, $args = null): ?bool
     {
         $this->loadPermissions();
 
@@ -181,11 +181,11 @@ class AccessRules extends Aggregator implements AccessRulesContract
      * @param $user
      * @param string $ability
      * @param $args
-     * @return bool
+     * @return bool|null
      */
-    public function checkMagicRuleSelf($user, string $ability, $args): bool
+    public function checkMagicRuleSelf($user, string $ability, $args): ?bool
     {
-        $check = false;
+        $check = null;
         // Check magic permission {rule}.self
         if ($ability && !empty($args[0]) && is_object($args[0]))
         {
@@ -204,12 +204,12 @@ class AccessRules extends Aggregator implements AccessRulesContract
      * @param Authorizable $user
      * @param string  $ability
      * @param array|null  $args
-     * @return bool
+     * @return bool|null
      */
-    public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): bool
+    public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): ?bool
     {
         if (method_exists($user, 'hasPermission')) {
-            return $user->hasPermission($ability, $args) ?: false;
+            return $user->hasPermission($ability, $args);
         }
 
         // if $user not inherited trait HasPermissions

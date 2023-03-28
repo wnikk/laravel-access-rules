@@ -201,10 +201,10 @@ class Aggregator
      *
      * @param array $PermittedList
      * @param string $permission
-     * @return bool
+     * @return bool|null
      */
     public function filterPermission(array $PermittedList, $permission)
     {
-        return in_array($permission, $PermittedList);
+        return in_array($permission, $PermittedList)?true:null;
     }
 }
