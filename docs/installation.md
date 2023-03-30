@@ -61,4 +61,4 @@ by indicating the list of possible types of users.
         use HasPermissions;
     ```
 
-Consult the **Basic Usage** section of the docs to get started using the features of this package.
+Consult the [Basic Usage](https://github.com/wnikk/laravel-access-rules/blob/main/docs/basic-usage.md) section of the docs to get started using the features of this package.
