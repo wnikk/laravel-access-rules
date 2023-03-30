@@ -831,6 +831,8 @@ There is no need to perform such checks anymore, as the **magic method** will ha
 
 
 ## Example 7
+Although this is not **ABAC**, the necessary attribute-based access control functionality can be achieved by adding the use of Laravel's built-in policy mechanism.
+
 All the previous examples focused on checking access to the controller, but we can use the same approach in "**Policy**" to implement _access control for attributes_ with all their variations.
 For this, it is necessary to generate a policy for our model:
 ```bash
@@ -847,12 +849,12 @@ use Illuminate\Auth\Access\Response;
 
 class NewsPolicy
 {
-    public function viewThisIfThisIsTest(User $user, News $news): ?bool
+    public function availableUpdateOnSomeTime(User $user, News $news): ?bool
     {
         if(
-            $user->can('Example7News.test')
-            && stripos($user->name, 'test') !== false
-            && stripos($news->description, 'test') !== false
+            $user->can('Example7News.allowedEditLast24Hours', $news)
+            && stripos($user->name, 'author') !== false
+            && ($news->created_at->isToday() || $news->created_at->isYesterday())
         ) {
             return true;
         }
@@ -882,7 +884,7 @@ class Example7Controller extends Controller
 
     public function index(News $news)
     {
-        $this->authorize('viewThisIfThisIsTest', $news);
+        $this->authorize('availableUpdateOnSomeTime', $news);
 
         return Response::json($news->toArray());
     }
@@ -890,7 +892,7 @@ class Example7Controller extends Controller
 ```
 Therefore, we now have the capability to check not only the rules individually, but also to verify the **attributes of the model**.
 
-It is important - if you add rule "_viewThisIfThisIsTest_" and permission to user, then the **policy will not be checked**.
+It is important - if you add rule "_availableUpdateOnSomeTime_" and permission to user, then the **policy will not be checked**.
 
 ## Final example
 
