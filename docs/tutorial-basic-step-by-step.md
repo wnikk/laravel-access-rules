@@ -1,3 +1,8 @@
+---
+title: Tutorial step-by-step
+weight: 3
+---
+
 ![ACR, ACL, RBAC - Access Control Rules in Laravel 10: Best Practices and Code Examples. Protect your application with advanced access control. Follow our step-by-step guide to implement GRUD functionality, access rules, and user roles. Don't let hackers get access to your sensitive data](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/jzr3m6s65dgs5hzo6shj.png)
 
 Originally posted on: [https://dev.to/wnikk/how-use-access-control-rules-and-grud-in-laravel-10-tutorial-step-by-step-307a](https://dev.to/wnikk/how-use-access-control-rules-and-grud-in-laravel-10-tutorial-step-by-step-307a)
