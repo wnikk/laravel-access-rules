@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.10 - 2023-04-07
+
+- Added clear cache after changing permission
+
 ## 2.0.9 - 2023-03-28
 
 - Fix support policies

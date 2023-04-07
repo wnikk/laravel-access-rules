@@ -72,12 +72,13 @@ trait AccessRulesPermission
                 'Owner not find in the database. Before adding a permission, add owner to DB.'
             );
         }
-
         if (!$rule) {
             throw new LogicException(
                 'Rule "'.$ability.'" is absent in the database. Before adding a permission, add rule to DB.'
             );
         }
+
+        if (method_exists($this, 'forgetCachedPermissions')) $this->forgetCachedPermissions();
 
         return $owner->addPermission($rule, $option, $access);
     }
@@ -95,6 +96,9 @@ trait AccessRulesPermission
         $owner = $this->getOwner();
         $rule  = $this->findRule($ability, $option);
         if (!$owner || !$rule) return false;
+
+        if (method_exists($this, 'forgetCachedPermissions')) $this->forgetCachedPermissions();
+
         return $owner->remPermission($rule, $option, $access);
     }
 
