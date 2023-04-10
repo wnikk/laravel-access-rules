@@ -69,7 +69,19 @@ trait AccessRulesCache
      */
     protected function setOwnerCache(int $type, $id = null)
     {
-        $this->cacheKey = self::$cacheParams['key'].'.'.$type.'.'.$id;
+        $this->cacheKey = $this->makeCacheKey($type, $id);
+    }
+
+    /**
+     * make key for cache
+     *
+     * @param int $type
+     * @param $id
+     * @return string
+     */
+    protected function makeCacheKey(int $type, $id = null): string
+    {
+        return self::$cacheParams['key'].'.'.$type.'.'.$id;
     }
 
     /**
@@ -140,6 +152,22 @@ trait AccessRulesCache
         $this->permissions = null;
 
         return $this->cache->forget($this->cacheKey);
+    }
+
+    /**
+     * Clear list cache for selected owners
+     *
+     * @param array<array{type: int, id: mixed}> $selected
+     * @return void
+     */
+    public function forgetSelectedCachePermission(array $selected): bool
+    {
+        foreach ($selected as $one) {
+            $this->cache->forget($this->makeCacheKey(
+                (string) $one['type']??$one[0]??$one,
+                $one['id']??$one[1]??null
+            ));
+        }
     }
 
     /**

@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.11 - 2023-04-10
+
+- Add method refreshPermission, forgetSelectedCachePermission
+
 ## 2.0.10 - 2023-04-07
 
 - Added clear cache after changing permission

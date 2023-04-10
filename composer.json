@@ -1,6 +1,6 @@
 {
     "name": "wnikk/laravel-access-rules",
-    "version": "2.0.10",
+    "version": "2.0.11",
     "description": "Simple system of ACR (access control rules) for Laravel, with roles, groups, unlimited inheritance and possibility of multiplayer use.",
     "license": "MIT",
     "keywords": [

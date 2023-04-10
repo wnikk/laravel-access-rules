@@ -150,14 +150,14 @@ class Aggregator
 
         $parentIds[] = $owner->id;
 
-        $allow    = $permission->whereIn('owner_id', $parentIds)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
-        $disallow = $permission->whereIn('owner_id', $parentIds)->where('permission', 0)->get(['rule_id', 'option'])->toArray();
+        $allow    = $permission->whereIn('owner_id', $parentIds)->where('permission', 1)->get()->toArray();
+        $disallow = $permission->whereIn('owner_id', $parentIds)->where('permission', 0)->get()->toArray();
         $allow    = $this->dbPermToArray($allow);
         $disallow = $this->dbPermToArray($disallow);
 
         $allow = array_diff_key($allow, $disallow);
 
-        $personally = $permission->where('owner_id', $owner->id)->where('permission', 1)->get(['rule_id', 'option'])->toArray();
+        $personally = $permission->where('owner_id', $owner->id)->where('permission', 1)->get()->toArray();
         $personally = $this->dbPermToArray($personally);
 
         $allow = array_merge($allow, $personally);

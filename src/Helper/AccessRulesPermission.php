@@ -53,6 +53,27 @@ trait AccessRulesPermission
             ->delete();
     }
 
+    /**
+     * Cleans cache permission when they change
+     *
+     * @return void
+     */
+    public function refreshPermission()
+    {
+        $owner = $this->getOwner();
+        if (!$owner) return;
+
+        if (
+            method_exists($this, 'forgetCachedPermissions')
+            && method_exists($this, 'clearAllCachedPermissions')
+        ) {
+            if ($owner->inheritanceParent()->count()) {
+                $this->clearAllCachedPermissions();
+            } else {
+                $this->forgetCachedPermissions();
+            }
+        }
+    }
 
     /**
      * Add a permission to owner
@@ -78,7 +99,7 @@ trait AccessRulesPermission
             );
         }
 
-        if (method_exists($this, 'forgetCachedPermissions')) $this->forgetCachedPermissions();
+        $this->refreshPermission();
 
         return $owner->addPermission($rule, $option, $access);
     }
@@ -97,7 +118,7 @@ trait AccessRulesPermission
         $rule  = $this->findRule($ability, $option);
         if (!$owner || !$rule) return false;
 
-        if (method_exists($this, 'forgetCachedPermissions')) $this->forgetCachedPermissions();
+        $this->refreshPermission();
 
         return $owner->remPermission($rule, $option, $access);
     }

@@ -103,6 +103,8 @@ trait HasPermissions
         $owner  = $this->getOwner();
         $parent = $this->getOwnerFrom($type, $id);
 
+        $this->accessRules->refreshPermission();
+
         return $parent && $owner->addInheritance($parent);
     }
 
@@ -117,6 +119,8 @@ trait HasPermissions
     {
         $owner  = $this->accessRules->getOwner();
         $parent = $this->getOwnerFrom($type, $id);
+
+        $this->accessRules->refreshPermission();
 
         return $parent && $owner->remInheritance($parent);
     }
