@@ -22,6 +22,11 @@
 - Permissions can be inherited with unlimited investment from users and groups.
 - Laravel gates and policies.
 
+## Visual Interface
+The visual interface for managing access control rules and permissions can be found at [this link](https://github.com/wnikk/laravel-access-ui).
+It offers an intuitive and user-friendly environment for administrators to define roles, assign permissions, and configure access rules.
+
+For detailed usage examples and instructions, refer to the [example repository](https://github.com/wnikk/-laravel-access-example).
 
 ## Documentation, Installation, and Usage Instructions
 
@@ -71,7 +76,16 @@ $user->inheritPermissionFrom('Group', 1);
 Because all permissions will be registered on **Laravel's gate**, you can check if a user has a permission with Laravel's default `can` function:
 
 ```php
-$user->can('articles.edit');
+$user->can('articles.edit'); 
+```
+
+Or without model:
+
+```php
+$acr = new AccessRules;
+$acr->setOwner('AnotherAnySystemUser', 'UserID-From-Any-System-FF01');
+$check = $acr->hasPermission('articles.edit');
+if (!$check) {abort(403);}
 ```
 
 Examples of how can be used in more detail described in [Basic Usage](https://github.com/wnikk/laravel-access-rules/blob/main/docs/basic-usage.md) section.
