@@ -27,9 +27,9 @@ trait AccessRulesCache
     protected function initializeAccessRulesCache()
     {
         self::$cacheParams = config('access.cache');
-        if (empty(self::$cacheParams['expiration_time'])) self::$cacheParams['expiration_time'] = 24*60;
-        if (empty(self::$cacheParams['key'])) self::$cacheParams['key'] = 'access_rules.cache.';
-        if (empty(self::$cacheParams['store'])) self::$cacheParams['store'] = 'default';
+        if (empty(self::$cacheParams['expiration_time'])) {self::$cacheParams['expiration_time'] = 24*60;}
+        if (empty(self::$cacheParams['key'])) {self::$cacheParams['key'] = 'access_rules.cache.';}
+        if (empty(self::$cacheParams['store'])) {self::$cacheParams['store'] = 'default';}
 
         $this->cache = $this->getCacheStoreFromConfig();
     }
@@ -91,7 +91,7 @@ trait AccessRulesCache
      */
     protected function loadCachePermissions(): bool
     {
-        if (!$this->cacheKey || !$this->cache->has($this->cacheKey)) return false;
+        if (!$this->cacheKey || !$this->cache->has($this->cacheKey)) {return false;}
 
         $this->permissions = $this->cache->get($this->cacheKey);
 
@@ -105,7 +105,7 @@ trait AccessRulesCache
      */
     protected function saveCachePermissions(): bool
     {
-        if (!$this->cacheKey) return false;
+        if (!$this->cacheKey) {return false;}
 
         $this->updateCacheList();
 
@@ -130,7 +130,7 @@ trait AccessRulesCache
         $all[$this->cacheKey] = $deadline;
 
         foreach ($all as $k=>$t) {
-            if ($t < time()) unset($all[$k]);
+            if ($t < time()) {unset($all[$k]);}
         }
 
         return $this->cache->put(
@@ -147,7 +147,7 @@ trait AccessRulesCache
      */
     public function forgetCachedPermissions(): bool
     {
-        if (!$this->cacheKey) return false;
+        if (!$this->cacheKey) {return false;}
 
         $this->permissions = null;
 

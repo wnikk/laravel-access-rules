@@ -83,7 +83,7 @@ class Aggregator
             $checkIds = [];
             foreach( $tmp as $id )
             {
-                if (isset($listIds[$id])) continue;
+                if (isset($listIds[$id])) {continue;}
                 $checkIds[] = $id;
                 $listIds[$id] = $id;
             }
@@ -113,7 +113,7 @@ class Aggregator
     {
         $rule    = $this->getRuleModel();
         $ruleIds = [];
-        foreach ($list as $item) $ruleIds[] = $item['rule_id'];
+        foreach ($list as $item) {$ruleIds[] = $item['rule_id'];}
 
         $rules = $rule->find($ruleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
 

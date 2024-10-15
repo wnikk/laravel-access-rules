@@ -11,6 +11,15 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Wnikk\LaravelAccessRules\Exceptions\AccessAuthorizationException;
+use Wnikk\LaravelAccessRules\Commands\ {
+    AccessPermissionAssign as AccessPermissionAssignCommand,
+    AccessPermissionRemove as AccessPermissionRemoveCommand,
+    AccessPermissionInherit as AccessPermissionInheritCommand,
+    AccessPermissionNotInherit as AccessPermissionNotInheritCommand,
+    AccessRuleCreate as AccessRuleCreateCommand,
+    AccessRuleDelete as AccessRuleDeleteCommand,
+    AccessRuleOwners as AccessRuleOwnersCommand,
+};
 use Wnikk\LaravelAccessRules\Contracts\{
     AccessRules as AccessRulesContract,
     Rule as RuleContract,
@@ -68,8 +77,15 @@ class AccessRulesServiceProvider extends ServiceProvider
     protected function registerCommands()
     {
         if ($this->app->runningInConsole()) {
-            //$this->commands([
-            //]);
+            $this->commands([
+                AccessPermissionAssignCommand::class,
+                AccessPermissionRemoveCommand::class,
+                AccessPermissionInheritCommand::class,
+                AccessPermissionNotInheritCommand::class,
+                AccessRuleCreateCommand::class,
+                AccessRuleDeleteCommand::class,
+                AccessRuleOwnersCommand::class,
+            ]);
         }
     }
 
@@ -109,8 +125,8 @@ class AccessRulesServiceProvider extends ServiceProvider
         }
 
         $handler->map(
-                AuthorizationException::class,
-                AccessAuthorizationException::class
+            AuthorizationException::class,
+            AccessAuthorizationException::class
         );
     }
 

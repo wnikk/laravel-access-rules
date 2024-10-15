@@ -145,7 +145,7 @@ class Owner extends Model implements OwnerContract
         $check = $this->inheritance()
             ->where('owner_parent_id', $parent->getKey())
             ->first();
-        if ($check) return true;
+        if ($check) {return true;}
 
         $add = app(InheritanceContract::class);
         $add->owner_id = $this->getKey();

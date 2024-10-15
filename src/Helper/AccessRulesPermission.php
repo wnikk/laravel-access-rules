@@ -61,7 +61,7 @@ trait AccessRulesPermission
     public function refreshPermission()
     {
         $owner = $this->getOwner();
-        if (!$owner) return;
+        if (!$owner) {return;}
 
         if (
             method_exists($this, 'forgetCachedPermissions')
@@ -116,7 +116,7 @@ trait AccessRulesPermission
     {
         $owner = $this->getOwner();
         $rule  = $this->findRule($ability, $option);
-        if (!$owner || !$rule) return false;
+        if (!$owner || !$rule) {return false;}
 
         $this->refreshPermission();
 

@@ -56,14 +56,14 @@ class Rule extends Model implements RuleContract
     {
         $rule = static::firstWhere('guard_name', $ability);
 
-        if ($rule) return $rule;
-        if (!$n = strrpos($ability, '.')) return null;
+        if ($rule) {return $rule;}
+        if (!$n = strrpos($ability, '.')) {return null;}
 
         $option  = substr($ability, $n+1);
         $ability = substr($ability, 0, $n);
 
         $rule = static::where('guard_name', $ability)->first();
-        if (!$rule) return null;
+        if (!$rule) {return null;}
 
         if ($rule->options) {
             $option = app(PermissionOption::class)->set($rule, 'option', $option, []);

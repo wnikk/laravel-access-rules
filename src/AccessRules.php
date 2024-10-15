@@ -16,16 +16,16 @@ class AccessRules extends Aggregator implements AccessRulesContract
     use AccessRulesCache, AccessRulesTypeOwner, AccessRulesPermission;
 
     /** @var int */
-    protected $thisOwnerType = -1;
+    protected int $thisOwnerType = -1;
 
-    /** @var int|null */
+    /** @var mixed|null */
     protected $thisOwnerId;
 
     /** @var array<string> */
     protected $permissions;
 
     /** @var string|null */
-    protected static $lastDisallow;
+    protected static ?string $lastDisallow = null;
 
     /**
      * PermissionRegistrar constructor.
@@ -50,7 +50,7 @@ class AccessRules extends Aggregator implements AccessRulesContract
         }
         if ($type instanceof Model)
         {
-            if ($id === null) $id = $type->getKey();
+            if ($id === null) {$id = $type->getKey();}
             $type = get_class($type);
         }
         $type = $this->getTypeID($type);
@@ -94,8 +94,8 @@ class AccessRules extends Aggregator implements AccessRulesContract
      */
     protected function loadPermissions()
     {
-        if ($this->permissions) return;
-        if ($this->loadCachePermissions()) return;
+        if ($this->permissions) {return;}
+        if ($this->loadCachePermissions()) {return;}
 
         $this->permissions = $this->getAllPermittedRule(
             $this->thisOwnerType,
@@ -141,7 +141,7 @@ class AccessRules extends Aggregator implements AccessRulesContract
 
         $check = $this->filterPermission($this->permissions, $ability);
 
-        if (!$check) $this::$lastDisallow = $ability;
+        if (!$check) {$this::$lastDisallow = $ability;}
 
         return $check;
     }
@@ -166,12 +166,15 @@ class AccessRules extends Aggregator implements AccessRulesContract
         $property = strtolower(class_basename($user));
 
         // remove last letter "s"
-        if (substr($property, -1) === 's') $property = substr($property, 0, -1);
+        if (substr($property, -1) === 's') {$property = substr($property, 0, -1);}
 
         // "user" to "user_id"
         $property .= '_'.$user->getKeyName();
 
-        return (isset($model->$property) && $model->$property === $user->getKey());
+        return (
+            isset($model->$property) &&
+            ($model->$property === $user->getKey())
+        );
     }
 
     /**

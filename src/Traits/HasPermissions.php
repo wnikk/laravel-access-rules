@@ -22,6 +22,30 @@ trait HasPermissions
     }
 
     /**
+     * @parent HasEvents
+     * @return void
+     */
+    public static abstract function retrieved($callback);
+
+    /**
+     * @parent HasEvents
+     * @return void
+     */
+    public static abstract function created($callback);
+
+    /**
+     * @parent HasEvents
+     * @return void
+     */
+    public static abstract function deleting($callback);
+
+    /**
+     * @parent Model
+     * @return mixed
+     */
+    public abstract function getKey();
+
+    /**
      * Initialize the trait
      *
      * @return void
@@ -48,7 +72,7 @@ trait HasPermissions
     public function getOwner()
     {
         $owner = $this->accessRules->getOwner();
-        if ($owner) return $owner;
+        if ($owner) {return $owner;}
 
         return $this->accessRules->newOwner(
             $this,
