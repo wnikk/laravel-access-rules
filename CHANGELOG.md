@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.15 - 2025-03-11
+
+- Update Laravel 12.x Compatibility
+
 ## 2.0.14 - 2024-10-15
 
 - Add permission inheritance management via Artisan command
