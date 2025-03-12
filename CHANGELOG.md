@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.0.16 - 2025-03-12
+
+- Add optionality to check cache and throw if not working
+
 ## 2.0.15 - 2025-03-11
 
 - Update Laravel 12.x Compatibility

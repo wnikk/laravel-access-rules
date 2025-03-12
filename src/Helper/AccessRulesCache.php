@@ -30,8 +30,16 @@ trait AccessRulesCache
         if (empty(self::$cacheParams['expiration_time'])) {self::$cacheParams['expiration_time'] = 24*60;}
         if (empty(self::$cacheParams['key'])) {self::$cacheParams['key'] = 'access_rules.cache.';}
         if (empty(self::$cacheParams['store'])) {self::$cacheParams['store'] = 'default';}
+        if (empty(self::$cacheParams['check'])) {self::$cacheParams['check'] = false;}
 
         $this->cache = $this->getCacheStoreFromConfig();
+
+        if (!self::$cacheParams['check']) {return;}
+        try {
+            $this->cache->get(self::$cacheParams['key'].'.cache_test');
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Cache is not working', 500, $e);
+        }
     }
 
     /**

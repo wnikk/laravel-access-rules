@@ -115,5 +115,10 @@ return [
          * file. Using 'default' here means to use the `default` set in cache.php.
          */
         'store' => 'default',
+
+        /*
+         * Check the cache for availability on start application
+         */
+        'check' => true,
     ],
 ];
