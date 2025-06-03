@@ -119,7 +119,7 @@ trait HasPermissions
     /**
      * Adds the user to inherit
      *
-     * @param  int|Model|OwnerContract  $type
+     * @param  int|Model|OwnerContract|AccessRulesContract  $type
      * @param  null|int  $id
      */
     public function inheritPermissionFrom($type, $id = null): bool
@@ -135,7 +135,7 @@ trait HasPermissions
     /**
      * Remove inherit from parent owner
      *
-     * @param  int|Model|OwnerContract  $type
+     * @param  int|Model|OwnerContract|AccessRulesContract  $type
      * @param  null|int  $id
      * @return bool
      */

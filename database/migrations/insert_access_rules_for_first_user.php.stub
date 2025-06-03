@@ -1,0 +1,145 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Wnikk\LaravelAccessRules\AccessRules;
+use App\Models\User;
+
+return new class extends Migration
+{
+    /**
+     * Add rules to AccessRules instance.
+     *
+     * @param AccessRules $acr
+     * @return int|false
+     */
+    protected function addRules(AccessRules $acr)
+    {
+        /**
+         * Add rule
+         */
+        $ruleId = $acr->newRule(
+            'Test.rule',
+            'Test rule for first user',
+            'This is a test rule for first user with validation',
+            null, // Parent rule ID, if any
+            'nullable|string|in:test,example,demo' // Options for validation
+        );
+        return $ruleId;
+    }
+
+    /**
+     * Add owner to AccessRules instance and set her.
+     *
+     * @param AccessRules $root
+     */
+    protected function addRoleAdmin(AccessRules $root)
+    {
+        /**
+         * Check config/access.php of type available "Role" in owner_types list
+         * @throw LogicException
+         */
+        $typeName = 'Role';
+        $typeId   = $root->getTypeID($typeName);
+
+        /**
+         * Make default role
+         */
+        $root->newOwner(
+            $typeName,       // This is type, it is used to identify the owner
+            'RootAdmin', // This is original_id, it is used to identify the owner
+            'RootAdmin role' // This is description, it is used to describe the owner
+        );
+        // Set owner for existing role/group/user or other type from config/access.php
+        //$root->setOwner($typeName, 'RootAdmin');
+        //$root->setOwner('Role', '00000000-0000-0000-0000-000000000000');
+        //$root->setOwner('Group', 123);
+        //$root->setOwner('Group', '23f45e89-8b5a-5c55-9df7-240d78a3ce15');
+        //$root->setOwner(User::class, 1);
+    }
+
+    /**
+     * Add permission to AccessRules instance of admin role.
+     *
+     * @param AccessRules $root
+     */
+    protected function addPermToAdmin(AccessRules $root)
+    {
+        /**
+         * Add permission for this rule to owner (group, role or user)
+         */
+        // This will add permission without options, because rule has nullable validation
+        $root->addPermission('Test.rule');
+        $root->addPermission('Test.rule', 'test');
+        $root->addPermission('Test.rule', 'demo');
+        $root->addPermission('Test.rule', 'example');
+    }
+
+    /**
+     * Add inheritance from admin role to first user.
+     *
+     * @param AccessRules $root
+     */
+    protected function addInheritFromAdmin(AccessRules $root)
+    {
+        /**
+         * The user class should already have trait added.
+         *
+         * @var Illuminate\Database\Eloquent\Model & Wnikk\LaravelAccessRules\Traits\HasPermissions $user
+         */
+        $user = User::orderBy('id')
+            ->limit(1)
+            ->first();
+        $user->inheritPermissionFrom($root);
+        // Or add permission to user directly
+        //$user->addPermission('Test.rule', 'test');
+        //$user->addPermission('Test.rule', 'demo');
+        //$user->addPermission('Test.rule', 'example');
+        //$user->addPermission('Test.rule');
+
+    }
+
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        $acr = new AccessRules;
+
+        $this->addRules($acr);
+        $this->addRoleAdmin($acr);
+        $this->addPermToAdmin($acr);
+        $this->addInheritFromAdmin($acr);
+
+        /**
+         * Update Cache
+         */
+        $acr->clearAllCachedPermissions();
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        $root = new AccessRules;
+        $type = $root->getTypeID('Role');
+        $root->setOwner('Role', 'RootAdmin');
+
+        $user = User::orderBy('id')
+            ->limit(1)
+            ->first();
+        $user->remInheritFrom($root);
+
+        $root->delRule('Test.rule', true);
+
+        DB::table(config('access.table_names.owner'))
+            ->where('type', $type)
+            ->where('original_id', 'RootAdmin')
+            ->delete();
+    }
+};

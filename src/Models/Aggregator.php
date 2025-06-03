@@ -8,9 +8,18 @@ use Wnikk\LaravelAccessRules\Contracts\{
     Owner as OwnerContract
 };
 
+/**
+ * Class Aggregator
+ *
+ * This class aggregates various models related to access rules,
+ * providing methods to find owners, rules, and permissions,
+ * as well as handling inheritance and permission checks.
+ */
 class Aggregator
 {
     /**
+     * Returns the owner model instance.
+     *
      * @return OwnerContract
      */
     protected static function getOwnerModel()
@@ -19,6 +28,8 @@ class Aggregator
     }
 
     /**
+     * Returns the rule model instance.
+     *
      * @return RuleContract
      */
     protected static function getRuleModel()
@@ -27,6 +38,8 @@ class Aggregator
     }
 
     /**
+     * Returns the inheritance model instance.
+     *
      * @return InheritanceContract
      */
     protected static function getInheritanceModel()
@@ -35,6 +48,8 @@ class Aggregator
     }
 
     /**
+     * Returns the permission model instance.
+     *
      * @return PermissionContract
      */
     protected static function getPermissionModel()
@@ -54,6 +69,8 @@ class Aggregator
     }
 
     /**
+     * Finds a rule by its ability and option.
+     *
      * @param string $ability
      * @param $option
      * @return mixed
@@ -92,6 +109,8 @@ class Aggregator
     }
 
     /**
+     * Converts a database permission list to an associative array.
+     *
      * @param array $list
      * @return array<string, array{rule_id:int, option:string|null}>
      */
@@ -106,6 +125,8 @@ class Aggregator
     }
 
     /**
+     * Converts a permission list to an array of rule names.
+     *
      * @param array $list
      * @return array<int, string>
      */

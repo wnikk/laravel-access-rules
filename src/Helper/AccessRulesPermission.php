@@ -41,16 +41,24 @@ trait AccessRulesPermission
     }
 
     /**
-     * Soft remove rule
+     * Remove rule
      *
      * @param string $guardName
      * @return mixed
      */
-    public static function delRule(string $guardName)
+    public static function delRule(string $guardName, bool $force = false)
     {
-        return self::getRuleModel()
-            ->where('guard_name', $guardName)
-            ->delete();
+        $rule = self::getRuleModel()
+            ->where('guard_name', $guardName);
+
+        if ($force) {
+            self::getPermissionModel()
+                ->where('rule_id', $rule->getKey())
+                ->delete();
+            return $rule->forceDelete();
+        }
+
+        return $rule->delete();
     }
 
     /**

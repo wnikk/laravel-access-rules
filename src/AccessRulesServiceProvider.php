@@ -98,7 +98,7 @@ class AccessRulesServiceProvider extends ServiceProvider
     {
         $this->app->bind(AccessRulesContract::class, AccessRules::class);
 
-        /** @var array{rule:string, linkage:string, owners:string, inheritance:string} */
+        /** @var array{rule:string, linkage:string, owners:string, inheritance:string} $config */
         $config = config('access.models');
 
         if (!$config) {

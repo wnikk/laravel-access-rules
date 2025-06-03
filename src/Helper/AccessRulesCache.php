@@ -5,6 +5,12 @@ use Illuminate\Cache\CacheManager;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Cache\Store;
 
+/**
+ * Trait AccessRulesCache
+ *
+ * This trait provides methods to manage caching of access rules.
+ * It allows for setting, getting, and clearing cached permissions.
+ */
 trait AccessRulesCache
 {
     /** @var \Illuminate\Contracts\Cache\Repository */
@@ -26,17 +32,29 @@ trait AccessRulesCache
      */
     protected function initializeAccessRulesCache()
     {
-        self::$cacheParams = config('access.cache');
-        if (empty(self::$cacheParams['expiration_time'])) {self::$cacheParams['expiration_time'] = 24*60;}
-        if (empty(self::$cacheParams['key'])) {self::$cacheParams['key'] = 'access_rules.cache.';}
-        if (empty(self::$cacheParams['store'])) {self::$cacheParams['store'] = 'default';}
-        if (empty(self::$cacheParams['check'])) {self::$cacheParams['check'] = false;}
+        self::$cacheParams = config('access.cache', []);
+        if (!is_array(self::$cacheParams)) {self::$cacheParams = [];}
+        self::$cacheParams += [
+            'expiration_time' => 24 * 60, // default expiration time in minutes
+            'key' => 'access_rules.cache.',
+            'store' => 'default',
+            'check' => false, // check cache availability
+        ];
 
         $this->cache = $this->getCacheStoreFromConfig();
 
         if (!self::$cacheParams['check']) {return;}
         try {
-            $this->cache->get(self::$cacheParams['key'].'.cache_test');
+            // Test if cache is working
+            if ($this->cache->get(self::$cacheParams['key'].'.cache_test')){
+                return;
+            }
+            $time = time();
+            $this->cache->set(self::$cacheParams['key'].'.cache_test', $time);
+            $check = $this->cache->get(self::$cacheParams['key'].'.cache_test');
+            if ($check !== $time) {
+                throw new \RuntimeException('Cache is not working');
+            }
         } catch (\Exception $e) {
             throw new \RuntimeException('Cache is not working', 500, $e);
         }
