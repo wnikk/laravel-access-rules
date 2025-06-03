@@ -1,11 +1,7 @@
 <?php
-
 namespace Wnikk\LaravelAccessRules\Commands;
 
-use Illuminate\Console\Command;
-use Wnikk\LaravelAccessRules\AccessRules;
-
-class AccessPermissionInherit extends Command
+class AccessPermissionInherit extends AccessArguments
 {
     // Command signature and description
     protected $signature = 'acr:inherit {primary_owner_type} {primary_owner_id} {owner_type} {owner_id}';
@@ -13,21 +9,14 @@ class AccessPermissionInherit extends Command
 
     public function handle()
     {
-        $primaryOwnerType = $this->argument('primary_owner_type');
-        $primaryOwnerId   = $this->argument('primary_owner_id');
-        $secondOwnerType  = $this->argument('owner_type');
-        $secondOwnerId    = $this->argument('owner_id');
+        $pAcr = $this->getPrimaryAccessRules();
+        $acr  = $this->getDefaultAccessRules();
 
-        $acr = new AccessRules;
-        $acr->setOwner($secondOwnerType, $secondOwnerId);
-        $user = $acr->getOwner();
-
-        if (!$user) {
-            $this->error('User not found!');
-            return;
-        }
-
-        $save = $user->inheritPermissionFrom($primaryOwnerType, $primaryOwnerId);
+        $save = $acr->getOwner()->addInheritance(
+            $pAcr->getOwner()
+        );
+        // Or you can use User trait method for inherit permissions from another user
+        // $user1->inheritPermissionFrom($user2);
 
         if ($save) {
             $this->info('Inherit permissions added.');

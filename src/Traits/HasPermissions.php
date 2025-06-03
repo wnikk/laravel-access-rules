@@ -99,13 +99,10 @@ trait HasPermissions
     private function getOwnerFrom($type, $id = null): OwnerContract
     {
         $owner = null;
-
-        if (is_object($type)) {
-            if ($type instanceof OwnerContract && $type->id) {
-                $owner = $type;
-            } elseif (method_exists($type, 'getOwner')) {
-                $owner = $type->getOwner();
-            }
+        if (is_object($type) && method_exists($type, 'getOwner')) {
+            $owner = $type->getOwner();
+        } elseif ($type instanceof OwnerContract && $type->id) {
+            $owner = $type;
         }
 
         if (!$owner) {

@@ -71,10 +71,10 @@ trait AccessRulesPermission
         $owner = $this->getOwner();
         if (!$owner) {return;}
 
-        if (
-            method_exists($this, 'forgetCachedPermissions')
-            && method_exists($this, 'clearAllCachedPermissions')
-        ) {
+        /**
+         * @var AccessRulesCache $this
+         */
+        if (method_exists($this, 'forgetSelectedCachePermission')) {
             if ($owner->inheritanceParent()->count()) {
                 $this->clearAllCachedPermissions();
             } else {

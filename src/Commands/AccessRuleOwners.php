@@ -1,9 +1,8 @@
 <?php
-
 namespace Wnikk\LaravelAccessRules\Commands;
 
-use Illuminate\Console\Command;
 use Wnikk\LaravelAccessRules\AccessRules;
+use Illuminate\Console\Command;
 
 class AccessRuleOwners extends Command
 {
