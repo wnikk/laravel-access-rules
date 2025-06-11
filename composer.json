@@ -49,7 +49,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Wnikk\\LaravelAccessRules\\Test\\": "tests"
+            "Tests\\": "tests"
         }
     },
     "config": {

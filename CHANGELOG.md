@@ -2,12 +2,13 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
-## 2.0.17 - 2025-06-03
+## 2.0.17 - 2025-06-11
 
 - Optimized cache initialization
 - Implemented the creation of a basic admin role,
   assigned a test permission to it,
   and ensured inheritance for the first user within this role.
+- Add unit tests for the base functionality
 
 ## 2.0.16 - 2025-03-12
 
