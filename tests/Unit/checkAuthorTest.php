@@ -32,7 +32,7 @@ class checkAuthorTest extends TestCase
         // Rule for self-authorization where the user is the author
         $acr = new AccessRules;
         $acr->newRule(
-            'view-gate-authorize.self',
+            'view-DummyModel-Author.self',
             'View Author Permission for Dummy Model',
         );
     }
@@ -56,7 +56,7 @@ class checkAuthorTest extends TestCase
          * Very important add permission to the user with "self" rule
          * And check that rule without "self".
          */
-        $user->addPermission('view-gate-authorize.self');
+        $user->addPermission('view-DummyModel-Author.self');
 
         $this->be($user);
 
@@ -78,7 +78,7 @@ class checkAuthorTest extends TestCase
         $model->testuser_id = $user->id;
 
         // Should not throw an exception
-        Gate::authorize('view-gate-authorize', $model);
+        Gate::authorize('view-DummyModel-Author', $model);
         // Explicitly assert success
         $this->assertTrue(true);
     }
@@ -97,7 +97,7 @@ class checkAuthorTest extends TestCase
 
         $this->expectException(AuthorizationException::class);
         // Should not throw an exception
-        Gate::authorize('view-gate-authorize', $model);
+        Gate::authorize('view-DummyModel-Author', $model);
         // If we reach here, the test failed
         $this->assertFalse(true, 'Expected AuthorizationException was not thrown');
     }
