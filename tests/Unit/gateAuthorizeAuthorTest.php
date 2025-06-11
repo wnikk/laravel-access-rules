@@ -15,7 +15,7 @@ use Tests\Fixtures\DummyModel;
  * This test checks if a user can access a resource they own
  * based on the defined access rules.
  */
-class gateAuthorizeSelfTest extends TestCase
+class gateAuthorizeAuthorTest extends TestCase
 {
     /**
      * Set up the test environment.
