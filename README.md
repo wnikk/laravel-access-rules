@@ -84,7 +84,7 @@ Or without model:
 ```php
 $acr = new AccessRules;
 $acr->setOwner('AnotherAnySystemUser', 'UserID-From-Any-System-FF01');
-$check = $acr->hasPermission('articles.edit');
+$check = $acr->can('articles.edit');
 if (!$check) {abort(403);}
 ```
 

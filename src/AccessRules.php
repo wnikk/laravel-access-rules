@@ -5,21 +5,15 @@ namespace Wnikk\LaravelAccessRules;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Wnikk\LaravelAccessRules\Contracts\AccessRules as AccessRulesContract;
-use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Models\Aggregator;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesCache;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesTypeOwner;
+use Wnikk\LaravelAccessRules\Helper\AccessRulesThisOwner;
 use Wnikk\LaravelAccessRules\Helper\AccessRulesPermission;
 
 class AccessRules extends Aggregator implements AccessRulesContract
 {
-    use AccessRulesCache, AccessRulesTypeOwner, AccessRulesPermission;
-
-    /** @var int */
-    protected int $thisOwnerType = -1;
-
-    /** @var mixed|null */
-    protected $thisOwnerId;
+    use AccessRulesCache, AccessRulesTypeOwner, AccessRulesThisOwner, AccessRulesPermission;
 
     /** @var array<string> */
     protected $permissions;
@@ -36,70 +30,22 @@ class AccessRules extends Aggregator implements AccessRulesContract
     }
 
     /**
-     * Set the owner id for user/groups support, this id is used when querying roles
-     *
-     * @param  int|Model|OwnerContract  $type
-     * @param  null|int  $id
-     */
-    public function setOwner($type, $id = null)
-    {
-        if ($type instanceof OwnerContract && $type->id)
-        {
-            $id   = $type->original_id;
-            $type = $type->type;
-        }
-        if ($type instanceof Model)
-        {
-            if ($id === null) {$id = $type->getKey();}
-            $type = get_class($type);
-        }
-        $type = $this->getTypeID($type);
-
-        $this->thisOwnerType = $type;
-        $this->thisOwnerId   = $id;
-
-        $this->setOwnerCache($type, $id);
-    }
-
-    /**
-     * @return null|OwnerContract
-     */
-    public function getOwner()
-    {
-        return $this->findOwner($this->thisOwnerType, $this->thisOwnerId);
-    }
-
-    /**
-     * @param $type
-     * @param $id
-     * @param $name
-     * @return OwnerContract
-     */
-    public function newOwner($type, $id = null, $name = null)
-    {
-        $this->setOwner($type, $id);
-        $owner = $this->getOwner();
-        if (!$owner) {
-            $owner = $this->getOwnerModel();
-            $owner->type        = $this->thisOwnerType;
-            $owner->original_id = $this->thisOwnerId;
-            $owner->name        = $name;
-            $owner->save();
-        }
-        return $owner;
-    }
-
-    /**
      * Load permissions from cache
      */
     protected function loadPermissions()
     {
         if ($this->permissions) {return;}
+
+        list($type, $id) = $this->getOwnerMarker();
+        $this->setOwnerCache($type, $id);
+
+        // If cache is enabled, try to load permissions from cache
         if ($this->loadCachePermissions()) {return;}
 
+        // If cache is not enabled or cache is empty, load permissions from database
         $this->permissions = $this->getAllPermittedRule(
-            $this->thisOwnerType,
-            $this->thisOwnerId
+            $type,
+            $id
         );
 
         $this->saveCachePermissions();
@@ -112,9 +58,10 @@ class AccessRules extends Aggregator implements AccessRulesContract
      */
     public function getThisPermitMap(): array
     {
+        list($type, $id) = $this->getOwnerMarker();
         return $this->getAllRuleIDMap(
-            $this->thisOwnerType,
-            $this->thisOwnerId
+            $type,
+            $id
         );
     }
 
@@ -126,6 +73,19 @@ class AccessRules extends Aggregator implements AccessRulesContract
     public static function getLastDisallowPermission()
     {
         return (self::$lastDisallow);
+    }
+
+    /**
+     * Checks if the user has permission
+     *
+     * @param string  $ability
+     * @param array|null  $args
+     * @return bool|null
+     * @alias hasPermission
+     */
+    public function can($ability, $args = null): ?bool
+    {
+        return $this->hasPermission($ability, $args);
     }
 
     /**
@@ -208,6 +168,7 @@ class AccessRules extends Aggregator implements AccessRulesContract
      * @param string  $ability
      * @param array|null  $args
      * @return bool|null
+     * @uses AccessRulesServiceProvider::registerPermissionsToGate()
      */
     public function checkOwnerPermission(Authorizable $user, string $ability, $args = null): ?bool
     {
