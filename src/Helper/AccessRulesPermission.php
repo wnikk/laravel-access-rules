@@ -49,11 +49,12 @@ trait AccessRulesPermission
     public static function delRule(string $guardName, bool $force = false)
     {
         $rule = self::getRuleModel()
-            ->where('guard_name', $guardName);
+            ->where('guard_name', $guardName)
+            ->first();
 
         if ($force) {
             self::getPermissionModel()
-                ->where('rule_id', $rule->getKey())
+                ->where('rule_id', $rule->id)
                 ->delete();
             return $rule->forceDelete();
         }
