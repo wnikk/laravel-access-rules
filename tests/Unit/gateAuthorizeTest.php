@@ -26,7 +26,7 @@ class gateAuthorizeTest extends TestCase
         parent::setUp();
 
         Config::set('access.owner_types', [
-            'user' => TestUser::class,
+            TestUser::class,
         ]);
         $acr = new AccessRules;
         $acr->newRule(

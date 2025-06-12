@@ -169,6 +169,7 @@ trait HasPermissions
      */
     public function addProhibition($ability, $option = null): bool
     {
+        $this->getOwner();
         return $this->accessRules->addProhibition($ability, $option);
     }
 
@@ -181,6 +182,7 @@ trait HasPermissions
      */
     public function remPermission($ability, $option = null): bool
     {
+        $this->getOwner();
         return $this->accessRules->remPermission($ability, $option);
     }
 
@@ -193,6 +195,7 @@ trait HasPermissions
      */
     public function remProhibition($ability, $option = null): bool
     {
+        $this->getOwner();
         return $this->accessRules->remProhibition($ability, $option);
     }
 
@@ -205,6 +208,7 @@ trait HasPermissions
      */
     public function hasPermission($ability, $args = null): ?bool
     {
+        $this->getOwner();
         $check = $this->accessRules->hasPermission($ability, $args);
 
         // Check magic permission {rule}.self

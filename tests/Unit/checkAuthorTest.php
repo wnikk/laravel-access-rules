@@ -27,7 +27,7 @@ class checkAuthorTest extends TestCase
         parent::setUp();
 
         Config::set('access.owner_types', [
-            'user' => TestUser::class,
+            TestUser::class,
         ]);
         // Rule for self-authorization where the user is the author
         $acr = new AccessRules;
