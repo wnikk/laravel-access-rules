@@ -7,11 +7,11 @@ use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 
 /**
- * Unit tests for the checkTraitUserTest class.
+ * Unit tests for the check Trait in User class.
  *
  * This class tests the authorization functionality for users.
  */
-class checkTraitUserTest extends TestCase
+class mainUserTest extends TestCase
 {
     /**
      * Set up the test environment.
@@ -49,7 +49,7 @@ class checkTraitUserTest extends TestCase
     }
 
     /**
-     * Test that the gate denies access for user without permission.
+     * Test that denies access for user without permission.
      */
     public function test_authorize_user_denies_no_rule_access()
     {
@@ -60,11 +60,12 @@ class checkTraitUserTest extends TestCase
     }
 
     /**
-     * Test that the gate denies access for user without permission.
+     * Test that denies access for user with prohibition.
      */
     public function test_authorize_user_denies_lock_rule_access()
     {
         $user = TestUser::factory()->make();
+        $user->addPermission('access-for-user');
         $user->addProhibition('access-for-user');
 
         // Authorize for the user
