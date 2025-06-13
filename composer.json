@@ -37,6 +37,8 @@
         "illuminate/console": "^8.0|*"
     },
     "require-dev": {
+        "orchestra/testbench": "*",
+        "phpunit/phpunit": "*"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
