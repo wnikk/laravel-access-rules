@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.2.21 - 2025-06-13
+
+- Fix force delete of rules
+- Add unit tests for option permission
+
 ## 2.2.19 - 2025-06-11
 
 - Optimized cache initialization
