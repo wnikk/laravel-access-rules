@@ -53,13 +53,6 @@ trait AccessRulesPermission
             ->first();
 
         if ($force) {
-            self::getRuleModel()
-                ->where('parent_id', $rule->id)
-                ->update(['parent_id' => $rule->parent_id]);
-
-            self::getPermissionModel()
-                ->where('rule_id', $rule->id)
-                ->delete();
             return $rule->forceDelete();
         }
 

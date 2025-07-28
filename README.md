@@ -32,6 +32,12 @@ For detailed usage examples and instructions, refer to the [example repository](
 
 See the [documentation](https://github.com/wnikk/laravel-access-rules/tree/master/docs) for detailed installation and usage instructions.
 
+## Versions & Dependencies
+
+| Laravel Access Control Rules | PHP       | Laravel |
+|------------------------------|-----------|---------|
+| 2.x+                         | 7.4 - 8.4 | 8 - 12  |
+| 1.x                          | 7.1 - 7.3 | 5.5 - 8 |
 
 ## You can install the package using composer:
 

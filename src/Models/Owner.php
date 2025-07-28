@@ -43,6 +43,23 @@ class Owner extends Model implements OwnerContract
     protected $guarded = [];
 
     /**
+     * Boot the model and set up event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        self::deleting(function ($model) {
+            $this->inheritance()
+                ->delete();
+            $this->inheritanceParent()
+                ->delete();
+            $this->permission()
+                ->delete();
+        });
+    }
+
+    /**
      * We get specified user
      *
      * @param int $type

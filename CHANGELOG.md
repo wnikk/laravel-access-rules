@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.2.23 - 2025-07-28
+
+- Optimized function deleting rules and owners
+
 ## 2.2.21 - 2025-06-13
 
 - Fix force delete of rules

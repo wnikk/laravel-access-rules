@@ -44,6 +44,23 @@ class Rule extends Model implements RuleContract
      */
     protected $guarded = [];
 
+    /**
+     * Boot the model and set up event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        self::deleting(function ($model) {
+            if ($model->forceDeleting) {
+                $model->children()
+                    ->update(['parent_id' => $model->parent_id]);
+
+                $model->permission()
+                    ->delete();
+            }
+        });
+    }
 
     /**
      * Find a rule by name
