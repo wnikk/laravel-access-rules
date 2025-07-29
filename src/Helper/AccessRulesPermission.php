@@ -52,6 +52,8 @@ trait AccessRulesPermission
             ->where('guard_name', $guardName)
             ->first();
 
+        if (!$rule) {return false;}
+
         if ($force) {
             return $rule->forceDelete();
         }
