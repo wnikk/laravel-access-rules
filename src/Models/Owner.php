@@ -50,11 +50,11 @@ class Owner extends Model implements OwnerContract
         parent::boot();
 
         self::deleting(function ($model) {
-            $this->inheritance()
+            $model->inheritance()
                 ->delete();
-            $this->inheritanceParent()
+            $model->inheritanceParent()
                 ->delete();
-            $this->permission()
+            $model->permission()
                 ->delete();
         });
     }
