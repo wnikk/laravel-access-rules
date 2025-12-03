@@ -32,9 +32,31 @@ return new class extends Migration
     {
         $tableNames = $this->getTableNames();
 
+        Schema::create($tableNames->owner, function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('type')->default(0);
+            $table->string('original_id', 64)->nullable();
+            $table->string('name',128)->nullable();
+            $table->timestamp('created_at');
+
+            $table->index(['type', 'original_id']);
+        });
+
+        Schema::create($tableNames->inheritance, function (Blueprint $table) use ($tableNames) {
+            $table->increments('id');
+            $table->unsignedInteger('owner_id');
+            $table->unsignedInteger('owner_parent_id');
+            $table->timestamp('created_at');
+
+            $table->foreign('owner_id')
+                ->references('id') // owners id
+                ->on($tableNames->owner)
+                ->onDelete('cascade');
+        });
+
         Schema::create($tableNames->rule, function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('parent_id')->default(0);
+            $table->unsignedInteger('parent_id')->default(0);
             $table->string('guard_name', 128)->unique();
             $table->string('options', 255)->nullable();
             $table->string('title', 128)->nullable();
@@ -44,43 +66,21 @@ return new class extends Migration
         });
         Schema::create($tableNames->permission, function (Blueprint $table) use ($tableNames) {
             $table->increments('id');
-            $table->integer('owner_id');
-            $table->integer('rule_id');
+            $table->unsignedInteger('owner_id');
+            $table->unsignedInteger('rule_id');
             $table->boolean('permission')->default(false);
             $table->string('option')->nullable();
             $table->timestamp('created_at');
 
-            //$table->foreign('owner_id')
-            //    ->references('id') // owners id
-            //    ->on($tableNames->owners)
-            //    ->onDelete('cascade');
+            $table->foreign('owner_id')
+                ->references('id') // owners id
+                ->on($tableNames->owner)
+                ->onDelete('cascade');
 
-            //$table->foreign('role_id')
-            //    ->references('id') // rule id
-            //    ->on($tableNames->rule)
-            //    ->onDelete('cascade');
-        });
-
-        Schema::create($tableNames->owner, function (Blueprint $table) {
-            $table->increments('id');
-            $table->integer('type')->default(0);
-            $table->string('original_id', 64)->nullable();
-            $table->string('name',128)->nullable();
-            $table->timestamp('created_at');
-
-            //$table->primary(['type', 'original_id']);
-        });
-
-        Schema::create($tableNames->inheritance, function (Blueprint $table) use ($tableNames) {
-            $table->increments('id');
-            $table->integer('owner_id');
-            $table->integer('owner_parent_id');
-            $table->timestamp('created_at');
-
-            //$table->foreign('owner_id')
-            //    ->references('id') // owners id
-            //    ->on($tableNames->owners)
-            //    ->onDelete('cascade');
+            $table->foreign('rule_id')
+                ->references('id') // rule id
+                ->on($tableNames->rule)
+                ->onDelete('cascade');
         });
 
     }
@@ -94,9 +94,9 @@ return new class extends Migration
     {
         $tableNames = $this->getTableNames();
 
-        Schema::drop($tableNames->rule);
-        Schema::drop($tableNames->permission);
         Schema::drop($tableNames->owner);
         Schema::drop($tableNames->inheritance);
+        Schema::drop($tableNames->rule);
+        Schema::drop($tableNames->permission);
     }
 };
