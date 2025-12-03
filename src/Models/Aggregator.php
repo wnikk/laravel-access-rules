@@ -7,6 +7,7 @@ use Wnikk\LaravelAccessRules\Contracts\{
     Permission as PermissionContract,
     Owner as OwnerContract
 };
+use Wnikk\LaravelAccessRules\Traits\ResolvesAccessModels;
 
 /**
  * Class Aggregator
@@ -17,45 +18,7 @@ use Wnikk\LaravelAccessRules\Contracts\{
  */
 class Aggregator
 {
-    /**
-     * Returns the owner model instance.
-     *
-     * @return OwnerContract
-     */
-    protected static function getOwnerModel()
-    {
-        return app(OwnerContract::class);
-    }
-
-    /**
-     * Returns the rule model instance.
-     *
-     * @return RuleContract
-     */
-    protected static function getRuleModel()
-    {
-        return app(RuleContract::class);
-    }
-
-    /**
-     * Returns the inheritance model instance.
-     *
-     * @return InheritanceContract
-     */
-    protected static function getInheritanceModel()
-    {
-        return app(InheritanceContract::class);
-    }
-
-    /**
-     * Returns the permission model instance.
-     *
-     * @return PermissionContract
-     */
-    protected static function getPermissionModel()
-    {
-        return app(PermissionContract::class);
-    }
+    use ResolvesAccessModels;
 
     /**
      * @param int $type
