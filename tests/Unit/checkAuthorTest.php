@@ -4,7 +4,6 @@ namespace Tests\Unit;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Access\AuthorizationException;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 use Tests\Fixtures\DummyModel;
@@ -30,7 +29,7 @@ class checkAuthorTest extends TestCase
             TestUser::class,
         ]);
         // Rule for self-authorization where the user is the author
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'view-DummyModel-Author.self',
             'View Author Permission for Dummy Model',

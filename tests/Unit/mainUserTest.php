@@ -2,7 +2,6 @@
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 
@@ -25,7 +24,7 @@ class mainUserTest extends TestCase
         Config::set('access.owner_types', [
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'access-for-user',
             'Access for User',

@@ -4,6 +4,7 @@ namespace Tests;
 
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Wnikk\LaravelAccessRules\AccessRules;
 
 /**
  * Base test case for package tests.
@@ -48,5 +49,15 @@ abstract class TestCase extends BaseTestCase
         return [
             \Wnikk\LaravelAccessRules\AccessRulesServiceProvider::class,
         ];
+    }
+
+    /**
+     * Get the AccessRules instance for testing.
+     *
+     * @return AccessRules
+     */
+    protected function getAccessRules()
+    {
+        return new AccessRules;
     }
 }

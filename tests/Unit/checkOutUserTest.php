@@ -2,7 +2,6 @@
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 
 /**
@@ -25,7 +24,7 @@ class checkOutUserTest extends TestCase
             'Group',
         ]);
 
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'access-for-out-user',
             'Access for Out User',
@@ -37,7 +36,7 @@ class checkOutUserTest extends TestCase
      */
     public function test_gate_authorize_out_user_allows_access()
     {
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newOwner('Group', 'out_user_id_122', 'Out User');
         // Add permission for the out user
         $acr->addPermission('access-for-out-user');
@@ -51,7 +50,7 @@ class checkOutUserTest extends TestCase
      */
     public function test_gate_authorize_out_user_denies_access()
     {
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newOwner('Group', 'out_user_id_124', 'Out User');
 
         // Attempt to authorize for a different out user

@@ -2,7 +2,6 @@
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 
@@ -26,7 +25,7 @@ class checkInheritTest extends TestCase
             'Group',
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'access-for-inherit-user',
             'Access for Inherit User',
@@ -74,7 +73,7 @@ class checkInheritTest extends TestCase
      */
     public function test_inherit3_owner_allows_access()
     {
-        $acrFirstUser = new AccessRules;
+        $acrFirstUser =  $this->getAccessRules();
         $acrFirstUser->newOwner('Group', 'out_user_id_'.rand(10000,99999), 'Out Group User');
         $acrFirstUser->addPermission('access-for-inherit-user');
         $secondUser = TestUser::factory()->make();

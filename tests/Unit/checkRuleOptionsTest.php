@@ -2,7 +2,6 @@
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 use LogicException;
@@ -27,7 +26,7 @@ class checkRuleOptionsTest extends TestCase
         Config::set('access.owner_types', [
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'access-options-rule',
             'Access with Options Rule',

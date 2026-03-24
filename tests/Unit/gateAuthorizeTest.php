@@ -4,7 +4,6 @@ namespace Tests\Unit;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Access\AuthorizationException;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 
@@ -28,7 +27,7 @@ class gateAuthorizeTest extends TestCase
         Config::set('access.owner_types', [
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'view-gate-authorize',
             'View Dashboard Permission',

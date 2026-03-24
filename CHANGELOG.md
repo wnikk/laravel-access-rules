@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.2.30 - 2026-03-24
+
+- Check support for Laravel 13.x
+- Check support for PHP 8.3
+- Update unit tests for Laravel 13.x compatibility
+
 ## 2.2.25 - 2025-12-03
 
 - Enhance access rules schema

@@ -1,7 +1,6 @@
 <?php
 namespace Tests\Unit;
 
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 
 /**
@@ -16,7 +15,7 @@ class crudRuleTest extends TestCase
      */
     public function test_create_rule()
     {
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'new-rule-test',
             'Rule for Testing',
@@ -42,7 +41,7 @@ class crudRuleTest extends TestCase
      */
     public function test_soft_delete_rule()
     {
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'new-rule-test-soft-delete',
             'Rule for Testing Soft Delete',
@@ -71,7 +70,7 @@ class crudRuleTest extends TestCase
      */
     public function test_remove_rule()
     {
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'new-rule-test-real-delete',
             'Rule for Testing Soft Delete',

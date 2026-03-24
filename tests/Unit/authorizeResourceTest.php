@@ -5,7 +5,6 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 use Tests\Fixtures\DummyModel;
@@ -40,7 +39,8 @@ class authorizeResourceTest extends TestCase
         Config::set('access.owner_types', [
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'view',
             'View Resource Permission',

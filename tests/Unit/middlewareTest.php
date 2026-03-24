@@ -3,7 +3,6 @@ namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Config;
-use Wnikk\LaravelAccessRules\AccessRules;
 use Tests\TestCase;
 use Tests\Fixtures\TestUser;
 
@@ -28,7 +27,7 @@ class middlewareTest extends TestCase
         Config::set('access.owner_types', [
             TestUser::class,
         ]);
-        $acr = new AccessRules;
+        $acr = $this->getAccessRules();
         $acr->newRule(
             'view-dashboard',
             'View Dashboard Permission',
