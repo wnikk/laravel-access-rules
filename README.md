@@ -36,7 +36,7 @@ See the [documentation](https://github.com/wnikk/laravel-access-rules/tree/maste
 
 | Laravel Access Control Rules | PHP       | Laravel |
 |------------------------------|-----------|---------|
-| 2.x+                         | 7.4 - 8.4 | 8 - 12  |
+| 2.x                          | 7.4 - 8.4 | 8 - 13  |
 | 1.x                          | 7.1 - 7.3 | 5.5 - 8 |
 
 ## You can install the package using composer:
