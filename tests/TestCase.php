@@ -16,6 +16,18 @@ abstract class TestCase extends BaseTestCase
     use RefreshDatabase;
 
     /**
+     * Reset process-level static cache state before every test so that
+     * $cacheCheckResult and $cacheWarningLogged never leak between test cases.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        AccessRules::resetCacheState();
+        parent::setUp();
+    }
+
+    /**
      * Set up the test environment.
      *
      * @param  \Illuminate\Foundation\Application  $app

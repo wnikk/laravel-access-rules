@@ -99,13 +99,26 @@ return [
     'cache' => [
 
         /*
+         * Master switch for permission caching.
+         *
+         * true  — permissions are cached (recommended for production; complex
+         *         inheritance queries make caching critical for performance).
+         * false — every hasPermission() call goes straight to the database.
+         *         Useful when you want to disable caching intentionally (e.g.
+         *         during debugging or in environments without a cache store).
+         *
+         * Env var: ACCESS_RULES_CACHE_ENABLED
+         */
+        'enabled' => env('ACCESS_RULES_CACHE_ENABLED', true),
+
+        /*
          * By default all permissions are cached for 24 hours to speed up performance.
          * When permissions or roles are updated the cache is flushed automatically.
          */
         'expiration_time' => 24*60,
 
         /*
-         * The cache key used to prefix store list permissions.
+         * The cache key used to prefix stored permissions.
          */
         'key' => 'access_rules.cache',
 
@@ -117,8 +130,20 @@ return [
         'store' => 'default',
 
         /*
-         * Check the cache for availability on start application
+         * Lazy smoke-test: on the very first hasPermission() call the package
+         * performs a read/write check against the configured cache store.
+         *
+         * true  — recommended default. If the test key already exists in cache
+         *         (written by a previous process) only a read is performed —
+         *         no extra write on every worker boot. If the store is down the
+         *         package silently falls back to direct DB queries and logs a
+         *         one-time warning. No exception is ever thrown.
+         * false — skip the smoke-test entirely; assume the cache store works.
+         *
+         * The test runs at most once per PHP process (result is cached statically).
+         *
+         * Env var: ACCESS_RULES_CACHE_CHECK
          */
-        'check' => true,
+        'check' => env('ACCESS_RULES_CACHE_CHECK', true),
     ],
 ];

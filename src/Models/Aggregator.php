@@ -81,7 +81,7 @@ class Aggregator
     {
         $rules = [];
         foreach ($list as $item) {
-            $key = 'R'.$item['rule_id'].'n'.($item['option']?'.'.$item['option']:null);
+            $key = 'R'.$item['rule_id'].'n'.($item['option'] ? '.'.$item['option'] : '');
             $rules[$key] = $item;
         }
         return $rules;
@@ -106,7 +106,7 @@ class Aggregator
                 unset($item[$k]);
                 continue;
             }
-            $item = $rules[$item['rule_id']].($item['option']?'.'.$item['option']:null);
+            $item = $rules[$item['rule_id']].($item['option'] ? '.'.$item['option'] : '');
         } unset($item);
 
         return array_values($list);

@@ -2,6 +2,13 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.3.0 - 2026-05-26
+
+- Enhance caching mechanism
+- Lazyload check of caching,
+- Added caching configurable options
+- Added unit tests for caching
+
 ## 2.2.30 - 2026-03-24
 
 - Check support for Laravel 13.x
