@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.4.2 - 2026-09-18
+
+- Fix: cached permissions are flushed after the changes are written to the database, not before.
+- Fix: deleted, restored or renamed rule flushes cached permissions,
+  deleted rule was still permitted until the cache expired
+- Fix: permissions of soft deleted rules were listed by `getAllPermittedRule()`/`getAllProhibitedRule()`
+- Added unit tests for cache invalidation
+
 ## 2.4.1 - 2026-09-18
 
 - Security fix: permissions of one user could be served to another.

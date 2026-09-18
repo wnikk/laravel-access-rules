@@ -101,15 +101,15 @@ class Aggregator
 
         $rules = $rule->find($ruleIds, ['id', 'guard_name'])->pluck('guard_name', 'id')->toArray();
 
-        foreach ($list as $k => &$item) {
-            if (empty($rules[$item['rule_id']])) {
-                unset($item[$k]);
-                continue;
-            }
-            $item = $rules[$item['rule_id']].($item['option'] ? '.'.$item['option'] : '');
-        } unset($item);
+        $names = [];
+        foreach ($list as $item) {
+            // Rule is absent or soft deleted
+            if (empty($rules[$item['rule_id']])) {continue;}
 
-        return array_values($list);
+            $names[] = $rules[$item['rule_id']].($item['option'] ? '.'.$item['option'] : '');
+        }
+
+        return $names;
     }
 
     /**

@@ -64,6 +64,10 @@ trait AccessRulesPermission
     /**
      * Cleans cache permission when they change
      *
+     * Call it after the changes are written to the database:
+     * cache flushed before the write can be refilled with old permissions
+     * by a concurrent request and stay outdated until expiration.
+     *
      * @return void
      */
     public function refreshPermission()
@@ -74,14 +78,46 @@ trait AccessRulesPermission
         /**
          * @var AccessRulesCache $this
          */
-        if (method_exists($this, 'forgetSelectedCachePermission')) {
-            list($type, $id) = $this->getOwnerMarker();
-            $this->setOwnerCache($type, $id);
-            if ($owner->inheritanceParent()->count()) {
-                $this->clearAllCachedPermissions();
-            } else {
-                $this->forgetCachedPermissions();
+        if (!method_exists($this, 'forgetSelectedCachePermission')) {return;}
+
+        list($type, $id) = $this->getOwnerMarker();
+        $withChildren    = (bool)$owner->inheritanceParent()->count();
+
+        $this->flushPermissionCache($type, $id, $withChildren);
+
+        // Until commit other requests still read old permissions and may cache them again
+        try {
+            $connection = $owner->getConnection();
+            if ($connection->transactionLevel() > 0 && method_exists($connection, 'afterCommit')) {
+                $connection->afterCommit(function () use ($type, $id, $withChildren) {
+                    $this->flushPermissionCache($type, $id, $withChildren);
+                });
             }
+        } catch (\Throwable $e) {
+            // Transactions manager is not available, cache has already been flushed above
+        }
+    }
+
+    /**
+     * Flush cached permissions of owner, or all of them when owner has heirs
+     *
+     * @param int $type
+     * @param mixed $id
+     * @param bool $withChildren
+     * @return void
+     */
+    protected function flushPermissionCache(int $type, $id, bool $withChildren)
+    {
+        // Owner of this instance can be switched before deferred call
+        list($thisType, $thisId) = $this->getOwnerMarker();
+        if ($thisType === $type && $thisId === $id) {
+            $this->permissions = null;
+        }
+
+        if ($withChildren) {
+            $this->clearAllCachedPermissions();
+        } else {
+            $this->forgetSelectedCachePermission([['type' => $type, 'id' => $id]]);
         }
     }
 
@@ -109,9 +145,11 @@ trait AccessRulesPermission
             );
         }
 
+        $result = $owner->addPermission($rule, $option, $access);
+
         $this->refreshPermission();
 
-        return $owner->addPermission($rule, $option, $access);
+        return $result;
     }
 
     /**
@@ -128,9 +166,11 @@ trait AccessRulesPermission
         $rule  = $this->findRule($ability, $option);
         if (!$owner || !$rule) {return false;}
 
+        $result = $owner->remPermission($rule, $option, $access);
+
         $this->refreshPermission();
 
-        return $owner->remPermission($rule, $option, $access);
+        return $result;
     }
 
     /**
