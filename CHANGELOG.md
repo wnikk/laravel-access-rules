@@ -2,6 +2,13 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.4.1 - 2026-09-18
+
+- Security fix: permissions of one user could be served to another.
+- Model listeners of `HasPermissions` are registered once per class (`bootHasPermissions`)
+- `setOwner()` drops permissions loaded for previous owner
+- Added regression tests for owner isolation
+
 ## 2.3.0 - 2026-05-26
 
 - Enhance caching mechanism
