@@ -15,6 +15,7 @@ class AccessPermissionNotInherit extends AccessArguments
         $save = $acr->getOwner()->remInheritance(
             $pAcr->getOwner()
         );
+        $acr->refreshPermission();
         // Or you can use User trait method for inherit permissions from another user
         // $user1->remInheritFrom($user2);
 

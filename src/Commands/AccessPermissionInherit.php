@@ -15,6 +15,7 @@ class AccessPermissionInherit extends AccessArguments
         $save = $acr->getOwner()->addInheritance(
             $pAcr->getOwner()
         );
+        $acr->refreshPermission();
         // Or you can use User trait method for inherit permissions from another user
         // $user1->inheritPermissionFrom($user2);
 

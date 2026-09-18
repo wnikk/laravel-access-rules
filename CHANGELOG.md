@@ -2,6 +2,28 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.4.2 - 2026-09-18
+
+- Fix: cached permissions are flushed after the changes are written to the database, not before.
+- Fix: deleted, restored or renamed rule flushes cached permissions,
+  deleted rule was still permitted until the cache expired
+- Fix: permissions of soft deleted rules were listed by `getAllPermittedRule()`/`getAllProhibitedRule()`
+- Added unit tests for cache invalidation
+
+## 2.4.1 - 2026-09-18
+
+- Security fix: permissions of one user could be served to another.
+- Model listeners of `HasPermissions` are registered once per class (`bootHasPermissions`)
+- `setOwner()` drops permissions loaded for previous owner
+- Added regression tests for owner isolation
+
+## 2.3.0 - 2026-05-26
+
+- Enhance caching mechanism
+- Lazyload check of caching,
+- Added caching configurable options
+- Added unit tests for caching
+
 ## 2.2.30 - 2026-03-24
 
 - Check support for Laravel 13.x

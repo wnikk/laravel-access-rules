@@ -4,6 +4,7 @@ namespace Wnikk\LaravelAccessRules\Models;
 
 use Wnikk\LaravelAccessRules\Casts\PermissionOption;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
+use Wnikk\LaravelAccessRules\Contracts\AccessRules as AccessRulesContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -59,6 +60,18 @@ class Rule extends Model implements RuleContract
                 $model->permission()
                     ->delete();
             }
+        });
+
+        // Cached permissions hold names of rules, without flush
+        // deleted rule stays permitted until the cache expires
+        $flush = function () {
+            app(AccessRulesContract::class)->clearAllCachedPermissions();
+        };
+
+        self::deleted($flush);
+        self::restored($flush);
+        self::updated(function ($model) use ($flush) {
+            if ($model->wasChanged('guard_name')) {$flush();}
         });
     }
 

@@ -10,6 +10,9 @@ trait HasPermissions
     /** @var AccessRulesContract */
     protected $accessRules;
 
+    /** @var array{0:int, 1:mixed}|null Model object id and key (false = not bound yet), that $accessRules belongs to */
+    protected $accessRulesBoundTo;
+
     /** @var string */
     protected $ownerName;
 
@@ -20,12 +23,6 @@ trait HasPermissions
     {
         return app(AccessRulesContract::class);
     }
-
-    /**
-     * @parent HasEvents
-     * @return void
-     */
-    public static abstract function retrieved($callback);
 
     /**
      * @parent HasEvents
@@ -46,17 +43,16 @@ trait HasPermissions
     public abstract function getKey();
 
     /**
-     * Initialize the trait
+     * Boot the trait
+     *
+     * Listeners are static: they must be registered once per model class.
+     * Registering them per model instance makes every loaded model
+     * re-point access rules of all previously loaded models to itself.
      *
      * @return void
      */
-    protected function initializeHasPermissions()
+    public static function bootHasPermissions()
     {
-        $ar = $this->accessRules = $this->appAccessRulesModel();
-
-        static::retrieved(function ($model) use ($ar) {
-            $ar->setOwner($model);
-        });
         static::created(function ($model) {
             $model->getOwner();
         });
@@ -67,14 +63,51 @@ trait HasPermissions
     }
 
     /**
+     * Initialize the trait
+     *
+     * @return void
+     */
+    protected function initializeHasPermissions()
+    {
+        $this->accessRules = $this->appAccessRulesModel();
+
+        // Remember the model that instance was created for, to detect clones sharing it
+        $this->accessRulesBoundTo = [spl_object_id($this), false];
+    }
+
+    /**
+     * Returns access rules bound to this model and only to it
+     *
+     * @return AccessRulesContract
+     */
+    protected function ownerAccessRules()
+    {
+        $bound = [spl_object_id($this), $this->getKey()];
+
+        if ($this->accessRulesBoundTo !== $bound) {
+            // Clone of model shares instance with its source, never re-point shared instance
+            $shared = $this->accessRulesBoundTo && $this->accessRulesBoundTo[0] !== $bound[0];
+            if (!$this->accessRules || $shared) {
+                $this->accessRules = $this->appAccessRulesModel();
+            }
+            $this->accessRules->setOwner($this);
+            $this->accessRulesBoundTo = $bound;
+        }
+
+        return $this->accessRules;
+    }
+
+    /**
      * @return OwnerContract
      */
     public function getOwner()
     {
-        $owner = $this->accessRules->getOwner();
+        $accessRules = $this->ownerAccessRules();
+
+        $owner = $accessRules->getOwner();
         if ($owner) {return $owner;}
 
-        return $this->accessRules->newOwner(
+        return $accessRules->newOwner(
             $this,
             $this->getKey(),
             $this->ownerName??
@@ -124,9 +157,11 @@ trait HasPermissions
         $owner  = $this->getOwner();
         $parent = $this->getOwnerFrom($type, $id);
 
+        $result = $parent && $owner->addInheritance($parent);
+
         $this->accessRules->refreshPermission();
 
-        return $parent && $owner->addInheritance($parent);
+        return $result;
     }
 
     /**
@@ -138,12 +173,14 @@ trait HasPermissions
      */
     public function remInheritFrom($type, $id = null): bool
     {
-        $owner  = $this->accessRules->getOwner();
+        $owner  = $this->ownerAccessRules()->getOwner();
         $parent = $this->getOwnerFrom($type, $id);
+
+        $result = $parent && $owner && $owner->remInheritance($parent);
 
         $this->accessRules->refreshPermission();
 
-        return $parent && $owner->remInheritance($parent);
+        return $result;
     }
 
 

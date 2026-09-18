@@ -20,6 +20,9 @@ trait AccessRulesThisOwner
     /** @var mixed|null */
     protected $thisOwnerId;
 
+    /** @var array<string>|null */
+    protected $permissions;
+
     /**
      * Set the owner id for user/groups support, this id is used when querying roles
      *
@@ -39,6 +42,11 @@ trait AccessRulesThisOwner
             $type = get_class($type);
         }
         $type = $this->getTypeID($type);
+
+        // Permissions loaded for previous owner must not be served to new one
+        if ($this->thisOwnerType !== $type || $this->thisOwnerId !== $id) {
+            $this->permissions = null;
+        }
 
         $this->thisOwnerType = $type;
         $this->thisOwnerId   = $id;
