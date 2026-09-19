@@ -1,59 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 
 /**
- * @property int $id
- * @property int $owner_id
- * @property int $owner_parent_id
- * @property ?\Illuminate\Support\Carbon $created_at
+ * One link "this owner inherits from that one". An owner can have many parents.
+ *
+ * @property int         $id
+ * @property int         $owner_id
+ * @property int         $owner_parent_id
+ * @property Carbon|null $created_at
  */
+#[Fillable(['owner_id', 'owner_parent_id'])]
 class Inheritance extends Model implements InheritanceContract
 {
     const UPDATED_AT = null;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'id',
-        'owner_id',
-        'owner_parent_id',
-        'created_at',
-    ];
-
-    /**
-     * @inherited
-     */
-    protected $guarded = [];
-
-    /**
-     * @inherited
-     */
     public function getTable()
     {
         return config('access.table_names.inheritance', parent::getTable());
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(Owner::class, 'owner_id');
+        return $this->belongsTo(config('access.models.owner', Owner::class), 'owner_id');
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function ownerParent(): BelongsTo
     {
-        return $this->belongsTo(Owner::class, 'owner_parent_id');
+        return $this->belongsTo(config('access.models.owner', Owner::class), 'owner_parent_id');
     }
 }

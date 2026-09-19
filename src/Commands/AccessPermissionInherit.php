@@ -1,28 +1,28 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Commands;
 
-class AccessPermissionInherit extends AccessArguments
+use Symfony\Component\Console\Attribute\AsCommand;
+
+#[AsCommand(name: 'acr:inherit')]
+class AccessPermissionInherit extends AccessCommand
 {
-    // Command signature and description
     protected $signature = 'acr:inherit {primary_owner_type} {primary_owner_id} {owner_type} {owner_id}';
+
     protected $description = 'Access rules and inheritance: inherit rules form one user to second';
 
-    public function handle()
+    public function handle(): int
     {
-        $pAcr = $this->getPrimaryAccessRules();
-        $acr  = $this->getDefaultAccessRules();
-
-        $save = $acr->getOwner()->addInheritance(
-            $pAcr->getOwner()
-        );
-        $acr->refreshPermission();
-        // Or you can use User trait method for inherit permissions from another user
-        // $user1->inheritPermissionFrom($user2);
-
-        if ($save) {
-            $this->info('Inherit permissions added.');
-        } else {
+        if (! $this->owner()->inheritFrom($this->owner('primary_'))) {
             $this->error('Inherit permission failed.');
+
+            return self::FAILURE;
         }
+
+        $this->info('Inherit permissions added.');
+
+        return self::SUCCESS;
     }
 }

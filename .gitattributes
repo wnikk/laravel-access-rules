@@ -1,0 +1,18 @@
+# Normalize line endings
+* text=auto eol=lf
+
+*.php diff=php
+*.md  diff=markdown
+
+# Files and folders excluded from release archives (composer dist / "Download ZIP"):
+# only what an application needs at runtime stays in vendor/.
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/_dev               export-ignore
+/docs               export-ignore
+/tests              export-ignore
+/phpunit.xml        export-ignore
+/phpunit.xml.dist   export-ignore
+/pint.json          export-ignore
+/run_phpunit.sh     export-ignore
+/CHANGELOG.md       export-ignore

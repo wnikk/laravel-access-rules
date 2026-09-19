@@ -4,10 +4,14 @@
          colors="true"
          processIsolation="false"
          stopOnFailure="false"
+         defaultTestSuite="Unit Test Suite"
 >
     <testsuites>
         <testsuite name="Unit Test Suite">
             <directory suffix=".php">tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Bench">
+            <directory suffix=".php">tests/Bench</directory>
         </testsuite>
     </testsuites>
     <php>

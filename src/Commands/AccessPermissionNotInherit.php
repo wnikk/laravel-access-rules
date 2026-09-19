@@ -1,28 +1,28 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Commands;
 
-class AccessPermissionNotInherit extends AccessArguments
+use Symfony\Component\Console\Attribute\AsCommand;
+
+#[AsCommand(name: 'acr:not-inherit')]
+class AccessPermissionNotInherit extends AccessCommand
 {
-    // Command signature and description
     protected $signature = 'acr:not-inherit {primary_owner_type} {primary_owner_id} {owner_type} {owner_id}';
+
     protected $description = 'Access rules and inheritance: remove inherit rules form one user to second';
 
-    public function handle()
+    public function handle(): int
     {
-        $pAcr = $this->getPrimaryAccessRules();
-        $acr  = $this->getDefaultAccessRules();
-
-        $save = $acr->getOwner()->remInheritance(
-            $pAcr->getOwner()
-        );
-        $acr->refreshPermission();
-        // Or you can use User trait method for inherit permissions from another user
-        // $user1->remInheritFrom($user2);
-
-        if ($save) {
-            $this->info('Inherit permissions removed.');
-        } else {
+        if (! $this->owner()->remInheritFrom($this->owner('primary_'))) {
             $this->error('Remove inherit permission failed.');
+
+            return self::FAILURE;
         }
+
+        $this->info('Inherit permissions removed.');
+
+        return self::SUCCESS;
     }
 }

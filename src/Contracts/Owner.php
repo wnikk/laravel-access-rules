@@ -1,89 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Contracts;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Models\Permission;
 
+/**
+ * What the package needs from a model of owners. config access.models can name another class,
+ * for example one on a separate connection, as long as it keeps these relations and columns.
+ *
+ * The relations are all the contract asks for. Version 2 also put writing methods here, and
+ * every replacement had to copy them; Administration\Owners does the writing now.
+ *
+ * @property int         $id
+ * @property int         $type
+ * @property string|null $original_id
+ * @property string|null $name
+ */
 interface Owner
 {
-    /**
-     * We get specified user
-     *
-     * @param int $type
-     * @param int $originalId
-     * @return mixed
-     */
-    public static function findOwner(int $type, $originalId = null);
-
-    /**
-     * Add a permission to owner
-     *
-     * @param RuleContract $rule
-     * @param $option
-     * @return bool
-     */
-    public function addPermission(RuleContract $rule, $option = null): bool;
-
-    /**
-     * Add blocking resolution to owner
-     *
-     * @param RuleContract $rule
-     * @param $option
-     * @return bool
-     */
-    public function addProhibition(RuleContract $rule, $option = null): bool;
-
-    /**
-     * Remove resolution from owner
-     *
-     * @param RuleContract $rule
-     * @param $option
-     * @return bool
-     */
-    public function remPermission(RuleContract $rule, $option = null): bool;
-
-    /**
-     * Remove blocking resolution from owner
-     *
-     * @param RuleContract $rule
-     * @param $option
-     * @return bool
-     */
-    public function remProhibition(RuleContract $rule, $option = null): bool;
-
-
-    /**
-     * Adds the user to inherit
-     * from specified user in parameter
-     *
-     * @param Owner $parent
-     * @return bool
-     */
-    public function addInheritance(Owner $parent): bool;
-
-    /**
-     * Removes user from inheritance
-     * from specified user in parameter
-     *
-     * @param Owner $parent
-     * @return int
-     */
-    public function remInheritance(Owner $parent);
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function permission(): HasMany;
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
+    /** Links to owners this one inherits from */
     public function inheritance(): HasMany;
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
+    /** Links to owners that inherit from this one */
     public function inheritanceParent(): HasMany;
 }

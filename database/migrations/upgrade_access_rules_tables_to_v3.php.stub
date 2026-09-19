@@ -1,0 +1,56 @@
+<?php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+/**
+ * Upgrade of tables created by version 2.x: only adds new nullable columns,
+ * existing data stays valid as it is.
+ */
+return new class extends Migration
+{
+    protected function tables(): stdClass
+    {
+        $tables = config('access.table_names');
+
+        if (empty($tables)) {
+            throw new \Exception('Error: config/access.php not loaded. Run [php artisan config:clear] and try again.');
+        }
+
+        return (object)$tables;
+    }
+
+    public function up()
+    {
+        $tables = $this->tables();
+
+        Schema::table($tables->rule, function (Blueprint $table) use ($tables) {
+            if (!Schema::hasColumn($tables->rule, 'resource')) {
+                $table->string('resource', 64)->nullable()->after('options');
+            }
+            if (!Schema::hasColumn($tables->rule, 'condition')) {
+                $table->jsonb('condition')->nullable()->after('options');
+            }
+        });
+
+        Schema::table($tables->permission, function (Blueprint $table) use ($tables) {
+            if (!Schema::hasColumn($tables->permission, 'condition')) {
+                $table->jsonb('condition')->nullable()->after('option');
+            }
+        });
+    }
+
+    public function down()
+    {
+        $tables = $this->tables();
+
+        Schema::table($tables->rule, function (Blueprint $table) {
+            $table->dropColumn(['resource', 'condition']);
+        });
+
+        Schema::table($tables->permission, function (Blueprint $table) {
+            $table->dropColumn('condition');
+        });
+    }
+};

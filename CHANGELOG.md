@@ -2,6 +2,34 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.0.0 - 2026-09-19
+
+Rewritten for Laravel 13+ and PHP 8.4+. Data and public API of 2.x stay compatible, see docs/upgrade-2-to-3.md.
+
+- Conditions (ABAC): a permission, a prohibition or a rule can depend on data of the record,
+  of its relations and their aggregates, on the user and on the environment; text language and builder `Cond`
+- `acr:explain` and `OwnerAccess::explain()`: which permission decided, where it came from, what its condition read, whether the cache agrees
+- Debug mode, `Access::debug()` or config `access.debug`: every refusal carries its explanation in the message of the 403, `Access::debugLog()` keeps refusals and the conditions and SQL behind every `allowedTo()` list. A permitted check costs the same with the mode on
+- `AccessRules::getLastDisallowPermission()` is kept, now per request instead of a static property
+- `acr:lint`: stored conditions, rules and owners checked against current models and config, for CI and deploys
+- Trees in conditions: `below()`, `belowOrSelf()`, `above()`, `aboveOrSelf()` for models that point at themselves through `parent_id`
+- Filtering of lists by the same conditions in the same query: `Model::query()->allowedTo()`, trait `HasAccessScope`
+- A check of a record and a filter of a list always agree: both follow three-valued logic of SQL
+- No queries after the first check of a request (2.x made one on every check), 3 queries to build permissions
+  at any depth of inheritance (2.x: 12 and growing)
+- Inherited owners are collected by one `WITH RECURSIVE` query where the database supports it
+- Cache with generations: any change leaves everything cached behind at once, on any driver
+- A prohibition is final for Laravel Gate (config `deny_is_final`)
+- Guests (config `guest`), tenants / teams (`tenant_types`, `user.tenant`), optional inheritance down the tree of rules
+- Message of an authorization error comes from the gate response, global mapping of exceptions is removed
+- Migrations: new nullable columns for 2.x tables, optional unique indexes
+- Own prohibition is the strongest: inherited permission < inherited prohibition < own permission < own prohibition
+- `Contracts\AccessManager` / facade `Access`: entry point that keeps nothing between calls, `for($owner)` gives permissions of one owner;
+  class `AccessRules` of 2.x works on top of it
+- Typed public API, abilities as backed enums, `AccessRulesException` with codes, event `AccessChanged` for audit,
+  `Access::batch()` to flush the cache once after many changes
+- Code is split by areas of responsibility: Administration, Authorization, Conditions (Syntax, Evaluation), Storage
+
 ## 2.4.2 - 2026-09-18
 
 - Fix: cached permissions are flushed after the changes are written to the database, not before.

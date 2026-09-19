@@ -1,32 +1,29 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Commands;
 
-class AccessPermissionAssign extends AccessArguments
+use Symfony\Component\Console\Attribute\AsCommand;
+
+#[AsCommand(name: 'acr:assign')]
+class AccessPermissionAssign extends AccessCommand
 {
-    // Command signature and description
-    protected $signature = 'acr:assign {owner_type} {owner_id} {rule} {option?} {availability?}';
+    protected $signature = 'acr:assign {owner_type} {owner_id} {rule} {option?} {availability?}
+        {--when= : Condition of the permission, e.g. "order.cost > 100 && order.items.count < 3"}';
+
     protected $description = 'Access rules and inheritance: assign rule to user';
 
-    public function handle()
+    public function handle(): int
     {
-        $rule   = $this->argument('rule');
-        $option = $this->argument('option');
-        $acr    = $this->getDefaultAccessRules();
+        $acr = $this->owner();
 
-        if ($this->checkAvailabilityArgument())
-        {
-            $access = 'Permission';
-            $save   = $acr->addPermission($rule, $option);
-        }
-        else {
-            $access = 'Prohibition';
-            $save   = $acr->addProhibition($rule, $option);
-        }
+        $this->availability()
+            ? $acr->addPermission($this->argument('rule'), $this->argument('option'), $this->option('when'))
+            : $acr->addProhibition($this->argument('rule'), $this->argument('option'), $this->option('when'));
 
-        if ($save) {
-            $this->info("{$access} '{$rule}' assigned to user.");
-        } else {
-            $this->error("Error assign {$access} '{$rule}' to user.");
-        }
+        $this->info('Permission assigned.');
+
+        return self::SUCCESS;
     }
 }

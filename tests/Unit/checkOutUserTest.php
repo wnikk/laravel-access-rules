@@ -1,22 +1,20 @@
 <?php
+
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * Test class for authorization using out user rules.
+ *     Owners without a model: a group addressed by a text id gets and checks permissions through AccessRules.
  *
- * This test checks if an out user can access a resource based on the defined access rules.
+ *
+ * The file comes from version 2 and its scenarios stay as they were written. It is part of the
+ * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
  */
 class checkOutUserTest extends TestCase
 {
-    /**
-     * Set up the test environment.
-     *
-     * This method is called before each test method.
-     */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -31,33 +29,24 @@ class checkOutUserTest extends TestCase
         );
     }
 
-    /**
-     * Create a user and a model instance for testing.
-     */
     public function test_gate_authorize_out_user_allows_access()
     {
         $acr = $this->getAccessRules();
         $acr->newOwner('Group', 'out_user_id_122', 'Out User');
-        // Add permission for the out user
         $acr->addPermission('access-for-out-user');
 
-        // Authorize for the out user
         $this->assertTrue($acr->can('access-for-out-user'));
     }
 
     /**
-     * Test that the gate denies access for an out user without permission.
+     * Null, not false. "Nothing is known" and "prohibited" are different answers, and Laravel Gate
+     * asks policies only after the first one.
      */
     public function test_gate_authorize_out_user_denies_access()
     {
         $acr = $this->getAccessRules();
         $acr->newOwner('Group', 'out_user_id_124', 'Out User');
 
-        // Attempt to authorize for a different out user
-        // This should return null since no permission
-        // Only for AccessRules object when using out user
-        // Otherwise the check will stop and it will not be possible to add other middlewares
-        // which work if you check gate, not directly from AccessRules class
         $this->assertNull($acr->can('access-for-out-user'));
     }
 }

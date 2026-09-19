@@ -2,11 +2,14 @@
 
 namespace Tests\Fixtures;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Wnikk\LaravelAccessRules\Traits\HasPermissions;
-use Tests\Fixtures\TestUserFactory;
 
+/**
+ * A user that owns permissions. Most tests never save it: the package needs a class and a key,
+ * not a row, and tests without a users table run on any database without setup.
+ */
 class TestUser extends Authenticatable
 {
     use HasFactory, HasPermissions;

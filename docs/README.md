@@ -1,50 +1,50 @@
 # Introduction
 
-Laravel Access Rules is a package that lets you handle very easily roles and permissions inside your application. All of this through a very simple configuration process and API.
+Laravel Access Rules handles roles and permissions inside your application (RBAC) and, since version 3,
+permissions that depend on data (ABAC): `order.cost > 100 && order.items.count < 3`.
+Everything goes through the standard Laravel Gate.
 
-### For work correctly
+- [Installation](installation.md)
+- [Basic usage](basic-usage.md): rules, permissions and prohibitions, roles and inheritance, options, the suffix `.self`, cache, console
+- [Conditions (ABAC)](conditions.md), new in 3.x: permissions with conditions, filtering of lists, trees, `acr:explain`, debug mode, `acr:lint`
+- [Upgrade from 2.x to 3.x](upgrade-2-to-3.md)
+- [Tutorial step by step](tutorial-basic-step-by-step.md): an application with seven ways to check access, written for 2.x
 
-1. It is necessary to carry out [installation](https://github.com/wnikk/laravel-access-rules/blob/main/docs/installation.md).
+## In short
 
-2. Add the necessary trait to your User model:
-
-    ```php
-    use Wnikk\LaravelAccessRules\Traits\HasPermissions;
-    
-    class User extends ... {
-        // The User model requires this trait
-        use HasPermissions;
-    ```
-
-3. After this, through standard Laravel methods, you can use all the capabilities of **Gate**.
-
-###  Checking through standard **Gate**:
-Here you can see some examples
 ```php
+use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Facades\Access;
+
+// a rule, a role that holds it, a user that inherits from the role
+AccessRules::newRule('news.edit', 'Edit news');
+AccessRules::newRule('news.publish', 'Publish news');
+AccessRules::newRule('news.delete', 'Delete news');
+Access::for('Role', 'editor')->create('Editors');
+Access::for('Role', 'editor')->allow('news.edit');
+$user->inheritPermissionFrom('Role', 'editor');
+
+// checks are the ones of Laravel
 $user->can('news.edit');
+Gate::authorize('news.edit', $news);
+// Route::...->middleware('can:news.edit'), @can('news.edit'), authorizeResource()
+
+// a permission of the user itself, and a prohibition that is stronger than anything inherited
+$user->addPermission('news.publish');
+$user->addProhibition('news.delete');
 ```
 
-### Management permission
-
-Get such a right, you can assign a rally:
+Since 3.x a permission can carry a condition, and the same condition filters a list:
 
 ```php
-// Adding permissions to a user
-$user->addPermission('news.edit');
+Access::for('Role', 'manager')->allow('orders.view', when: 'order.cost > 100 && order.items.count < 3');
+
+$user->can('orders.view', $order);
+Order::allowedTo('orders.view')->paginate();
 ```
 
-Or you can inherit the rights from another user or groups
+When access is refused and it is not clear why:
 
-```php
-// According to the existing user from object
-$user->inheritPermissionFrom(User::find(1));
-
-// By identifier
-$user->inheritPermissionFrom(User::class, 1);
-
-// From the group
-$user->inheritPermissionFrom('Group', 1);
+```bash
+php artisan acr:explain "App\Models\User" 7 orders.view order:4
 ```
-
-
-Examples of how can be used in more detail described in [Basic Usage](https://github.com/wnikk/laravel-access-rules/blob/main/docs/basic-usage.md) section.

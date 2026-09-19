@@ -76,6 +76,52 @@ return new class extends Migration
     }
 
     /**
+     * Permissions with conditions (ABAC): they work only for records the condition is true for.
+     *
+     * A condition about a record needs to know its model: list it in config/access.php
+     *     'resources' => ['order' => App\Models\Order::class, 'item' => App\Models\OrderItem::class],
+     * and add the trait Wnikk\LaravelAccessRules\Traits\HasAccessScope to the model to filter lists.
+     * The examples below are commented out, because models of your application are not known here.
+     *
+     * @param AccessRules $root
+     */
+    protected function addConditionalPermissions(AccessRules $root)
+    {
+        /**
+         * A condition that is only about the user or the environment needs no record and no model
+         */
+        $root->newRule('Test.worktime', 'Test rule that works on working days only');
+        $root->addPermission('Test.worktime', when: 'env.weekday in [1, 2, 3, 4, 5]');
+
+        /**
+         * The rule is about orders: "order." in conditions is the record that is checked
+         */
+        //$root->newRule('orders.view', 'View orders', resource: 'order');
+        //$root->newRule('orders.update', 'Update orders', resource: 'order');
+
+        // columns of the record, number of related records
+        //$root->addPermission('orders.view', when: 'order.cost > 100 && order.items.count < 3');
+
+        // the record against the user, a related record, state of the record
+        //$root->addPermission('orders.update', when: "order.department_id == user.department_id && order.status in ['draft', 'review']");
+        //$root->addPermission('orders.update', when: 'order.client.manager_id == user.id');
+
+        // an aggregate with a filter: clients with turnover of the last month above 1000
+        //$root->newRule('clients.view', 'View clients', resource: 'client');
+        //$root->addPermission('clients.view', when: 'sum(client.payments.amount, paid_at >= monthStart(-1) && paid_at < monthStart(0)) > 1000');
+
+        // a prohibition for one owner on top of what it inherits from a role
+        //$user->addProhibition('clients.view', when: "client.city == 'Y'");
+
+        /**
+         * How it is used then:
+         *     $user->can('orders.view', $order);                     // this very order
+         *     $user->can('orders.view', Order::class);               // orders in general: menu, list page
+         *     Order::query()->allowedTo('orders.view')->paginate();  // only orders the current user may see, one query
+         */
+    }
+
+    /**
      * Add inheritance from admin role to first user.
      *
      * @param AccessRules $root
@@ -111,12 +157,10 @@ return new class extends Migration
         $this->addRules($acr);
         $this->addRoleAdmin($acr);
         $this->addPermToAdmin($acr);
+        $this->addConditionalPermissions($acr);
         $this->addInheritFromAdmin($acr);
 
-        /**
-         * Update Cache
-         */
-        $acr->clearAllCachedPermissions();
+        // Nothing to do about cache: it follows every change by itself
     }
 
     /**

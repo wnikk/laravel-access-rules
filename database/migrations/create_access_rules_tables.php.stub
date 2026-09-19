@@ -39,7 +39,7 @@ return new class extends Migration
             $table->string('name',128)->nullable();
             $table->timestamp('created_at');
 
-            $table->index(['type', 'original_id']);
+            $table->unique(['type', 'original_id'], 'acr_owner_unique');
         });
 
         Schema::create($tableNames->inheritance, function (Blueprint $table) use ($tableNames) {
@@ -48,7 +48,15 @@ return new class extends Migration
             $table->unsignedInteger('owner_parent_id');
             $table->timestamp('created_at');
 
+            $table->unique(['owner_id', 'owner_parent_id'], 'acr_inheritance_unique');
+            $table->index('owner_parent_id', 'acr_inheritance_parent');
+
             $table->foreign('owner_id')
+                ->references('id') // owners id
+                ->on($tableNames->owner)
+                ->onDelete('cascade');
+
+            $table->foreign('owner_parent_id', 'acr_inheritance_parent_fk')
                 ->references('id') // owners id
                 ->on($tableNames->owner)
                 ->onDelete('cascade');
@@ -59,6 +67,8 @@ return new class extends Migration
             $table->unsignedInteger('parent_id')->default(0);
             $table->string('guard_name', 128)->unique();
             $table->string('options', 255)->nullable();
+            $table->string('resource', 64)->nullable();
+            $table->jsonb('condition')->nullable();
             $table->string('title', 128)->nullable();
             $table->string('description', 255)->nullable();
             $table->timestamp('created_at');
@@ -70,7 +80,10 @@ return new class extends Migration
             $table->unsignedInteger('rule_id');
             $table->boolean('permission')->default(false);
             $table->string('option')->nullable();
+            $table->jsonb('condition')->nullable();
             $table->timestamp('created_at');
+
+            $table->unique(['owner_id', 'rule_id', 'option', 'permission'], 'acr_permission_unique');
 
             $table->foreign('owner_id')
                 ->references('id') // owners id

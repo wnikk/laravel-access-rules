@@ -1,26 +1,22 @@
 <?php
+
 namespace Tests\Unit;
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Config;
-use Tests\TestCase;
+use Illuminate\Support\Facades\Route;
 use Tests\Fixtures\TestUser;
+use Tests\TestCase;
 
 /**
- * Unit tests for the access rules middleware.
+ *     The "can:" route middleware of Laravel asks the package: 200 with the permission, 403 without.
  *
- * Verifies that the middleware correctly allows or denies access
- * based on user permissions.
+ *
+ * The file comes from version 2 and its scenarios stay as they were written. It is part of the
+ * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
  */
 class middlewareTest extends TestCase
 {
-    /**
-     * Set up the test environment.
-     *
-     * Configures owner types, creates a test permission,
-     * and registers a test route with the middleware.
-     */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -38,12 +34,6 @@ class middlewareTest extends TestCase
         })->middleware('can:view-dashboard');
     }
 
-    /**
-     * Test that a user without the required permission
-     * is denied access to the protected route.
-     *
-     * @return void
-     */
     public function test_middleware_allowed_route()
     {
         $user = TestUser::factory()->make();
@@ -53,12 +43,6 @@ class middlewareTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /**
-     * Test that a user without the required permission
-     * is denied access to the protected route.
-     *
-     * @return void
-     */
     public function test_middleware_prohibited_route()
     {
         $user = TestUser::factory()->make();

@@ -2,27 +2,29 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Fixtures\TestUser;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Tests\Fixtures\TestUser;
+use Tests\TestCase;
+use Wnikk\LaravelAccessRules\Contracts\Rule;
 
 /**
- * Tests that cached permissions are invalidated after the database is changed, not before.
+ * Cached permissions are dropped after a change reaches the database, never before it.
  *
- * When cache is flushed before the write, a concurrent request can load
- * old permissions in between and keep them cached until expiration.
+ * Version 2 dropped the cache first and wrote second. A request that arrived in between read
+ * the old rows and cached them again, and the change stayed invisible until the entry expired
+ * a day later. The window is a few milliseconds wide, so no ordinary test ever hits it.
+ *
+ * These tests hit it on purpose: a hook runs a second "request" at the exact moment before
+ * the INSERT or DELETE goes out.
  */
 class cacheInvalidationTest extends TestCase
 {
     /** @var TestUser */
     protected $user;
 
-    /**
-     * Set up the test environment.
-     */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -38,19 +40,21 @@ class cacheInvalidationTest extends TestCase
     }
 
     /**
-     * Emulates a concurrent request: right before the first query
-     * starting with $sqlPrefix is executed, permissions of the user
-     * are loaded (and so cached) by a separate AccessRules instance.
+     * Plays the concurrent request. Right before the first query that starts with $sqlPrefix,
+     * another reader compiles and caches permissions of the user from rows that are still old.
      *
-     * @param string $sqlPrefix
-     * @return void
+     * beforeExecuting() is the only place that sits between "the package decided to write" and
+     * "the database has the row". Model events fire too early for deletes, which the package
+     * runs as bulk queries without events.
      */
     protected function cachePermissionsRightBefore(string $sqlPrefix)
     {
         $done = false;
 
         DB::connection()->beforeExecuting(function ($query) use ($sqlPrefix, &$done) {
-            if ($done || stripos(ltrim($query), $sqlPrefix) !== 0) {return;}
+            if ($done || stripos(ltrim($query), $sqlPrefix) !== 0) {
+                return;
+            }
             $done = true;
 
             $this->checkByNewRequest('cached-rule');
@@ -58,21 +62,19 @@ class cacheInvalidationTest extends TestCase
     }
 
     /**
-     * Checks permission the way a new request does: nothing but the cache store is shared.
-     *
-     * @param string $ability
-     * @return bool|null
+     * Asks like a request that starts from nothing: everything that lives as long as a request
+     * is forgotten, and only the cache store is shared with the code that made the change.
      */
     protected function checkByNewRequest(string $ability)
     {
+        $this->app->forgetScopedInstances();
+
         $acr = $this->getAccessRules();
         $acr->setOwner($this->user);
+
         return $acr->hasPermission($ability);
     }
 
-    /**
-     * Permission added while a concurrent request caches permissions is visible afterwards.
-     */
     public function test_cache_is_flushed_after_permission_is_added()
     {
         $this->assertNull($this->checkByNewRequest('cached-rule'));
@@ -83,9 +85,6 @@ class cacheInvalidationTest extends TestCase
         $this->assertTrue($this->checkByNewRequest('cached-rule'));
     }
 
-    /**
-     * Permission removed while a concurrent request caches permissions is gone afterwards.
-     */
     public function test_cache_is_flushed_after_permission_is_removed()
     {
         $this->user->addPermission('cached-rule');
@@ -97,9 +96,6 @@ class cacheInvalidationTest extends TestCase
         $this->assertNull($this->checkByNewRequest('cached-rule'));
     }
 
-    /**
-     * Inheritance added while a concurrent request caches permissions is visible afterwards.
-     */
     public function test_cache_is_flushed_after_inheritance_is_added()
     {
         $group = $this->getAccessRules();
@@ -114,9 +110,6 @@ class cacheInvalidationTest extends TestCase
         $this->assertTrue($this->checkByNewRequest('cached-rule'));
     }
 
-    /**
-     * Inheritance removed while a concurrent request caches permissions is gone afterwards.
-     */
     public function test_cache_is_flushed_after_inheritance_is_removed()
     {
         $group = $this->getAccessRules();
@@ -133,7 +126,7 @@ class cacheInvalidationTest extends TestCase
     }
 
     /**
-     * Artisan commands changing inheritance flush cached permissions as well.
+     * The console commands of version 2 changed inheritance and never touched the cache.
      */
     public function test_cache_is_flushed_by_inherit_commands()
     {
@@ -158,26 +151,31 @@ class cacheInvalidationTest extends TestCase
     }
 
     /**
-     * Inside a transaction other requests see old data until commit,
-     * so whatever they cached meanwhile must be flushed once more after commit.
+     * Inside a transaction other connections read old rows until commit, so a drop of the cache
+     * made inside it is not enough. The test plants what such a reader would cache, under the
+     * generation that is current inside the transaction, and expects it to be out of reach after commit.
      */
     public function test_cache_is_flushed_again_after_transaction_commit()
     {
-        $type = $this->getAccessRules()->getTypeID(TestUser::class);
-        $key  = config('access.cache.key').'.'.$type.'.'.$this->user->getKey();
+        $stale = null;
 
-        DB::transaction(function () use ($key) {
+        DB::transaction(function () use (&$stale) {
             $this->user->addPermission('cached-rule');
 
-            // concurrent request does not see uncommitted permission and caches list without it
-            Cache::put($key, [], 600);
+            $generation = Cache::get(config('access.cache.key').'.generation');
+            $type       = $this->getAccessRules()->getTypeID(TestUser::class);
+            $stale      = config('access.cache.key').'.'.$generation.'.'.$type.'.'.$this->user->getKey();
+
+            Cache::put($stale, ['owner' => null, 'permit' => [], 'deny' => [], 'cond' => []], 600);
         });
 
+        $this->assertNotNull(Cache::get($stale), 'precondition: stale permissions were cached');
         $this->assertTrue($this->checkByNewRequest('cached-rule'));
     }
 
     /**
-     * Deleted rule is revoked at once, not when cached permissions expire.
+     * The rule goes through its model here, the way an admin panel deletes it. A drop of the cache
+     * that lived only in RuleCatalog would miss this path.
      */
     public function test_cache_is_flushed_after_rule_is_deleted_and_restored()
     {
@@ -187,20 +185,17 @@ class cacheInvalidationTest extends TestCase
         $this->getAccessRules()->delRule('cached-rule');
         $this->assertNull($this->checkByNewRequest('cached-rule'));
 
-        app(\Wnikk\LaravelAccessRules\Contracts\Rule::class)
+        app(Rule::class)
             ->withTrashed()->where('guard_name', 'cached-rule')->first()->restore();
         $this->assertTrue($this->checkByNewRequest('cached-rule'));
     }
 
-    /**
-     * Renamed rule is not permitted by its old name.
-     */
     public function test_cache_is_flushed_after_rule_is_renamed()
     {
         $this->user->addPermission('cached-rule');
         $this->assertTrue($this->checkByNewRequest('cached-rule'));
 
-        $rule = app(\Wnikk\LaravelAccessRules\Contracts\Rule::class)->where('guard_name', 'cached-rule')->first();
+        $rule             = app(Rule::class)->where('guard_name', 'cached-rule')->first();
         $rule->guard_name = 'renamed-rule';
         $rule->save();
 
@@ -209,7 +204,8 @@ class cacheInvalidationTest extends TestCase
     }
 
     /**
-     * Permissions of soft deleted rule are skipped, list of permitted rules holds names only.
+     * Version 2 left permissions of a deleted rule in the list as arrays instead of names.
+     * A loose in_array() hid the mistake from checks, and only listings showed it.
      */
     public function test_soft_deleted_rule_is_not_listed_as_permitted()
     {
@@ -229,9 +225,6 @@ class cacheInvalidationTest extends TestCase
         );
     }
 
-    /**
-     * Same for prohibited rules.
-     */
     public function test_soft_deleted_rule_is_not_listed_as_prohibited()
     {
         $acr = $this->getAccessRules();

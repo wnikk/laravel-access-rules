@@ -1,144 +1,94 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Casts\PermissionOption;
-use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Contracts\AccessRules as AccessRulesContract;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
+use Wnikk\LaravelAccessRules\Storage\PermissionCache;
 
 /**
- * @property int $id
- * @property string $parent_id
- * @property string $guard_name
- * @property string $options
- * @property string $title
- * @property string $description
- * @property ?\Illuminate\Support\Carbon $deleted_at
+ * Something that can be permitted. Rules form a tree through parent_id, which groups them in
+ * admin screens and, with config access.rule_tree_inheritance, passes permissions down.
+ *
+ * Rules are soft deleted so that a rule removed by mistake returns with all its permissions.
+ *
+ * @property int         $id
+ * @property int         $parent_id
+ * @property string      $guard_name
+ * @property string|null $options
+ * @property string|null $resource
+ * @property array|null  $condition
+ * @property string|null $title
+ * @property string|null $description
+ * @property Carbon|null $deleted_at
  */
+#[Fillable(['parent_id', 'guard_name', 'options', 'resource', 'condition', 'title', 'description'])]
 class Rule extends Model implements RuleContract
 {
     use SoftDeletes;
 
     const UPDATED_AT = null;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'id',
-        'parent_id',
-        'guard_name',
-        'options',
-        'title',
-        'description',
-        'deleted_at',
-    ];
-
-    /**
-     * @inherited
-     */
-    protected $guarded = [];
-
-    /**
-     * Boot the model and set up event listeners
-     */
-    protected static function boot()
+    protected function casts(): array
     {
-        parent::boot();
+        return [
+            'condition' => 'array',
+        ];
+    }
 
-        self::deleting(function ($model) {
-            if ($model->forceDeleting) {
-                $model->children()
-                    ->update(['parent_id' => $model->parent_id]);
-
-                $model->permission()
-                    ->delete();
+    protected static function booted(): void
+    {
+        // Only a real delete touches neighbours. Children move one level up instead of vanishing with
+        // their parent, and permissions go by hand because tables of version 2 cascade on some servers only.
+        static::deleting(function (self $rule) {
+            if (! $rule->isForceDeleting()) {
+                return;
             }
+
+            $rule->children()->update(['parent_id' => $rule->parent_id]);
+            $rule->permission()->delete();
         });
 
-        // Cached permissions hold names of rules, without flush
-        // deleted rule stays permitted until the cache expires
-        $flush = function () {
-            app(AccessRulesContract::class)->clearAllCachedPermissions();
+        // Compiled permissions carry names and conditions of rules. A rule deleted through the model,
+        // for example by an admin panel, would otherwise stay permitted until its cache entry expires.
+        // The events live on the model because not every change comes through RuleCatalog.
+        $flush = static function (self $rule) {
+            app(PermissionCache::class)->bump($rule->getConnection());
         };
 
-        self::deleted($flush);
-        self::restored($flush);
-        self::updated(function ($model) use ($flush) {
-            if ($model->wasChanged('guard_name')) {$flush();}
+        static::deleted($flush);
+        static::restored($flush);
+        static::updated(function (self $rule) use ($flush) {
+            if ($rule->wasChanged(['guard_name', 'condition', 'parent_id'])) {
+                $flush($rule);
+            }
         });
     }
 
-    /**
-     * Find a rule by name
-     *
-     * @param string $ability
-     * @param $option
-     * @return RuleContract|null
-     */
-    public static function findRule(string $ability, &$option = null)
-    {
-        $rule = static::firstWhere('guard_name', $ability);
-
-        if ($rule) {return $rule;}
-        if (!$n = strrpos($ability, '.')) {return null;}
-
-        $option  = substr($ability, $n+1);
-        $ability = substr($ability, 0, $n);
-
-        $rule = static::where('guard_name', $ability)->first();
-        if (!$rule) {return null;}
-
-        if ($rule->options) {
-            $option = app(PermissionOption::class)->set($rule, 'option', $option, []);
-        }
-
-        return $rule;
-    }
-
-    /**
-     * @inherited
-     */
     public function getTable()
     {
         return config('access.table_names.rule', parent::getTable());
     }
 
-    /**
-     * @return $this
-     */
-    public function rule()
-    {
-        return $this;
-    }
-
-    /**
-     * @return BelongsTo
-     */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(Rule::class, 'parent_id');
+        return $this->belongsTo(static::class, 'parent_id');
     }
 
-    /**
-     * @return HasMany
-     */
     public function children(): HasMany
     {
-        return $this->hasMany(Rule::class, 'parent_id');
+        return $this->hasMany(static::class, 'parent_id');
     }
 
-    /**
-     * @return HasMany
-     */
     public function permission(): HasMany
     {
-        return $this->hasMany(Permission::class, 'rule_id');
+        return $this->hasMany(config('access.models.permission', Permission::class), 'rule_id');
     }
 }

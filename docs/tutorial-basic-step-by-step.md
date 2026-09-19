@@ -7,6 +7,16 @@ weight: 3
 
 Originally posted on: [https://dev.to/wnikk/how-use-access-control-rules-and-grud-in-laravel-10-tutorial-step-by-step-307a](https://dev.to/wnikk/how-use-access-control-rules-and-grud-in-laravel-10-tutorial-step-by-step-307a)
 
+> **About versions.** The article was written for version 2.x of the package and Laravel 10, and it is kept as it was
+> published. Rules, seeders and all seven examples work with 3.x unchanged. Three things differ:
+>
+> - 3.x needs Laravel 13 and PHP 8.4. The base controller of a fresh application no longer has `authorizeResource()`,
+>   add `use Illuminate\Foundation\Auth\Access\AuthorizesRequests;` to controllers of examples 4, 5 and 7.
+> - The visual package `wnikk/laravel-access-ui` has no release for 3.x yet. Skip it in step 2 together with the
+>   final example, and manage permissions from seeders or the `acr:*` console commands.
+> - Example 7 reaches attribute-based checks through a policy. In 3.x this is a condition of a permission,
+>   see the note in that example and [Conditions](conditions.md).
+
 Download the sample code: [https://github.com/wnikk/-laravel-access-example](https://github.com/wnikk/-laravel-access-example)
 
 In this article, we'll dive into how to implement _Role-Based Access Control_ (RBAC) in Laravel 10, to manage user access effectively.
@@ -831,6 +841,18 @@ There is no need to perform such checks anymore, as the **magic method** will ha
 
 
 ## Example 7
+
+> **3.x:** the policy below is no longer needed for this. List the model in `resources` of `config/access.php`
+> (`'news' => App\Models\News::class`) and put the rule of the policy into the permission:
+> ```php
+> AccessRules::newRule('Example7News.update', 'Edit fresh news', resource: 'news');
+> $acr->addPermission('Example7News.update', when: "news.created_at >= ago('48 hours')");
+>
+> Gate::authorize('Example7News.update', $news);
+> News::allowedTo('Example7News.update')->get();   // the same condition filters a list; News uses the trait HasAccessScope
+> ```
+> The policy stays a valid way for logic that does not fit a condition.
+
 Although this is not **ABAC**, the necessary attribute-based access control functionality can be achieved by adding the use of Laravel's built-in policy mechanism.
 
 All the previous examples focused on checking access to the controller, but we can use the same approach in "**Policy**" to implement _access control for attributes_ with all their variations.

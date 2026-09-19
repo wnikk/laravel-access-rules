@@ -1,7 +1,7 @@
 {
     "name": "wnikk/laravel-access-rules",
-    "version": "2.4.2",
-    "description": "Simple system of ACR (access control rules) for Laravel, with roles, groups, unlimited inheritance and possibility of multiplayer use.",
+    "version": "3.0.0",
+    "description": "Fast access control for Laravel: RBAC with roles, groups and unlimited inheritance, extended to ABAC — conditions on any model, its relations and aggregates, with list filtering.",
     "license": "MIT",
     "keywords": [
         "wnikk",
@@ -14,7 +14,10 @@
         "acr",
         "rbac",
         "manager",
-        "security"
+        "security",
+        "abac",
+        "attribute-based",
+        "gate"
     ],
     "authors": [
         {
@@ -28,26 +31,27 @@
         "url": "https://github.com/wnikk/laravel-access-rules/issues"
     },
     "require": {
-        "php": ">=7.4",
-        "illuminate/auth": "^8.0|*",
-        "illuminate/container": "^8.0|*",
-        "illuminate/contracts": "^8.0|*",
-        "illuminate/database": "^8.0|*",
-        "illuminate/cache": "^8.0|*",
-        "illuminate/console": "^8.0|*"
+        "php": "^8.4",
+        "illuminate/auth": "^13.0",
+        "illuminate/cache": "^13.0",
+        "illuminate/console": "^13.0",
+        "illuminate/container": "^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/support": "^13.0",
+        "illuminate/validation": "^13.0"
     },
     "require-dev": {
-        "orchestra/testbench": "*",
-        "phpunit/phpunit": "*"
+        "laravel/pint": "^1.32",
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.0",
+        "staudenmeir/laravel-adjacency-list": "^1.26"
     },
-    "minimum-stability": "dev",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Wnikk\\LaravelAccessRules\\": "src"
-        },
-        "files": [
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {

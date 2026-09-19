@@ -1,73 +1,54 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Wnikk\LaravelAccessRules\Models;
 
-use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
-use Wnikk\LaravelAccessRules\Casts\PermissionOption;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 
 /**
- * @property int $id
- * @property int $owner_id
- * @property int $rule_id
- * @property bool $permission
- * @property string $option
- * @property ?\Illuminate\Support\Carbon $created_at
+ * One permission or prohibition of an owner for a rule, with an optional option and condition.
+ *
+ * The condition is a tree compiled by ConditionCompiler. The cast decodes it for admin screens;
+ * the path of a check reads the column through the query builder and skips Eloquent.
+ *
+ * @property int         $id
+ * @property int         $owner_id
+ * @property int         $rule_id
+ * @property bool        $permission
+ * @property string|null $option
+ * @property array|null  $condition
+ * @property Carbon|null $created_at
  */
+#[Fillable(['owner_id', 'rule_id', 'permission', 'option', 'condition'])]
 class Permission extends Model implements PermissionContract
 {
     const UPDATED_AT = null;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'id',
-        'owner_id',
-        'rule_id',
-        'permission',
-        'option',
-        'created_at',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'permission' => 'boolean',
+            'condition'  => 'array',
+        ];
+    }
 
-    /**
-     * @inherited
-     */
-    protected $guarded = [];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'option' => PermissionOption::class,
-    ];
-
-    /**
-     * @inherited
-     */
     public function getTable()
     {
         return config('access.table_names.permission', parent::getTable());
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function rule(): BelongsTo
     {
-        return $this->belongsTo(Rule::class, 'rule_id');
+        return $this->belongsTo(config('access.models.rule', Rule::class), 'rule_id');
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(Owner::class, 'owner_id');
+        return $this->belongsTo(config('access.models.owner', Owner::class), 'owner_id');
     }
 }

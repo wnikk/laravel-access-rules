@@ -2,24 +2,31 @@
 
 namespace Tests;
 
-use Orchestra\Testbench\TestCase as BaseTestCase;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Orchestra\Testbench\TestCase as BaseTestCase;
 use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\AccessRulesServiceProvider;
+use Wnikk\LaravelAccessRules\Models\Inheritance;
+use Wnikk\LaravelAccessRules\Models\Owner;
+use Wnikk\LaravelAccessRules\Models\Permission;
+use Wnikk\LaravelAccessRules\Models\Rule;
 
 /**
- * Base test case for package tests.
+ * Base of every test: an application with the package loaded and its tables in place.
  *
- * Sets up the environment and runs required migrations for testing.
+ * The suite runs on whatever database the environment names. phpunit.xml says SQLite in memory,
+ * and DB_CONNECTION with friends in the environment points the same tests at PostgreSQL or
+ * MySQL. Servers differ exactly where the package writes SQL, so the suite has to pass on all
+ * of them, and nothing in the tests may assume SQLite.
  */
 abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 
     /**
-     * Reset process-level static cache state before every test so that
-     * $cacheCheckResult and $cacheWarningLogged never leak between test cases.
-     *
-     * @return void
+     * The cache remembers per process whether its store works. One test with a broken store would
+     * turn the cache off for every test after it, so the memory is wiped first.
      */
     protected function setUp(): void
     {
@@ -28,10 +35,8 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Set up the test environment.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return void
+     * Loads config from the file of the package, not from a copy. A key added to config/access.php
+     * then reaches the tests without anybody remembering to mirror it here.
      */
     protected function getEnvironmentSetUp($app)
     {
@@ -39,34 +44,42 @@ abstract class TestCase extends BaseTestCase
             require __DIR__.'/../config/access.php'
         );
 
-        // Run migrations from database/migrations
+    }
+
+    /**
+     * Creates tables of the package after RefreshDatabase has done its part and, on a real server,
+     * inside the transaction of the test.
+     *
+     * Creating them earlier, while the application boots, works on SQLite in memory only. On
+     * PostgreSQL the first "migrate:fresh" drops them again, and whatever survives piles up from
+     * test to test. Inside the transaction every test starts empty and leaves nothing behind.
+     */
+    protected function afterRefreshingDatabase()
+    {
         $migration = require __DIR__.'/../database/migrations/create_access_rules_tables.php.stub';
         $migration->up();
     }
 
     /**
-     * Get package service providers.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return array
+     * Names the models before the provider registers, as an application with a published config does.
      */
     protected function getPackageProviders($app)
     {
         $app['config']->set('access.models', [
-            'rule'        => \Wnikk\LaravelAccessRules\Models\Rule::class,
-            'inheritance' => \Wnikk\LaravelAccessRules\Models\Inheritance::class,
-            'permission'  => \Wnikk\LaravelAccessRules\Models\Permission::class,
-            'owner'       => \Wnikk\LaravelAccessRules\Models\Owner::class,
+            'rule'        => Rule::class,
+            'inheritance' => Inheritance::class,
+            'permission'  => Permission::class,
+            'owner'       => Owner::class,
         ]);
+
         return [
-            \Wnikk\LaravelAccessRules\AccessRulesServiceProvider::class,
+            AccessRulesServiceProvider::class,
         ];
     }
 
     /**
-     * Get the AccessRules instance for testing.
-     *
-     * @return AccessRules
+     * A new object per call. Tests of version 2 get their entry point this way, and sharing one
+     * object between owners is the mistake that ownerIsolationTest guards against.
      */
     protected function getAccessRules()
     {
