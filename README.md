@@ -238,8 +238,10 @@ Authentication, API tokens and social login belong to other packages. This one d
 
 ## For AI coding agents
 
-The package ships [Laravel Boost](https://laravel.com/docs/boost) guidelines and a skill in `resources/boost/`;
-`php artisan boost:install` adds them to `CLAUDE.md` / `AGENTS.md` of your application. [docs/llms.txt](docs/llms.txt)
+The package ships [Laravel Boost](https://laravel.com/docs/boost) guidelines and a skill in `resources/boost/`.
+`php artisan boost:install` asks which third-party packages to include: tick `wnikk/laravel-access-rules`, and Boost
+adds the guidelines to `CLAUDE.md` / `AGENTS.md` of your application and installs the skill `access-rules-development`.
+With Boost already installed, run `php artisan boost:update --discover`. [docs/llms.txt](docs/llms.txt)
 is a map of the documentation, and [AGENTS.md](AGENTS.md) is for agents that work on the package itself.
 They tell an agent to check through Gate, to write data-dependent access as a condition instead of a policy plus
 a hand-written query, to filter lists with `allowedTo()` and to create rules in migrations.

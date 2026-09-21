@@ -4,7 +4,7 @@ Roles, inheritance and permissions (RBAC) plus permissions that depend on data (
 
 ### Conventions
 
-- Check access the Laravel way: `$user->can()`, `Gate::authorize()`, `@@can`, the `can:` middleware, `authorizeResource()`. Do not call the package directly where Gate works.
+- Check access the Laravel way: `$user->can()`, `Gate::authorize()`, `@can`, the `can:` middleware, `authorizeResource()`. Do not call the package directly where Gate works.
 - A permission that depends on data is a **condition** on the permission, not a Policy class and not a hand-written `where()`. Write a Policy only for logic a condition cannot express.
 - Lists are filtered with `Model::allowedTo('ability')` (trait `HasAccessScope`). Never load records and filter them with `can()` in a loop.
 - A rule has to exist before it is granted. Rules that code checks by name are created in migrations or seeders, never at runtime.
