@@ -7,7 +7,8 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    # Pinned: "ubuntu-latest" moves to a new release on a date of GitHub's choosing, and a red build should mean the package.
+    runs-on: ubuntu-24.04
     name: PHP ${{ matrix.php }} / ${{ matrix.db }}
 
     strategy:
@@ -16,7 +17,8 @@ jobs:
         php: ['8.4']
         db: [sqlite, pgsql]
         include:
-          # Not verified locally yet. They run and report, and do not turn the badge red until they have passed once.
+          # MySQL is verified locally on 9.7, MariaDB is not. They run and report, and do not turn the badge red
+          # until they have passed here once; then move them into "db" above.
           - { php: '8.4', db: mysql, experimental: true }
           - { php: '8.4', db: mariadb, experimental: true }
 
@@ -40,7 +42,7 @@ jobs:
         options: --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 5s --health-timeout 5s --health-retries 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:

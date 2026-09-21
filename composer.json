@@ -43,7 +43,8 @@
     },
     "require-dev": {
         "orchestra/testbench": "*",
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "*",
+        "staudenmeir/laravel-adjacency-list": "*"
     },
     "prefer-stable": true,
     "autoload": {
