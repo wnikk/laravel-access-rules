@@ -24,25 +24,59 @@ class User extends Authenticatable
 A rule has to exist before anybody can hold it. Create rules in a migration or a seeder:
 
 ```php
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Facades\Access;
 
-AccessRules::newRule('articles.view', 'View articles');
-AccessRules::newRule('articles.edit', 'Edit articles', 'Shown in an admin panel as a hint');
+Access::newRule('articles.view', 'View articles');
+Access::newRule('articles.edit', 'Edit articles', 'Shown in an admin panel as a hint');
 
-// all fields by name
-AccessRules::newRule([
-    'guard_name' => 'profile.update',
-    'title'      => 'Change profile fields',
-    'options'    => 'required|in:name,email,password',   // validation rule of Laravel for the option, see "Options"
-]);
+// fields by name
+Access::newRule(
+    'profile.update',
+    title: 'Change profile fields',
+    options: 'required|in:name,email,password',   // validation rule of Laravel for the option, see "Options"
+);
 
-AccessRules::delRule('articles.edit');               // soft delete: permissions stay and return with the rule
-AccessRules::delRule('articles.edit', force: true);  // for good, together with permissions
+Access::delRule('articles.edit');               // refused with RULE_IN_USE while somebody holds the rule
+Access::delRule('articles.edit', force: true);  // together with every permission and prohibition for it
 ```
+
+A rule that somebody holds is not deleted by accident: its prohibitions would vanish with it, and nothing
+brings them back. Children of a deleted rule move one level up in the tree.
 
 `newRule()` returns the id of the rule. Pass it as the parent of another rule to group rules in an admin panel.
 With `'rule_tree_inheritance' => true` in config the tree also passes permissions down: a permission for `reports`
 covers `reports.sales`.
+
+### Rules of code and rules of an admin panel
+
+A rule is a name that code asks about, so every rule has an **origin**:
+
+| origin | created by | an admin panel may |
+|---|---|---|
+| `code`, the default | a migration or a seeder, together with the code that checks it | change title, description and options |
+| `custom` | an administrator, for names that code builds at run time: `can('news.edit.'.$category->slug)` | change everything and delete |
+| `import` | an import, because a foreign document named it | change everything and delete |
+
+```php
+use Wnikk\LaravelAccessRules\Models\RuleOrigin;
+
+Access::newRule('news.edit.sport', 'Edit sport news', origin: RuleOrigin::Custom);
+```
+
+Code is trusted with everything: `newRule()`, `delRule()` and migrations do not look at the origin. An admin panel
+goes through two methods that do:
+
+```php
+use Wnikk\LaravelAccessRules\Administration\RuleCatalog;
+
+$catalog->edit('orders.export', ['title' => 'Export orders', 'options' => 'required|in:csv,pdf']);
+$catalog->edit('orders.export', ['guard_name' => 'orders.download']);   // AccessRulesException, RULE_MANAGED_BY_CODE
+$catalog->discard('orders.export');                                     // the same
+$catalog->discard('news.edit.sport');                                   // deleted, unless somebody holds it: RULE_IN_USE
+```
+
+Options are validated when a permission is granted. After `in:csv,pdf` becomes `in:csv`, permissions for `pdf` keep
+working, and `php artisan acr:lint` reports them.
 
 Names of rules can be a backed enum, everywhere a name is accepted:
 
@@ -94,13 +128,8 @@ Access::for('Role', 'chief-editor')->inheritFrom('Role', 'editor');
 
 A link that closes a loop is refused with `AccessRulesException::INHERITANCE_LOOP`.
 
-The object of version 2 works as before, seeders written for it need no changes:
-
-```php
-$acr = new AccessRules;
-$acr->newOwner('Role', 'editor', 'Editors');
-$acr->addPermission('articles.edit');
-```
+The object of version 2, `new AccessRules` with `setOwner()`, works as before and seeders written for it need
+no changes, see [Upgrade from 2.x to 3.x](upgrade-2-to-3.md). New code uses `Access::for()` and the trait.
 
 ### What wins
 
@@ -146,9 +175,16 @@ class ArticleController extends Controller
     }
 ```
 
-A refusal says what was refused, `Action "articles.edit" is unauthorized.`; see `denial_message` in config.
-A prohibition of the package is final: policies and `Gate::define()` are not asked after it (`deny_is_final`).
-When the package has nothing to say, they decide as usual.
+The package answers Gate with "yes" or with nothing. When it does not permit, the other `Gate::before` callbacks,
+policies and `Gate::define()` decide as usual, so a super administrator of the application, Nova, Filament or another
+permission package keep working next to it. A **prohibition takes a permission away and is no veto**: like most
+permission systems this one starts from "everything is forbidden", and a policy for the same ability can still permit.
+
+The message of a 403 stays the one of Laravel. What was refused is known to your error page:
+
+```php
+Access::lastDenied();   // 'articles.edit'
+```
 
 To ask the package alone, past Gate and policies:
 
@@ -174,10 +210,7 @@ One rule with a list of values instead of a rule per value. The rule declares wh
 with a validation rule of Laravel:
 
 ```php
-AccessRules::newRule([
-    'guard_name' => 'profile.update',
-    'options'    => 'required|in:name,email,password',
-]);
+Access::newRule('profile.update', options: 'required|in:name,email,password');
 
 $user->addPermission('profile.update', 'email');
 
@@ -190,8 +223,8 @@ $user->can('profile.update.password');   // false
 "May edit any comment" and "may edit own comments" are two rules, the second with the suffix:
 
 ```php
-AccessRules::newRule('comments.edit', 'Edit any comment');
-AccessRules::newRule('comments.edit.self', 'Edit own comments');
+Access::newRule('comments.edit', 'Edit any comment');
+Access::newRule('comments.edit.self', 'Edit own comments');
 
 $user->addPermission('comments.edit.self');
 ```
@@ -259,16 +292,18 @@ The package keeps no audit log of its own; a listener of this event writes one.
 
 | command | |
 |---|---|
-| `acr:create {rule} {title?} {options?} {description?} {parent_id?} --resource= --when=` | new rule |
-| `acr:delete {rule} --force` | delete a rule |
+| `acr:create {rule} {title?} {options?} {description?} {parent_id?} --resource= --when= --origin=` | new rule |
+| `acr:delete {rule} --force` | delete a rule; `--force` also removes the permissions that hold it |
 | `acr:owners` | list of owners |
 | `acr:assign {owner_type} {owner_id} {rule} {option?} {availability?} --when=` | permission; `availability` "no" makes it a prohibition |
 | `acr:remove {owner_type} {owner_id} {rule} {option?} {availability?}` | take it away |
 | `acr:inherit {primary_owner_type} {primary_owner_id} {owner_type} {owner_id}` | the second owner inherits from the first (primary) one |
 | `acr:not-inherit ...` | stop inheriting |
 | `acr:explain {owner_type} {owner_id} {ability} {record?}` | why a check answers what it answers |
-| `acr:lint` | stored conditions against models and config as they are now |
+| `acr:lint --fix` | stored conditions against models and config as they are now; `--fix` saves again those whose column types changed |
 | `acr:cache:clear` | drop cached permissions |
+| `acr:xacml:export {target}` | permissions as an XACML 3.0 policy with a manifest, into a directory or a `.zip`, see [XACML](xacml.md) |
+| `acr:xacml:import {source} --check --all --replace --partial --subject-type= --role-type= --everyone=` | show what an XACML 3.0 policy would change, or convert it into permissions |
 
 ## When access is refused and it is not clear why
 

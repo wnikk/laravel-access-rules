@@ -14,14 +14,15 @@ use Wnikk\LaravelAccessRules\Contracts\AccessManager;
  * namespace, and two imports with one short name in a seeder would force an alias on every user.
  *
  * @method static \Wnikk\LaravelAccessRules\Administration\OwnerAccess for(mixed $type, string|int|null $id = null)
- * @method static int|false                                            newRule(string|\BackedEnum $guardName, ?string $title = null, ?string $description = null, ?int $parentId = null, ?string $options = null, ?string $resource = null, string|\Wnikk\LaravelAccessRules\Conditions\Cond|array|null $when = null)
+ * @method static int|false                                            newRule(string|\BackedEnum $guardName, ?string $title = null, ?string $description = null, ?int $parentId = null, ?string $options = null, ?string $resource = null, string|\Wnikk\LaravelAccessRules\Conditions\Cond|array|null $when = null, \Wnikk\LaravelAccessRules\Models\RuleOrigin|string|null $origin = null)
  * @method static bool                                                 delRule(string|\BackedEnum $guardName, bool $force = false)
  * @method static void                                                 flush()
  * @method static mixed                                                batch(\Closure $changes)
  * @method static void                                                 debug(bool $on = true)
  * @method static array                                                debugLog()
+ * @method static ?string                                              lastDenied()
  *
- * @see \Wnikk\LaravelAccessRules\Administration\AccessManager
+ * @see \Wnikk\LaravelAccessRules\Internal\Administration\AccessManager
  */
 class Access extends Facade
 {

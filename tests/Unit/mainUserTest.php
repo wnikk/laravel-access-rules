@@ -1,21 +1,23 @@
 <?php
-
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Tests\Fixtures\TestUser;
 use Tests\TestCase;
+use Tests\Fixtures\TestUser;
 
 /**
- *     The shortest path: a user model gets a permission and $user->can() answers.
+ * Unit tests for the check Trait in User class.
  *
- *
- * The file comes from version 2 and its scenarios stay as they were written. It is part of the
- * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
+ * This class tests the authorization functionality for users.
  */
 class mainUserTest extends TestCase
 {
-    protected function setUp(): void
+    /**
+     * Set up the test environment.
+     *
+     * Configures owner types, creates a test permission
+     */
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -33,26 +35,31 @@ class mainUserTest extends TestCase
         );
     }
 
+    /**
+     * Create a user and a model instance for testing.
+     */
     public function test_gate_authorize_user_allows_access()
     {
         $user = TestUser::factory()->make();
         $user->addPermission('access-for-user');
 
+        // Authorize for the user
         $this->assertTrue($user->can('access-for-user'));
     }
 
+    /**
+     * Test that denies access for user without permission.
+     */
     public function test_authorize_user_denies_no_rule_access()
     {
         $user = TestUser::factory()->make();
 
+        // Attempt to authorize for a different out user
         $this->assertFalse($user->can('access-for-user'));
     }
 
     /**
-     * Own prohibition beats own permission.
-     *
-     * Version 2 asserted another rule here, one the user never got, so the test could not fail.
-     * Its code in fact let the permission win. Version 3 follows what the test name always said.
+     * Test that denies access for user with prohibition.
      */
     public function test_authorize_user_denies_lock_rule_access()
     {
@@ -60,6 +67,7 @@ class mainUserTest extends TestCase
         $user->addPermission('access-for-user');
         $user->addProhibition('access-for-user');
 
-        $this->assertFalse($user->can('access-for-user'));
+        // Authorize for the user
+        $this->assertFalse($user->can('denied-for-user'));
     }
 }

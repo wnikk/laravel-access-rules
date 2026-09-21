@@ -8,16 +8,16 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 
 /**
  * Something that can be permitted. Rules form a tree through parent_id, which groups them in
  * admin screens and, with config access.rule_tree_inheritance, passes permissions down.
  *
- * Rules are soft deleted so that a rule removed by mistake returns with all its permissions.
+ * A rule is deleted for good. Version 2 soft deleted rules, which left the name taken, had no
+ * way back and made every reader of the table remember to skip "sleeping" rows. What protects
+ * from a delete by mistake now is RuleCatalog: a rule that still has permissions is not deleted.
  *
  * @property int         $id
  * @property int         $parent_id
@@ -27,31 +27,27 @@ use Wnikk\LaravelAccessRules\Storage\PermissionCache;
  * @property array|null  $condition
  * @property string|null $title
  * @property string|null $description
- * @property Carbon|null $deleted_at
+ * @property RuleOrigin  $origin
  */
-#[Fillable(['parent_id', 'guard_name', 'options', 'resource', 'condition', 'title', 'description'])]
+#[Fillable(['parent_id', 'guard_name', 'options', 'resource', 'condition', 'title', 'description', 'origin'])]
 class Rule extends Model implements RuleContract
 {
-    use SoftDeletes;
-
     const UPDATED_AT = null;
 
     protected function casts(): array
     {
         return [
             'condition' => 'array',
+            'origin'    => RuleOrigin::class,
         ];
     }
 
     protected static function booted(): void
     {
-        // Only a real delete touches neighbours. Children move one level up instead of vanishing with
-        // their parent, and permissions go by hand because tables of version 2 cascade on some servers only.
+        // Children move one level up instead of vanishing with their parent, and permissions go by
+        // hand because tables of version 2 cascade on some servers only. Whether a rule with
+        // permissions may be deleted at all is decided above, in RuleCatalog::delete().
         static::deleting(function (self $rule) {
-            if (! $rule->isForceDeleting()) {
-                return;
-            }
-
             $rule->children()->update(['parent_id' => $rule->parent_id]);
             $rule->permission()->delete();
         });
@@ -64,7 +60,6 @@ class Rule extends Model implements RuleContract
         };
 
         static::deleted($flush);
-        static::restored($flush);
         static::updated(function (self $rule) use ($flush) {
             if ($rule->wasChanged(['guard_name', 'condition', 'parent_id'])) {
                 $flush($rule);

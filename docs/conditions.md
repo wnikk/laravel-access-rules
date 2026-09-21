@@ -8,7 +8,7 @@ weight: 3
 A permission can have a condition. Then it works only for records the condition is true for:
 
 ```php
-AccessRules::newRule('orders.view', 'View orders', resource: 'order');
+Access::newRule('orders.view', 'View orders', resource: 'order');
 
 $manager->addPermission('orders.view', when: 'order.cost > 100 && order.items.count < 3');   // model with the trait HasPermissions
 $user->addProhibition('clients.view', when: "client.city == 'Y'");
@@ -59,7 +59,9 @@ No other method of a model can ever be called by a condition.
 | related record (belongsTo, hasOne, morphOne, also of the same table) | `order.client.city`, `order.client.parent.city` |
 | the user | `user.id`, `user.department_id`, `user.tenant`, `user.roles`, `user.guest` |
 | environment | `env.now`, `env.today`, `env.time`, `env.hour`, `env.weekday` (1 - Monday), `env.ip`, `env.app` |
-| comparison | `==  !=  >  >=  <  <=`, `in [..]`, `not in [..]`, `x in user.tenant` |
+| comparison | `==  !=  >  >=  <  <=`, `in [..]`, `not in [..]`, `x in user.tenant`, `x between a and b`, `x not between a and b` |
+| arithmetic | `+  -  *  /`, brackets, unary minus: `order.cost * 1.2 > order.budget`, `order.cost <= user.limit / 2` |
+| text | `startsWith(order.code, 'A-')`, `endsWith(..)`, `contains(..)`, `lower(order.email) == lower(user.email)` |
 | logic | `&&` `and`, `\|\|` `or`, `!` `not`, brackets |
 | values | `100`, `1.5`, `'text'`, `true`, `false`, `null`, `['a', 'b']` |
 | time | `now()`, `today()`, `ago('24 hours')`, `after('7 days')`, `monthStart(-1)`, `yearStart()` |
@@ -74,6 +76,13 @@ order.items.count < 3                        count(order.items) < 3
 exists(order.products, restricted)           not exists(client.orders)
 sum(client.payments.amount, paid_at >= monthStart(-1) && paid_at < monthStart(0)) > 1000
 max(client.payments.amount) >= 2000          exists(order.comments, author_id == user.id)
+```
+
+Columns of a pivot table are `pivot.column`, in a filter and as what is summed. The relation has to load them,
+`->withPivot('quantity')`, otherwise a loaded record does not have the column and the condition is refused:
+
+```
+exists(order.products, pivot.quantity > 4)          sum(order.products.pivot.quantity) >= 6
 ```
 
 A filter can hold an aggregate of its own, so a chain of to-many relations is written from the inside out.
@@ -100,9 +109,25 @@ $role->addPermission('orders.view', when: Cond::all(
 ));
 ```
 
+The builder has the whole language: `->times(1.2)`, `->plus()`, `->minus()`, `->dividedBy()`, `->between(100, 200)`,
+`->startsWith('A-')`, `->endsWith()`, `->contains()`, `->lower()`, `->in([...])`, `Cond::sum('order.products.pivot.quantity')`.
+
 A condition is checked when it is saved: a mistake in a name, an unknown function, a model that is not listed,
 a wrong use of a relation throw `InvalidConditionException` right away, not later when permissions are checked.
-What is stored is a tree, its text for an editor is given by `ConditionCompiler::describe()`.
+What is stored is a tree, its text for an editor is given by `Cond::describe($permission->condition, $rule->resource)`.
+
+## Arithmetic, between, text
+
+Arithmetic works with numbers: number columns, `count()`, `sum()`, attributes of the user, number literals. A text column
+or a text literal in it is refused when the condition is saved. The result keeps six decimal places in a record and
+in a list alike, so `order.cost * 1.2 > 600` does not depend on whether PHP or the database multiplies. Division is never
+integer division, and division by zero is unknown, like a comparison with NULL.
+
+`x between a and b` includes both ends and is stored as `x >= a && x <= b`, which is how an editor shows it back.
+
+`startsWith()`, `endsWith()` and `contains()` compare exactly, letter case included, on every database; put `lower()`
+on both sides to ignore case. Their second argument is a value: a literal, an attribute of the user or of the environment,
+not a column of the record.
 
 ## Trees: "this category and everything under it"
 
@@ -147,6 +172,25 @@ exactly as it would be in a query. Say it explicitly when such records are meant
 client.city == null || client.city != 'Y'
 ```
 
+## Numbers and text
+
+The column decides how a comparison works, for one record and for a list alike:
+
+- a number column (`integer`, `decimal`, `float`, ...) compares as a number: `order.price > '100'` and `order.price > 100` are the same;
+- a text column (`varchar`, `text`, ...) compares as text: for a code `'01234'` the condition `order.code == 1234` is not true,
+  and `'10' > '9'` is not true either, exactly as in a query;
+- dates, booleans, json and uuid are left to the database and to PHP as they are.
+
+The type is read from the schema when the condition is saved. It is kept only inside comparisons where PHP and the database
+would disagree (a text column against something that may be a number, a number column against a value known only during
+the check), so everyday conditions like `order.cost > 100` or `order.status == 'new'` cost a check nothing extra.
+Mistakes surface at the same moment: `order.cost > 'many'` and a number column compared with a text column are refused.
+A value that arrives later and is not a number, `order.price > user.limit` with a limit of `'abc'`, makes the comparison
+unknown, like NULL does.
+
+When a migration changes the type of a column, stored conditions keep the old one. `php artisan acr:lint` reports them
+and `php artisan acr:lint --fix` saves them again.
+
 ## A record, a class, or nothing
 
 ```php
@@ -185,7 +229,7 @@ A permission whose condition is not true (or unknown) is not applicable, the nex
 ## Condition of a rule
 
 ```php
-AccessRules::newRule('orders.export', 'Export', resource: 'order', when: 'not order.locked');
+Access::newRule('orders.export', 'Export', resource: 'order', when: 'not order.locked');
 ```
 
 Such a condition is valid for everybody who has the rule, together with conditions of their own permissions.
@@ -226,7 +270,7 @@ The explanation runs the very loop that makes real decisions, so it cannot disag
 permissions from the database and compares the answer with the cached one: a difference means that something
 changed permissions past the package, and the command says so.
 
-### Debug mode: the same explanation on every refusal
+### Debug mode: every refusal explained
 
 Most questions come from production data: a user complains that a page is forbidden or a list is shorter than
 it should be. An administrator signs in as that user, ticks "debug", and the application turns the mode on
@@ -239,16 +283,27 @@ if ($request->session()->get('impersonated_by') && $request->cookie('access_debu
 }
 ```
 
-From then on every refusal carries the explanation above in the message of the 403, after the usual
-`Action "orders.view" is unauthorized.`, whether it came from `$user->can()`, `@can`, the `can:` middleware
-or `authorizeResource()`. Everything is also kept for the request:
+From then on every refusal is explained and kept for the request, whether it came from `$user->can()`, `@can`,
+the `can:` middleware, `authorizeResource()` or a direct `hasPermission()`:
 
 ```php
 Access::debugLog();
-// 'denials' => every refused check, as explain() reports it; direct hasPermission() calls included
+// 'denials' => every refused check as explain() reports it, with the text above under 'text'
 // 'lists'   => every allowedTo(): ability, model, owner, the permissions used with their conditions as text,
 //              outcome "filtered" | "everything" | "nothing", and the SQL with bindings that narrowed the query
 ```
+
+Show the last one on your error page, `resources/views/errors/403.blade.php`:
+
+```blade
+@if ($denial = last(Access::debugLog()['denials']))
+    <pre>{{ $denial['text'] }}</pre>
+@endif
+```
+
+The mode only observes. It reads the final answer of Laravel Gate and changes neither a decision nor a message,
+so what you debug is what your users get. A check that the package left open and a policy then permitted is no
+refusal and is not logged.
 
 A short list is read from `lists`: the conditions say what a record must look like. For one missing record ask
 `$user->access()->explain('orders.view', $order)`. A debug bar or a block at the bottom of the layout is
@@ -256,10 +311,10 @@ a few lines over `debugLog()`.
 
 `'debug' => true` in config (`ACCESS_RULES_DEBUG`) turns the mode on for everybody, which suits a local
 environment only: an explanation shows rules of other owners, their conditions and values of attributes.
-A permitted check costs the same with the mode on; an explained refusal costs several queries. A policy of
-Laravel that answers `false` keeps its own message, the package explains only what it decided or kept silent about.
+A permitted check costs the same with the mode on; an explained refusal costs several queries.
 
-`AccessRules::getLastDisallowPermission()` of version 2 still names the last refused ability, in any mode.
+`Access::lastDenied()` names the last ability the package did not permit, in any mode and for free.
+It is what an error page prints when debug mode is off.
 
 ```bash
 php artisan acr:lint
@@ -273,5 +328,10 @@ after migrations.
 ## Limits
 
 - `morphTo` cannot be used in a path: it leads to models of different types.
-- A path cannot continue after a to-many relation, use an aggregate with a filter.
+- A path cannot continue after a to-many relation, use an aggregate with a filter. The one exception is `pivot.column`.
+- `lower()` follows the database in a list: SQLite lowers only ASCII, PHP lowers every alphabet.
 - Laravel policies and `Gate::define()` are code, `allowedTo()` takes into account only permissions of this package.
+- Equality of text is exact for one record. A list follows the collation of the column, so on MySQL with a case-insensitive
+  collation `client.city == 'york'` finds "York" in a list and refuses it for the record. `startsWith()`, `endsWith()` and
+  `contains()` do not have this problem: on MySQL and MariaDB they compare bytes. The same goes for `<` and `>` on text:
+  one record is compared byte by byte, a list by the collation. Digits, dates in ISO form and codes in one case are safe.

@@ -31,6 +31,8 @@ final class AccessChanged
 
     public const RULE_DELETED = 'rule.deleted';
 
+    public const RULE_EDITED = 'rule.edited';
+
     /**
      * @param string               $action  one of the constants of this class
      * @param array<string, mixed> $details what was changed: owner_type, owner_id, rule, option, permit, condition, parent_type, parent_id, force ...

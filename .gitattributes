@@ -8,7 +8,9 @@
 # only what an application needs at runtime stays in vendor/.
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
+/.github            export-ignore
 /_dev               export-ignore
+/AGENTS.md          export-ignore
 /docs               export-ignore
 /tests              export-ignore
 /phpunit.xml        export-ignore

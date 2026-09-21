@@ -4,29 +4,31 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules;
 
+use Illuminate\Auth\Access\Events\GateEvaluated;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
-use Wnikk\LaravelAccessRules\Administration\AccessManager;
-use Wnikk\LaravelAccessRules\Administration\Owners;
+use Wnikk\LaravelAccessRules\Administration\Linter;
 use Wnikk\LaravelAccessRules\Administration\RuleCatalog;
-use Wnikk\LaravelAccessRules\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Authorization\GateHook;
-use Wnikk\LaravelAccessRules\Authorization\Permissions;
-use Wnikk\LaravelAccessRules\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Conditions\Evaluation\TreeFunctions;
-use Wnikk\LaravelAccessRules\Conditions\ResourceRegistry;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager as AccessManagerContract;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Storage\HierarchyQuery;
-use Wnikk\LaravelAccessRules\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
+use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Internal\Authorization\GateHook;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Permissions;
+use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\TreeFunctions;
+use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
+use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 
 /**
  * Wires the package into an application: bindings, the Gate hooks, commands, publishing.
@@ -54,6 +56,9 @@ class AccessRulesServiceProvider extends ServiceProvider
             $this->app->bind($contract, static fn ($app) => $app->make(config('access.models.'.$key) ?: $default));
         }
 
+        // The entry point of version 2 as a name only, see the interface.
+        $this->app->bind(Contracts\AccessRules::class, AccessRules::class);
+
         // Process lifetime. None of these holds anything about a user or a request.
         $this->app->singleton(TypeRegistry::class);
         $this->app->singleton(ResourceRegistry::class);
@@ -67,7 +72,7 @@ class AccessRulesServiceProvider extends ServiceProvider
         // Request lifetime. Permissions compiles per owner and remembers the result; the services
         // around it hold a reference to it, so they share its lifetime.
         $this->app->scoped(PermissionCache::class, static fn () => new PermissionCache(config('access.cache') ?? []));
-        foreach ([Permissions::class, DecisionPoint::class, GateHook::class, Owners::class, RuleCatalog::class, ConditionCompiler::class, AccessManager::class, TreeFunctions::class, Explainer::class] as $service) {
+        foreach ([Permissions::class, DecisionPoint::class, GateHook::class, Owners::class, RuleCatalog::class, ConditionCompiler::class, AccessManager::class, TreeFunctions::class, Explainer::class, Linter::class] as $service) {
             $this->app->scoped($service);
         }
 
@@ -98,9 +103,14 @@ class AccessRulesServiceProvider extends ServiceProvider
 
         $gate->before(fn (?Authenticatable $user, $ability, $args = []) => $this->app->make(GateHook::class)->before($user, (string) $ability, (array) $args));
 
-        // The check for null comes before the container call: most checks are decided by now, and
-        // resolving the hook costs 0.3 microseconds that a decided check does not need to pay.
-        $gate->after(fn (?Authenticatable $user, $ability, $result = null, $args = []) => $result !== null ? null : $this->app->make(GateHook::class)->after($user, (string) $ability, $result, (array) $args));
+        // Debug mode watches the final answer of Gate and changes nothing in it. Laravel announces
+        // every check with this event anyway; the static flag keeps the listener to one comparison
+        // until somebody turns the mode on in this process.
+        $this->app->make('events')->listen(GateEvaluated::class, function (GateEvaluated $event) {
+            if (Explainer::$watching ??= (bool) config('access.debug')) {
+                $this->app->make(Explainer::class)->evaluated($event, $this->app->make(GateHook::class)->owner($event->user));
+            }
+        });
 
         return true;
     }
@@ -122,6 +132,8 @@ class AccessRulesServiceProvider extends ServiceProvider
             Commands\AccessCacheClear::class,
             Commands\AccessExplain::class,
             Commands\AccessLint::class,
+            Commands\AccessXacmlExport::class,
+            Commands\AccessXacmlImport::class,
         ]);
 
         $this->optimizes(clear: 'acr:cache:clear', key: 'access-rules');
@@ -148,12 +160,6 @@ class AccessRulesServiceProvider extends ServiceProvider
         $this->publishes([
             $migrations.'upgrade_access_rules_tables_to_v3.php.stub' => $this->migrationPath('upgrade_access_rules_tables_to_v3.php'),
         ], 'access-migrations-upgrade');
-
-        // Separate again, because it stops on duplicates that version 2 allowed. A project decides
-        // when to clean them up; the upgrade of the package does not wait for that.
-        $this->publishes([
-            $migrations.'add_access_rules_constraints.php.stub' => $this->migrationPath('add_access_rules_constraints.php'),
-        ], 'access-migrations-constraints');
     }
 
     /**

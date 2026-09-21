@@ -38,12 +38,13 @@ Version 3 needs PHP 8.4 and Laravel 13 or newer. For older applications stay on 
 4. You should publish the migration and the **config/access.php** config file with:
 
     ```bash
-    php artisan vendor:publish --provider="Wnikk\LaravelAccessRules\AccessRulesServiceProvider"
+    php artisan vendor:publish --tag=access-config --tag=access-migrations
     ```
 
-   Or one part at a time: `--tag=access-config`, `--tag=access-migrations`.
+   Publishing by `--provider=...` would also bring the migration that upgrades tables of version 2.x.
+   It does nothing on new tables and is not needed in a new project.
 
-   Coming from version 2.x? Tables stay as they are, see the [upgrade guide](upgrade-2-to-3.md):
+   Coming from version 2.x? Tables stay and are upgraded in place, see the [upgrade guide](upgrade-2-to-3.md):
 
     ```bash
     php artisan vendor:publish --tag=access-migrations-upgrade
@@ -85,7 +86,12 @@ by indicating the list of possible types of users.
    `config/access.php` and add the trait `HasAccessScope` to models whose lists are filtered with `allowedTo()`.
    See [Conditions](conditions.md).
 
-9. Optional: run `php artisan acr:lint` in CI and after migrations. It checks stored conditions, rules and owners
+9. Optional: a place to start from. The package ships an example migration with two rules, a role that holds them
+   and the first user as a member of the role:
+   `vendor/wnikk/laravel-access-rules/database/migrations/insert_access_rules_for_first_user.php.stub`.
+   Copy it to `database/migrations` as a `.php` file and edit it to the rules of your project.
+
+10. Optional: run `php artisan acr:lint` in CI and after migrations. It checks stored conditions, rules and owners
    against models and config as they are now.
 
 Go on with [Basic Usage](basic-usage.md).

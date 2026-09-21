@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules\Conditions;
 
-use Wnikk\LaravelAccessRules\Conditions\Syntax\Parser;
+use Wnikk\LaravelAccessRules\Internal\Conditions\Normalizer;
+use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Parser;
+use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
 
 /**
  * Builds a condition in PHP code instead of text.
@@ -127,6 +129,57 @@ final class Cond
         return $this->compare('<=', $value);
     }
 
+    /**
+     * Both ends are included, as in SQL.
+     */
+    public function between(mixed $low, mixed $high): self
+    {
+        return self::all($this->gte($low), $this->lte($high));
+    }
+
+    public function plus(mixed $value): self
+    {
+        return new self(['math', '+', $this->raw, self::operand($value)]);
+    }
+
+    public function minus(mixed $value): self
+    {
+        return new self(['math', '-', $this->raw, self::operand($value)]);
+    }
+
+    public function times(mixed $value): self
+    {
+        return new self(['math', '*', $this->raw, self::operand($value)]);
+    }
+
+    public function dividedBy(mixed $value): self
+    {
+        return new self(['math', '/', $this->raw, self::operand($value)]);
+    }
+
+    /**
+     * Exact, letter case included. Put lower() on both sides to ignore case.
+     */
+    public function startsWith(mixed $text): self
+    {
+        return new self(['call', 'startsWith', [$this->raw, self::operand($text)]]);
+    }
+
+    public function endsWith(mixed $text): self
+    {
+        return new self(['call', 'endsWith', [$this->raw, self::operand($text)]]);
+    }
+
+    public function contains(mixed $text): self
+    {
+        return new self(['call', 'contains', [$this->raw, self::operand($text)]]);
+    }
+
+    public function lower(): self
+    {
+        return new self(['call', 'lower', [$this->raw]]);
+    }
+
     public function isNull(): self
     {
         return $this->compare('==', null);
@@ -148,6 +201,18 @@ final class Cond
     public function notIn(array|self $list): self
     {
         return new self(['in', $this->raw, self::operand($list), true]);
+    }
+
+    /**
+     * The text of a stored condition, for an editor of an admin panel and for messages. Only the
+     * tree is stored, so this is the one source of that text. It reads back unchanged when saved.
+     *
+     * @param array|null  $stored   The "condition" of a permission or of a rule.
+     * @param string|null $resource Alias of the model the rule is about; the text then says "order.cost" and not "resource.cost".
+     */
+    public static function describe(?array $stored, ?string $resource = null): ?string
+    {
+        return $stored === null ? null : Printer::print($stored, $resource ?? 'resource');
     }
 
     public function toRaw(): array

@@ -8,6 +8,7 @@ use BackedEnum;
 use Closure;
 use Wnikk\LaravelAccessRules\Administration\OwnerAccess;
 use Wnikk\LaravelAccessRules\Conditions\Cond;
+use Wnikk\LaravelAccessRules\Models\RuleOrigin;
 
 /**
  * What application code may rely on: access of owners, rules, control over the cache.
@@ -32,12 +33,14 @@ interface AccessManager
      * @param  string|null            $options  validation rules of the option, e.g. "required|in:1,2,3"
      * @param  string|null            $resource alias of the entity from config access.resources the rule is about
      * @param  string|Cond|array|null $when     condition valid for everybody who has the rule
+     * @param  RuleOrigin|string|null $origin   where the rule comes from; null means code, the right answer for migrations and seeders
      * @return int|false              id of the rule
      */
-    public function newRule(string|BackedEnum $guardName, ?string $title = null, ?string $description = null, ?int $parentId = null, ?string $options = null, ?string $resource = null, string|Cond|array|null $when = null): int|false;
+    public function newRule(string|BackedEnum $guardName, ?string $title = null, ?string $description = null, ?int $parentId = null, ?string $options = null, ?string $resource = null, string|Cond|array|null $when = null, RuleOrigin|string|null $origin = null): int|false;
 
     /**
-     * Soft delete keeps permissions, so the rule can be restored with them; $force removes both for good.
+     * A rule that still has permissions is not deleted and the call throws RULE_IN_USE; $force deletes the rule
+     * together with them. Admin panels use RuleCatalog::discard() and RuleCatalog::edit(), which respect the origin of a rule.
      */
     public function delRule(string|BackedEnum $guardName, bool $force = false): bool;
 
@@ -61,6 +64,13 @@ interface AccessManager
      * @return array{denials:list<array>, lists:list<array>} Refusals as Explainer::explain() reports them; lists with the conditions and the SQL that narrowed them.
      */
     public function debugLog(): array;
+
+    /**
+     * The ability the package did not permit last in this request, null when there was none.
+     * An error page names what was refused with it. It costs one assignment per refusal and works
+     * without debug mode; the cause of the refusal is what debug mode adds.
+     */
+    public function lastDenied(): ?string;
 
     /**
      * Many changes in a row: cached permissions are left behind once, after $changes, and not after every change.

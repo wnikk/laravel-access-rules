@@ -7,11 +7,13 @@ namespace Wnikk\LaravelAccessRules\Administration;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Validator;
 use Wnikk\LaravelAccessRules\Conditions\Cond;
-use Wnikk\LaravelAccessRules\Conditions\ConditionCompiler;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Events\AccessChanged;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Models\RuleOrigin;
 
 /**
  * Holds the list of things that can be permitted at all, and matches an ability to its rule.
@@ -23,8 +25,11 @@ use Wnikk\LaravelAccessRules\Storage\PermissionCache;
  * The class belongs to the administration layer. Administration\Owners calls resolve() for
  * every grant and revoke, AccessManager calls create() and delete().
  *
- * Checks do not come here. Authorization\Permissions joins rules once while it compiles, and
- * a rule that is soft deleted drops out of that join without any code in this class.
+ * Two kinds of callers write here. Code, migrations and seeders, uses create() and delete() and
+ * is trusted with everything. An admin panel uses edit() and discard(), which look at the origin
+ * of a rule first, see Models\RuleOrigin.
+ *
+ * Checks do not come here. Authorization\Permissions joins rules once while it compiles.
  */
 final class RuleCatalog
 {
@@ -47,6 +52,7 @@ final class RuleCatalog
         $rule->description = $data['description'] ?? null;
         $rule->options     = $data['options'] ?? null;
         $rule->resource    = $data['resource'] ?? null;
+        $rule->origin      = self::origin($data['origin'] ?? null);
         $rule->condition   = $this->conditions->compile($data['when'] ?? null, $rule->resource);
 
         if (! empty($data['parent_id'])) {
@@ -63,9 +69,15 @@ final class RuleCatalog
     }
 
     /**
-     * Soft delete is the default because it is reversible: permissions stay in place and come
-     * back with the rule. The model drops cached permissions on delete and on restore, so callers
-     * of this method do not.
+     * A rule that somebody still holds is not deleted. Deleting takes permissions and
+     * prohibitions along, and a prohibition that disappears widens access without a trace;
+     * nothing brings the rows back afterwards. Version 2 answered this with a soft delete, see
+     * Models\Rule. The caller takes permissions away first, or says $force and means it:
+     * a migration that rolls back, a test that cleans up.
+     *
+     * @param bool $force Delete the rule together with every permission and prohibition for it.
+     *
+     * @throws AccessRulesException With code RULE_IN_USE.
      */
     public function delete(string $guardName, bool $force = false): bool
     {
@@ -74,11 +86,77 @@ final class RuleCatalog
             return false;
         }
 
-        $deleted = (bool) ($force ? $rule->forceDelete() : $rule->delete());
+        $held = $force ? 0 : $rule->permission()->count();
+        if ($held > 0) {
+            throw new AccessRulesException('Rule "'.$guardName.'" is held by '.$held.' permission(s) or prohibition(s). Take them away first, or delete with force to remove them too.', AccessRulesException::RULE_IN_USE);
+        }
+
+        $deleted = (bool) $rule->delete();
 
         $this->events->dispatch(new AccessChanged(AccessChanged::RULE_DELETED, ['rule' => $guardName, 'force' => $force]));
 
         return $deleted;
+    }
+
+    /**
+     * Deleting as an admin panel may do it: only rules that do not come with code, and never
+     * with force. A panel that wants a rule gone shows who holds it and lets the administrator
+     * take the permissions away knowingly.
+     *
+     * @throws AccessRulesException With code RULE_MANAGED_BY_CODE or RULE_IN_USE.
+     */
+    public function discard(string $guardName): bool
+    {
+        $rule = $this->model()->newQuery()->where('guard_name', $guardName)->first();
+
+        if ($rule?->origin->isManagedByCode()) {
+            throw new AccessRulesException('Rule "'.$guardName.'" comes with code and is removed by a migration, together with the code that checks it.', AccessRulesException::RULE_MANAGED_BY_CODE);
+        }
+
+        return $this->delete($guardName);
+    }
+
+    /**
+     * Editing as an admin panel may do it. Title, description and options are open for every rule.
+     * Name, resource, condition and place in the tree are open only for rules that do not come
+     * with code: code asks for the name, passes a record of that resource and was written with
+     * that condition in mind.
+     *
+     * Options are open although they are a contract too, because lists like "in:1,2,3" follow
+     * data. Narrowing them leaves permissions for values that are no longer allowed; they keep
+     * working, since an option is validated when it is granted, and "acr:lint" reports them.
+     *
+     * @param array{title?:?string, description?:?string, options?:?string, guard_name?:string, resource?:?string, when?:mixed, parent_id?:?int} $fields Only the keys that change.
+     *
+     * @throws AccessRulesException With code RULE_NOT_FOUND or RULE_MANAGED_BY_CODE.
+     */
+    public function edit(string $guardName, array $fields): bool
+    {
+        $rule = $this->model()->newQuery()->where('guard_name', $guardName)->first();
+        if (! $rule) {
+            throw new AccessRulesException('Rule "'.$guardName.'" is absent in the database.', AccessRulesException::RULE_NOT_FOUND);
+        }
+
+        $closed = array_diff(array_keys($fields), ['title', 'description', 'options']);
+        if ($closed !== [] && $rule->origin->isManagedByCode()) {
+            throw new AccessRulesException('Rule "'.$guardName.'" comes with code: '.implode(', ', $closed).' cannot be changed from an admin panel.', AccessRulesException::RULE_MANAGED_BY_CODE);
+        }
+
+        if (array_key_exists('when', $fields) || array_key_exists('resource', $fields)) {
+            $resource        = array_key_exists('resource', $fields) ? $fields['resource'] : $rule->resource;
+            $when            = array_key_exists('when', $fields) ? $fields['when'] : $rule->condition;
+            $rule->condition = $this->conditions->compile($when, $resource);
+        }
+        if (array_key_exists('parent_id', $fields)) {
+            // The column is NOT NULL DEFAULT 0 since version 2; zero means "no parent".
+            $rule->parent_id = empty($fields['parent_id']) ? 0 : $this->model()->newQuery()->findOrFail($fields['parent_id'])->getKey();
+        }
+
+        $saved = $rule->fill(array_intersect_key($fields, array_flip(['title', 'description', 'options', 'guard_name', 'resource'])))->save();
+
+        $this->events->dispatch(new AccessChanged(AccessChanged::RULE_EDITED, ['rule' => $rule->guard_name, 'was' => $guardName, 'fields' => array_keys($fields)]));
+
+        return $saved;
     }
 
     /**
@@ -137,6 +215,11 @@ final class RuleCatalog
         } elseif ($option !== null && $option !== '') {
             throw new AccessRulesException('Rule "'.$rule->guard_name.'" has no permissible option "'.$option.'". Before adding a permission, adjust rule option validator.', AccessRulesException::INVALID_OPTION);
         }
+    }
+
+    private static function origin(RuleOrigin|string|null $origin): RuleOrigin
+    {
+        return $origin instanceof RuleOrigin ? $origin : (RuleOrigin::tryFrom((string) $origin) ?? RuleOrigin::Code);
     }
 
     private function model(): RuleContract

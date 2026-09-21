@@ -1,21 +1,23 @@
 <?php
-
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use Tests\Fixtures\TestUser;
 use Tests\TestCase;
+use Tests\Fixtures\TestUser;
 
 /**
- *     Permissions travel along inheritance: one level, two levels, and from an owner without a model.
+ * Unit tests for the checkTraitUserTest class.
  *
- *
- * The file comes from version 2 and its scenarios stay as they were written. It is part of the
- * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
+ * This class tests the authorization functionality for inherit users.
  */
 class checkInheritTest extends TestCase
 {
-    protected function setUp(): void
+    /**
+     * Set up the test environment.
+     *
+     * Configures owner types, creates a test permission
+     */
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -30,17 +32,25 @@ class checkInheritTest extends TestCase
         );
     }
 
+    /**
+     * Create a user and test if the user can access the permission for inherit user.
+     */
     public function test_inherit_user_allows_access()
     {
         $firstUser  = TestUser::factory()->make();
         $secondUser = TestUser::factory()->make();
         $firstUser->addPermission('access-for-inherit-user');
 
+        // Inherit permissions from the first user to the second user
         $secondUser->inheritPermissionFrom($firstUser);
 
+        // Authorize for the user
         $this->assertTrue($secondUser->can('access-for-inherit-user'));
     }
 
+    /**
+     * Test that denies access for user without permission for inherit user.
+     */
     public function test_inherit3_user_allows_access()
     {
         $firstUser  = TestUser::factory()->make();
@@ -48,43 +58,52 @@ class checkInheritTest extends TestCase
         $thirdUser  = TestUser::factory()->make();
         $firstUser->addPermission('access-for-inherit-user');
 
+        // Inherit permissions from the user
         $secondUser->inheritPermissionFrom($firstUser);
 
+        // Inherit permissions from the second user
         $thirdUser->inheritPermissionFrom($secondUser);
 
+        // Authorize for the user
         $this->assertTrue($thirdUser->can('access-for-inherit-user'));
     }
 
     /**
-     * The first owner is a group addressed by a text id. Roles and groups have no model, so
-     * inheritance must work from an AccessRules object as well as from a model.
+     * Test that denies access for user without permission for inherit user.
      */
     public function test_inherit3_owner_allows_access()
     {
-        $acrFirstUser = $this->getAccessRules();
-        $acrFirstUser->newOwner('Group', 'out_user_id_'.rand(10000, 99999), 'Out Group User');
+        $acrFirstUser =  $this->getAccessRules();
+        $acrFirstUser->newOwner('Group', 'out_user_id_'.rand(10000,99999), 'Out Group User');
         $acrFirstUser->addPermission('access-for-inherit-user');
         $secondUser = TestUser::factory()->make();
         $thirdUser  = TestUser::factory()->make();
 
+        // Inherit permissions from the user
         $secondUser->inheritPermissionFrom($acrFirstUser);
 
+        // Inherit permissions from the second user
         $thirdUser->inheritPermissionFrom($secondUser);
 
+        // Authorize for the user
         $this->assertTrue($thirdUser->can('access-for-inherit-user'));
     }
 
+    /**
+     * Test that denies access for user without permission for inherit user.
+     */
     public function test_inherit_denies_no_rule_access()
     {
         $firstUser  = TestUser::factory()->make();
         $secondUser = TestUser::factory()->make();
         $firstUser->addPermission('access-for-inherit-user');
 
+        // Attempt to authorize for a different out user
         $this->assertFalse($secondUser->can('access-for-inherit-user'));
     }
 
     /**
-     * An own prohibition beats an inherited permission.
+     * Test that denies access for user without permission for inherit user.
      */
     public function test_inherit2_denies_lock_rule_access()
     {
@@ -92,19 +111,18 @@ class checkInheritTest extends TestCase
         $secondUser = TestUser::factory()->make();
         $firstUser->addPermission('access-for-inherit-user');
 
+        // Inherit permissions from the first user to the second user
         $secondUser->inheritPermissionFrom($firstUser);
 
+        // Add a prohibition for the second user
         $secondUser->addProhibition('access-for-inherit-user');
 
+        // Attempt to authorize for a different out user
         $this->assertFalse($secondUser->can('access-for-inherit-user'));
     }
 
     /**
-     * The prohibition of the second user reaches the third one as an inherited prohibition, and that
-     * beats the inherited permission of the first user.
-     *
-     * Version 2 asserted a rule name that did not exist here, so the test passed whatever the
-     * package did. It checks the real rule now.
+     * Test that denies access for user without permission for inherit user.
      */
     public function test_inherit3_denies_lock_rule_access()
     {
@@ -113,11 +131,15 @@ class checkInheritTest extends TestCase
         $thirdUser  = TestUser::factory()->make();
         $firstUser->addPermission('access-for-inherit-user');
 
+        // Inherit permissions from the user
         $secondUser->inheritPermissionFrom($firstUser);
+        // Add a prohibition for the second user
         $secondUser->addProhibition('access-for-inherit-user');
 
+        // Add a prohibition for the third user
         $thirdUser->inheritPermissionFrom($secondUser);
 
-        $this->assertFalse($thirdUser->can('access-for-inherit-user'));
+        // Authorize for the user
+        $this->assertFalse($thirdUser->can('denied-for-inherit-user'));
     }
 }

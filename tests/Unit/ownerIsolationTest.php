@@ -2,22 +2,19 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Database\Schema\Blueprint;
+use Tests\TestCase;
+use Tests\Fixtures\TestUser;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
-use Tests\Fixtures\TestUser;
-use Tests\TestCase;
+use Illuminate\Database\Schema\Blueprint;
+use Wnikk\LaravelAccessRules\Models\Owner;
 
 /**
- * Permissions of one owner never answer for another owner.
+ * Regression tests: permissions of one owner must never be served to another.
  *
- * Version 2.3 had this hole: the trait registered model listeners once per loaded model, and
- * loading a list of users re-pointed the permission service of the signed in user at the last
- * user of the list. Whoever came last in an admin table lent their permissions to the viewer.
- *
- * The mechanism is gone in version 3, where models hold nothing. The scenarios stay, because
- * they describe how the hole was reached from outside, and a future optimisation that starts
- * remembering something per model would reopen it the same way.
+ * Covers the leak where HasPermissions registered static model listeners
+ * on every model instance, so loading other users re-pointed the
+ * AccessRules instance of an already loaded user to a foreign owner.
  */
 class ownerIsolationTest extends TestCase
 {
@@ -28,10 +25,12 @@ class ownerIsolationTest extends TestCase
     protected $secretUser;
 
     /**
-     * Users are saved here, unlike in most tests. The leak needed models loaded from the database,
-     * and a model made in memory never fired the event it rode on.
+     * Set up the test environment.
+     *
+     * Unlike other tests, users are persisted: the leak only shows up
+     * when models are hydrated from the database ("retrieved" event).
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -54,31 +53,34 @@ class ownerIsolationTest extends TestCase
     }
 
     /**
-     * The list is ordered so that the user with the permission loads last: the leak always came
-     * from the last loaded model.
+     * Loading other users after the current one must not change its permissions.
      */
     public function test_permissions_do_not_leak_when_other_users_are_retrieved()
     {
         $user = TestUser::find($this->plainUser->id);
 
+        // e.g. admin page with a list of users, user with permission is hydrated last
         TestUser::orderBy('id')->get();
 
         $this->assertFalse($user->can('secret-rule'));
     }
 
     /**
-     * The mirror case. A leak can take permissions away as well as give them, and only the second
-     * kind gets reported by users.
+     * Loading other users must not take away permissions either.
      */
     public function test_permissions_are_kept_when_other_users_are_retrieved()
     {
         $user = TestUser::find($this->secretUser->id);
 
+        // user without permission is hydrated last
         TestUser::orderByDesc('id')->get();
 
         $this->assertTrue($user->can('secret-rule'));
     }
 
+    /**
+     * Every user of a hydrated collection is checked against its own owner.
+     */
     public function test_each_user_of_collection_has_own_permissions()
     {
         $users = TestUser::orderBy('id')->get()->keyBy('id');
@@ -88,8 +90,7 @@ class ownerIsolationTest extends TestCase
     }
 
     /**
-     * Counts listeners before and after loading models. Behaviour alone does not show this one:
-     * listeners that pile up answer correctly and get slower with every loaded model.
+     * Model listeners are registered once per class, not once per model instance.
      */
     public function test_model_listeners_do_not_accumulate()
     {
@@ -99,7 +100,6 @@ class ownerIsolationTest extends TestCase
             foreach (['retrieved', 'created', 'deleting'] as $event) {
                 $total += count($events->getListeners('eloquent.'.$event.': '.TestUser::class));
             }
-
             return $total;
         };
 
@@ -112,12 +112,15 @@ class ownerIsolationTest extends TestCase
         $this->assertSame($before, $count());
     }
 
+    /**
+     * A replica of a model is a new owner without permissions of its source.
+     */
     public function test_replicated_user_does_not_share_permissions()
     {
         $source = TestUser::find($this->secretUser->id);
         $this->assertTrue($source->can('secret-rule'));
 
-        $copy        = $source->replicate();
+        $copy = $source->replicate();
         $copy->email = 'copy@example.com';
         $copy->save();
 
@@ -127,15 +130,14 @@ class ownerIsolationTest extends TestCase
     }
 
     /**
-     * A clone copies every property of its source. Anything a model remembers about its owner
-     * travels with the clone and keeps pointing at the source after the key changes.
+     * A clone shares internals with its source, re-keyed clone must be checked as its own owner.
      */
     public function test_cloned_user_with_other_key_does_not_share_permissions()
     {
         $source = TestUser::find($this->secretUser->id);
         $this->assertTrue($source->can('secret-rule'));
 
-        $copy     = clone $source;
+        $copy = clone $source;
         $copy->id = $this->plainUser->id;
 
         $this->assertFalse($copy->can('secret-rule'));
@@ -143,25 +145,24 @@ class ownerIsolationTest extends TestCase
     }
 
     /**
-     * Cloned before any check, so nothing was bound yet. The first fix of 2.4.1 passed the test
-     * above and failed this one: the last assertion repeats a check after the source was checked.
+     * Same as above, but model is cloned before its permissions were ever checked.
      */
     public function test_user_cloned_before_first_check_does_not_share_permissions()
     {
         $source = TestUser::find($this->plainUser->id);
 
-        $copy     = clone $source;
+        $copy = clone $source;
         $copy->id = $this->secretUser->id;
 
         $this->assertTrue($copy->can('secret-rule'));
         $this->assertFalse($source->can('secret-rule'));
 
+        // check of source must not re-point access rules of its clone
         $this->assertTrue($copy->can('secret-rule'));
     }
 
     /**
-     * The entry point of version 2 selects an owner and can select another. Admin screens do it
-     * in a loop over owners.
+     * Switching owner of AccessRules instance must drop permissions loaded for previous owner.
      */
     public function test_set_owner_resets_loaded_permissions()
     {
@@ -174,9 +175,14 @@ class ownerIsolationTest extends TestCase
         $this->assertNull($acr->hasPermission('secret-rule'));
     }
 
+    /**
+     * Owner is still created together with the model and removed together with it.
+     */
     public function test_owner_is_created_and_deleted_with_model()
     {
         $user = TestUser::create(['name' => 'Temp', 'email' => 'temp@example.com']);
+        $type = $this->getAccessRules()->getTypeID(TestUser::class);
+
         $this->assertNotNull($this->getAccessRules()->setOwner(TestUser::class, $user->id)->getOwner());
 
         $user->delete();

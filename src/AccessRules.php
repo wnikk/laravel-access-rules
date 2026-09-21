@@ -6,14 +6,15 @@ namespace Wnikk\LaravelAccessRules;
 
 use BackedEnum;
 use Wnikk\LaravelAccessRules\Administration\OwnerAccess;
-use Wnikk\LaravelAccessRules\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Authorization\Permissions;
 use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Permissions;
+use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Models\RuleOrigin;
 
 /**
  * The entry point of version 2, kept so that code written for it runs unchanged.
@@ -35,7 +36,7 @@ use Wnikk\LaravelAccessRules\Storage\PermissionCache;
  * No logic lives here. Every method forwards to the manager or to the OwnerAccess of the
  * selected owner, so the two entry points cannot drift apart.
  */
-class AccessRules
+class AccessRules implements Contracts\AccessRules
 {
     private ?OwnerAccess $access = null;
 
@@ -44,9 +45,10 @@ class AccessRules
      * @param  string|null             $options   Laravel validation rules for the option, for example "required|in:1,2,3".
      * @param  string|null             $resource  Alias from config access.resources: the model that conditions of the rule talk about.
      * @param  string|Cond|array|null  $when      Condition for everybody who holds the rule.
+     * @param  RuleOrigin|string|null  $origin    Where the rule comes from, see RuleOrigin. Null means code.
      * @return int|false               Id of the rule.
      */
-    public static function newRule(string|BackedEnum|array $guardName, ?string $title = null, ?string $description = null, ?int $parentRuleID = null, ?string $options = null, ?string $resource = null, string|Cond|array|null $when = null): int|false
+    public static function newRule(string|BackedEnum|array $guardName, ?string $title = null, ?string $description = null, ?int $parentRuleID = null, ?string $options = null, ?string $resource = null, string|Cond|array|null $when = null, RuleOrigin|string|null $origin = null): int|false
     {
         if (is_array($guardName)) {
             return app(AccessManager::class)->newRule(
@@ -57,14 +59,16 @@ class AccessRules
                 $guardName['options'] ?? null,
                 $guardName['resource'] ?? null,
                 $guardName['when'] ?? null,
+                $guardName['origin'] ?? null,
             );
         }
 
-        return app(AccessManager::class)->newRule($guardName, $title, $description, $parentRuleID, $options, $resource, $when);
+        return app(AccessManager::class)->newRule($guardName, $title, $description, $parentRuleID, $options, $resource, $when, $origin);
     }
 
     /**
-     * Soft delete keeps permissions, so the rule can be restored with them; $force removes both for good.
+     * A rule that still has permissions is not deleted and the call throws RULE_IN_USE; $force deletes both.
+     * Version 2 soft deleted here. A migration that rolls a rule back says delRule('x', true).
      */
     public static function delRule(string|BackedEnum $guardName, bool $force = false): bool
     {
@@ -103,7 +107,7 @@ class AccessRules
      */
     public static function getLastDisallowPermission(): ?string
     {
-        return app(Explainer::class)->lastDenied;
+        return app(AccessManager::class)->lastDenied();
     }
 
     /**
@@ -117,11 +121,12 @@ class AccessRules
     }
 
     /**
-     * @internal The test base class of version 2 calls it before every test.
+     * @internal The test base class of version 2 calls it before every test. It forgets what a PHP process remembers between requests.
      */
     public static function resetCacheState(): void
     {
         PermissionCache::resetState();
+        Explainer::$watching = null;
     }
 
     /**

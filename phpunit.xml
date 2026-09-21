@@ -4,11 +4,16 @@
          colors="true"
          processIsolation="false"
          stopOnFailure="false"
-         defaultTestSuite="Unit Test Suite"
+         defaultTestSuite="Unit Test Suite,Feature"
 >
     <testsuites>
+        <!-- The suite inherited from version 2: proof that its API still works. -->
         <testsuite name="Unit Test Suite">
             <directory suffix=".php">tests/Unit</directory>
+        </testsuite>
+        <!-- What the documentation promises, tested from outside. See tests/Feature/FeatureTestCase.php. -->
+        <testsuite name="Feature">
+            <directory suffix="Test.php">tests/Feature</directory>
         </testsuite>
         <testsuite name="Bench">
             <directory suffix=".php">tests/Bench</directory>

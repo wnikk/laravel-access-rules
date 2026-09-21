@@ -33,4 +33,10 @@ class AccessRulesException extends LogicException
     public const OWNER_NOT_SELECTED = 7;
 
     public const INVALID_CONDITION = 8;
+
+    /** The rule still has permissions. Take them away first, or delete with $force to remove them too. */
+    public const RULE_IN_USE = 9;
+
+    /** The rule comes with code, see RuleOrigin. An admin panel may reword it and edit its options, nothing else. */
+    public const RULE_MANAGED_BY_CODE = 10;
 }

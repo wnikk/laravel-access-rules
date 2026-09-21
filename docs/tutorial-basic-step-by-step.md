@@ -16,6 +16,8 @@ Originally posted on: [https://dev.to/wnikk/how-use-access-control-rules-and-gru
 >   final example, and manage permissions from seeders or the `acr:*` console commands.
 > - Example 7 reaches attribute-based checks through a policy. In 3.x this is a condition of a permission,
 >   see the note in that example and [Conditions](conditions.md).
+>
+> **Part two** continues from here: [ABAC step by step](tutorial-abac-step-by-step.md), permissions that look at the data and filter lists.
 
 Download the sample code: [https://github.com/wnikk/-laravel-access-example](https://github.com/wnikk/-laravel-access-example)
 

@@ -63,29 +63,13 @@ return [
     'guest' => null,
 
     /*
-     * True: a prohibition ends the check. Laravel policies and Gate::define() are not asked,
-     * so nothing can permit what the package has prohibited.
-     *
-     * False: the behaviour of version 2, where a prohibition only removed the permission and a
-     * policy for the same ability could still say yes. Turn it off only if the project relies on that.
-     */
-    'deny_is_final' => true,
-
-    /*
-     * Message of the authorization error, ":ability" becomes the name that was checked.
-     * A bare "This action is unauthorized." in a log does not say which of ten checks on the
-     * page failed. Null keeps the message of Laravel, for projects that show it to end users.
-     */
-    'denial_message' => 'Action ":ability" is unauthorized.',
-
-    /*
-     * True: every refusal carries the explanation of its cause in the message of the 403, and every
-     * list narrowed by allowedTo() is written down, see Access::debugLog().
+     * True: every refusal is explained and every list narrowed by allowedTo() is written down, see
+     * Access::debugLog(). The mode only observes: it changes no decision and no message.
      *
      * Keep it false in production. An explanation shows rules of other owners, their conditions and
-     * values of attributes, far more than a stranger should learn from a 403. For a support session
-     * turn it on for one request instead: a middleware calls Access::debug() when an administrator
-     * who looks at the application as a user has ticked "debug".
+     * values of attributes. For a support session turn it on for one request instead: a middleware
+     * calls Access::debug() when an administrator who looks at the application as a user has ticked
+     * "debug", and the error page prints the last refusal from the log.
      *
      * Env var: ACCESS_RULES_DEBUG
      */
@@ -149,6 +133,19 @@ return [
      * Functions of values known before the query, limitFor(env.region), work everywhere.
      */
     'functions' => [],
+
+    'xacml' => [
+        /*
+         * Names of attributes in XACML documents, for "php artisan acr:xacml:export" and "acr:xacml:import":
+         *     'urn:example:order:total' => 'order.cost',
+         *     'urn:example:subject:department' => 'user.department_id',
+         *
+         * Without an entry the export names an attribute "urn:wnikk:access:resource:order:cost", which
+         * only this package recognises. A foreign document uses names of its own, and an attribute
+         * that is not listed here stops the import of the rule that reads it.
+         */
+        'attributes' => [],
+    ],
 
     /*
      * True: the package answers $user->can(), @can, the "can:" middleware and authorizeResource().

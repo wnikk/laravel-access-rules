@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Administration;
 
 use BackedEnum;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Wnikk\LaravelAccessRules\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Authorization\Explainer;
 use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-
-use function Illuminate\Support\enum_value;
+use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
+use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
 
 /**
  * Access of exactly one owner: what it is permitted, what it inherits, what it may do.
@@ -33,8 +34,8 @@ use function Illuminate\Support\enum_value;
 final class OwnerAccess
 {
     /**
-     * @param Model|null        $subject  Model of the owner when there is one. Conditions read "user." attributes from it; a role has none.
-     * @param string|false|null $createAs Name for the record created by the first change. False means the record has to exist, which is what console commands want.
+     * @param Model|null                $subject  Model of the owner when there is one. Conditions read "user." attributes from it; a role has none.
+     * @param Closure|string|false|null $createAs Name for the record created by the first change, or a closure that gives it. False means the record has to exist, which is what console commands want.
      */
     public function __construct(
         private readonly Owners $owners,
@@ -42,14 +43,19 @@ final class OwnerAccess
         public readonly int $type,
         public readonly string|int|null $id,
         private readonly ?Model $subject = null,
-        private readonly string|false|null $createAs = false,
+        private readonly Closure|string|false|null $createAs = false,
     ) {}
 
     /**
      * A copy that creates the record of the owner on the first change. Models use it: a user
      * that was never granted anything has no record, and "grant" must not fail on that.
      */
-    public function createdAs(?string $name): self
+    /**
+     * The name may come as a closure. A model works its name out of five attributes, and
+     * $user->hasPermission() goes through here on every call: read eagerly, the name cost 2.7 of
+     * the 3.9 microseconds of a check, for a value that only the first grant of a new owner uses.
+     */
+    public function createdAs(Closure|string|null $name): self
     {
         return new self($this->owners, $this->decisions, $this->type, $this->id, $this->subject, $name);
     }
@@ -61,7 +67,7 @@ final class OwnerAccess
 
     public function create(?string $name = null): OwnerContract
     {
-        return $this->owners->findOrCreate($this->type, $this->id, $name ?? ($this->createAs ?: null));
+        return $this->owners->findOrCreate($this->type, $this->id, $name ?? ($this->name() ?: null));
     }
 
     public function delete(): bool
@@ -77,7 +83,7 @@ final class OwnerAccess
      */
     public function allow(string|BackedEnum $ability, string|int|null $option = null, string|Cond|array|null $when = null): bool
     {
-        return $this->owners->grant($this->type, $this->id, enum_value($ability), self::option($option), true, $when, $this->createAs);
+        return $this->owners->grant($this->type, $this->id, self::ability($ability), self::option($option), true, $when, $this->name());
     }
 
     /**
@@ -89,17 +95,17 @@ final class OwnerAccess
      */
     public function deny(string|BackedEnum $ability, string|int|null $option = null, string|Cond|array|null $when = null): bool
     {
-        return $this->owners->grant($this->type, $this->id, enum_value($ability), self::option($option), false, $when, $this->createAs);
+        return $this->owners->grant($this->type, $this->id, self::ability($ability), self::option($option), false, $when, $this->name());
     }
 
     public function removeAllow(string|BackedEnum $ability, string|int|null $option = null): bool
     {
-        return $this->owners->revoke($this->type, $this->id, enum_value($ability), self::option($option), true);
+        return $this->owners->revoke($this->type, $this->id, self::ability($ability), self::option($option), true);
     }
 
     public function removeDeny(string|BackedEnum $ability, string|int|null $option = null): bool
     {
-        return $this->owners->revoke($this->type, $this->id, enum_value($ability), self::option($option), false);
+        return $this->owners->revoke($this->type, $this->id, self::ability($ability), self::option($option), false);
     }
 
     /**
@@ -114,7 +120,7 @@ final class OwnerAccess
     {
         [$parentType, $parentId] = $this->owners->address($type, $id);
 
-        return $this->owners->inherit($this->type, $this->id, $parentType, $parentId, $this->createAs);
+        return $this->owners->inherit($this->type, $this->id, $parentType, $parentId, $this->name());
     }
 
     public function stopInheritingFrom(mixed $type, string|int|null $id = null): bool
@@ -133,16 +139,16 @@ final class OwnerAccess
      */
     public function can(string|BackedEnum $ability, mixed $record = null): ?bool
     {
-        $decision = $this->decisions->decide($this->type, $this->id, $this->subject, enum_value($ability), Arr::wrap($record));
+        $decision = $this->decisions->decide($this->type, $this->id, $this->subject, self::ability($ability), Arr::wrap($record));
 
         // Refusals of direct checks are written down too, since many projects never go through
         // Gate. The container lookup sits behind the refusal, so a permitted check pays nothing.
         if ($decision !== true) {
             $explainer             = app(Explainer::class);
-            $explainer->lastDenied = enum_value($ability);
+            $explainer->lastDenied = self::ability($ability);
 
             if ($explainer->enabled()) {
-                $explainer->denied($this->type, $this->id, $this->subject, enum_value($ability), Arr::wrap($record));
+                $explainer->denied($this->type, $this->id, $this->subject, self::ability($ability), Arr::wrap($record));
             }
         }
 
@@ -161,7 +167,21 @@ final class OwnerAccess
      */
     public function explain(string|BackedEnum $ability, mixed $record = null): array
     {
-        return app(Explainer::class)->explain($this->type, $this->id, $this->subject, enum_value($ability), Arr::wrap($record));
+        return app(Explainer::class)->explain($this->type, $this->id, $this->subject, self::ability($ability), Arr::wrap($record));
+    }
+
+    private function name(): string|false|null
+    {
+        return $this->createAs instanceof Closure ? ($this->createAs)() : $this->createAs;
+    }
+
+    /**
+     * Laravel has enum_value() for this and marks it internal, so the package does not lean on it.
+     * Abilities are typed as string or backed enum, which leaves one case to handle.
+     */
+    private static function ability(string|BackedEnum $ability): string
+    {
+        return $ability instanceof BackedEnum ? $ability->value : $ability;
     }
 
     private static function option(string|int|null $option): ?string

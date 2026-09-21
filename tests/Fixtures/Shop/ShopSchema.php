@@ -72,6 +72,7 @@ class ShopSchema
         Schema::create('shop_order_product', function (Blueprint $t) {
             $t->integer('order_id');
             $t->integer('product_id');
+            $t->integer('quantity')->default(1);
         });
         Schema::create('shop_comments', function (Blueprint $t) {
             $t->increments('id');
@@ -125,7 +126,8 @@ class ShopSchema
             for ($i = 0; $i < $items; $i++) {
                 Item::create(['order_id' => $id, 'price' => 10 * ($i + 1)]);
             }
-            $order->products()->attach($products);
+            // Quantity is twice the id of the product: 2 of food, 4 of tools, 6 of weapon.
+            $order->products()->attach(collect($products)->mapWithKeys(fn ($id) => [$id => ['quantity' => $id * 2]])->all());
             foreach ($comments as [$kind, $author]) {
                 $order->comments()->create(['kind' => $kind, 'author_id' => $author]);
             }

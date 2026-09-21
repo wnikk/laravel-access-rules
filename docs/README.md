@@ -7,19 +7,21 @@ Everything goes through the standard Laravel Gate.
 - [Installation](installation.md)
 - [Basic usage](basic-usage.md): rules, permissions and prohibitions, roles and inheritance, options, the suffix `.self`, cache, console
 - [Conditions (ABAC)](conditions.md), new in 3.x: permissions with conditions, filtering of lists, trees, `acr:explain`, debug mode, `acr:lint`
+- [Performance](performance.md): why a check is cheap, measured numbers, comparison with other packages, what is expensive
+- [XACML 3.0](xacml.md), new in 3.x: export of permissions as a policy, import of policies with a report of what does not convert
 - [Upgrade from 2.x to 3.x](upgrade-2-to-3.md)
 - [Tutorial step by step](tutorial-basic-step-by-step.md): an application with seven ways to check access, written for 2.x
+- [Tutorial, part two: ABAC step by step](tutorial-abac-step-by-step.md), new in 3.x: seventeen short examples on six orders, from the first condition to XACML
 
 ## In short
 
 ```php
-use Wnikk\LaravelAccessRules\AccessRules;
 use Wnikk\LaravelAccessRules\Facades\Access;
 
 // a rule, a role that holds it, a user that inherits from the role
-AccessRules::newRule('news.edit', 'Edit news');
-AccessRules::newRule('news.publish', 'Publish news');
-AccessRules::newRule('news.delete', 'Delete news');
+Access::newRule('news.edit', 'Edit news');
+Access::newRule('news.publish', 'Publish news');
+Access::newRule('news.delete', 'Delete news');
 Access::for('Role', 'editor')->create('Editors');
 Access::for('Role', 'editor')->allow('news.edit');
 $user->inheritPermissionFrom('Role', 'editor');

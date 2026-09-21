@@ -8,7 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
-use Wnikk\LaravelAccessRules\Storage\HierarchyQuery;
+use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
 
 /**
  * Compares WITH RECURSIVE with the level by level loop on the database the suite points at.

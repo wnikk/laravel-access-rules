@@ -1,25 +1,25 @@
 <?php
-
 namespace Tests\Unit;
 
 use Illuminate\Support\Facades\Config;
-use LogicException;
-use Tests\Fixtures\TestUser;
 use Tests\TestCase;
+use Tests\Fixtures\TestUser;
+use LogicException;
 
 /**
- *     A rule can take an option, "rule.option", and the rule decides which options are valid.
+ * Unit tests for checking rule options in user permissions.
  *
- *     Options are the dynamic part that version 2 already had: one rule "edit section" and a permission
- *     per section id, without a rule per section.
- *
- *
- * The file comes from version 2 and its scenarios stay as they were written. It is part of the
- * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
+ * This class tests the functionality of access rules with options
+ * and ensures that users can only access rules with valid options.
  */
 class checkRuleOptionsTest extends TestCase
 {
-    protected function setUp(): void
+    /**
+     * Set up the test environment.
+     *
+     * Configures owner types, creates a test permission
+     */
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -36,44 +36,54 @@ class checkRuleOptionsTest extends TestCase
         );
     }
 
+    /**
+     * Create a user and a model instance for testing.
+     */
     public function test_gate_authorize_user_allows_access()
     {
         $user = TestUser::factory()->make();
         $user->addPermission('access-options-rule', 'option1');
 
+        // Authorize for the user
         $this->assertTrue($user->can('access-options-rule.option1'));
     }
 
     /**
-     * Expects LogicException, the class version 2 threw. The package throws AccessRulesException
-     * now, which extends it, and this test is what keeps that inheritance in place.
+     * Test that wrong option access for user without permission.
      */
     public function test_wrong_option_rule_access()
     {
         $user = TestUser::factory()->make();
 
         $this->expectException(LogicException::class);
+        // Invalid option
         $user->addPermission('access-options-rule', 'option4');
 
+        // If we reach here, the test failed
         $this->assertFalse(true, 'Expected LogicException was not thrown');
 
     }
 
+    /**
+     * Test that denies access for user without permission.
+     */
     public function test_authorize_user_denies_no_rule_access()
     {
         $user = TestUser::factory()->make();
 
+        // Attempt to authorize for a different out user
         $this->assertFalse($user->can('access-options-rule.option1'));
     }
 
     /**
-     * A permission for one option says nothing about another option of the same rule.
+     * Test that denies access for user with prohibition.
      */
     public function test_authorize_user_denies_other_rule_access()
     {
         $user = TestUser::factory()->make();
         $user->addPermission('access-options-rule', 'option2');
 
+        // Authorize for the user
         $this->assertFalse($user->can('access-options-rule.option1'));
     }
 }

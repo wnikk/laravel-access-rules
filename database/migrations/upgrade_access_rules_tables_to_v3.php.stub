@@ -1,12 +1,23 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 /**
- * Upgrade of tables created by version 2.x: only adds new nullable columns,
- * existing data stays valid as it is.
+ * Upgrade of tables created by version 2.x. New columns are added, existing rows stay valid.
+ *
+ * One thing of version 2 goes away: rules were soft deleted, version 3 deletes them for good.
+ * Rows that version 2 had soft deleted would come back to life when the column disappears,
+ * permissions included. They are renamed to "deprecated__<name>" instead: no code asks for
+ * such a name, so they stay as inert as they were, nothing is lost, and the original name is
+ * free again. Remove them from an admin panel or with "php artisan acr:delete" when convenient.
+ *
+ * Tables of version 2 also had no unique indexes, so an owner, a link or a permission could be
+ * stored twice. Version 3 creates tables with these indexes, and the upgrade adds them. Nothing
+ * is deleted to make room: which of two rows is the right one is a question about the project.
+ * When duplicates exist the migration lists them and stops before it has changed anything.
  */
 return new class extends Migration
 {
@@ -23,7 +34,16 @@ return new class extends Migration
 
     public function up()
     {
-        $tables = $this->tables();
+        $tables      = $this->tables();
+        $constrained = Schema::hasIndex($tables->owner, 'acr_owner_unique');
+
+        // First, and before any change: MySQL commits every ALTER TABLE at once, so a stop
+        // in the middle would leave tables half upgraded and the migration not repeatable.
+        if (! $constrained) {
+            $this->failOnDuplicates($tables->owner, ['type', 'original_id']);
+            $this->failOnDuplicates($tables->inheritance, ['owner_id', 'owner_parent_id']);
+            $this->failOnDuplicates($tables->permission, ['owner_id', 'rule_id', 'option', 'permission']);
+        }
 
         Schema::table($tables->rule, function (Blueprint $table) use ($tables) {
             if (!Schema::hasColumn($tables->rule, 'resource')) {
@@ -32,21 +52,134 @@ return new class extends Migration
             if (!Schema::hasColumn($tables->rule, 'condition')) {
                 $table->jsonb('condition')->nullable()->after('options');
             }
+            if (!Schema::hasColumn($tables->rule, 'origin')) {
+                // Every existing rule counts as coming with code: whether it was typed into the admin panel
+                // of version 2 cannot be told, and "cannot be deleted by a click" is the safe mistake.
+                $table->string('origin', 16)->default('code')->after('description');
+            }
         });
+
+        if (Schema::hasColumn($tables->rule, 'deleted_at')) {
+            $deprecated = DB::table($tables->rule)->whereNotNull('deleted_at')->get(['id', 'parent_id', 'guard_name']);
+
+            foreach ($deprecated as $rule) {
+                // Children move one level up, as they do when a rule is deleted. With config
+                // access.rule_tree_inheritance a permission for the dead parent would otherwise cover them.
+                DB::table($tables->rule)->where('parent_id', $rule->id)->update(['parent_id' => $rule->parent_id]);
+
+                // "custom", so an administrator can remove the leftovers without a migration.
+                DB::table($tables->rule)->where('id', $rule->id)->update(['guard_name' => 'deprecated__'.$rule->guard_name, 'origin' => 'custom']);
+            }
+
+            Schema::table($tables->rule, function (Blueprint $table) {
+                $table->dropColumn('deleted_at');
+            });
+        }
 
         Schema::table($tables->permission, function (Blueprint $table) use ($tables) {
             if (!Schema::hasColumn($tables->permission, 'condition')) {
                 $table->jsonb('condition')->nullable()->after('option');
             }
         });
+
+        if (! $constrained) {
+            $this->addConstraints($tables);
+        }
+    }
+
+    /**
+     * The same names as in the create migration, so both kinds of install end up with one schema.
+     */
+    protected function addConstraints(stdClass $tables): void
+    {
+        Schema::table($tables->owner, function (Blueprint $table) {
+            $table->unique(['type', 'original_id'], 'acr_owner_unique');
+        });
+
+        Schema::table($tables->inheritance, function (Blueprint $table) use ($tables) {
+            $table->unique(['owner_id', 'owner_parent_id'], 'acr_inheritance_unique');
+            $table->index('owner_parent_id', 'acr_inheritance_parent');
+
+            // SQLite cannot add a foreign key to an existing table. The package removes links
+            // of an owner by itself, the key only guards against changes made straight in the database.
+            if (DB::getDriverName() !== 'sqlite') {
+                $table->foreign('owner_parent_id', 'acr_inheritance_parent_fk')
+                    ->references('id')
+                    ->on($tables->owner)
+                    ->onDelete('cascade');
+            }
+        });
+
+        Schema::table($tables->permission, function (Blueprint $table) {
+            $table->unique(['owner_id', 'rule_id', 'option', 'permission'], 'acr_permission_unique');
+        });
+    }
+
+    protected function failOnDuplicates(string $table, array $columns): void
+    {
+        $duplicates = DB::table($table)
+            ->select($columns)
+            ->selectRaw('count(*) as duplicates')
+            ->groupBy($columns)
+            ->havingRaw('count(*) > 1')
+            ->limit(20)
+            ->get();
+
+        if ($duplicates->isNotEmpty()) {
+            throw new \Exception(
+                'Table "'.$table.'" has duplicates by ('.implode(', ', $columns).'), remove them and run the migration again: '
+                .$duplicates->toJson()
+            );
+        }
     }
 
     public function down()
     {
         $tables = $this->tables();
 
+        if (Schema::hasIndex($tables->owner, 'acr_owner_unique')) {
+            // MySQL keeps an index under every foreign key. It gave up its own index on owner_id when the unique
+            // ones, which start with that column, appeared, and it refuses to drop them until it gets one back.
+            $mysql = in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
+
+            Schema::table($tables->permission, function (Blueprint $table) use ($tables, $mysql) {
+                if ($mysql) {
+                    $table->index('owner_id', $tables->permission.'_owner_id_foreign');
+                }
+                $table->dropUnique('acr_permission_unique');
+            });
+
+            Schema::table($tables->inheritance, function (Blueprint $table) use ($tables, $mysql) {
+                if (DB::getDriverName() !== 'sqlite') {
+                    $table->dropForeign('acr_inheritance_parent_fk');
+                }
+                if ($mysql) {
+                    $table->index('owner_id', $tables->inheritance.'_owner_id_foreign');
+                }
+                $table->dropIndex('acr_inheritance_parent');
+                $table->dropUnique('acr_inheritance_unique');
+            });
+
+            Schema::table($tables->owner, function (Blueprint $table) {
+                $table->dropUnique('acr_owner_unique');
+            });
+        }
+
+        // Back to version 2: renamed rules become soft deleted ones again. Their place in the tree is not restored.
         Schema::table($tables->rule, function (Blueprint $table) {
-            $table->dropColumn(['resource', 'condition']);
+            $table->softDeletes();
+        });
+
+        // Filtered in PHP: "_" is a wildcard of LIKE, and escaping it is spelled differently on every server.
+        foreach (DB::table($tables->rule)->where('guard_name', 'like', 'deprecated%')->get(['id', 'guard_name']) as $rule) {
+            if (! str_starts_with($rule->guard_name, 'deprecated__')) {
+                continue;
+            }
+            DB::table($tables->rule)->where('id', $rule->id)->update(['guard_name' => substr($rule->guard_name, strlen('deprecated__')), 'deleted_at' => now()]);
+        }
+
+        Schema::table($tables->rule, function (Blueprint $table) {
+            $table->dropColumn(['resource', 'condition', 'origin']);
         });
 
         Schema::table($tables->permission, function (Blueprint $table) {

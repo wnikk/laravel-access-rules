@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Return name of tables
      *
-     * @return stdClass{role:string, Permission:string, owners:string, inheritance:string}
+     * @return object{owner:string, inheritance:string, rule:string, permission:string}
      */
     protected function getTableNames(): stdClass
     {
@@ -71,8 +71,9 @@ return new class extends Migration
             $table->jsonb('condition')->nullable();
             $table->string('title', 128)->nullable();
             $table->string('description', 255)->nullable();
+            // Where the rule comes from: code, custom, import. See Wnikk\LaravelAccessRules\Models\RuleOrigin.
+            $table->string('origin', 16)->default('code');
             $table->timestamp('created_at');
-            $table->softDeletes();
         });
         Schema::create($tableNames->permission, function (Blueprint $table) use ($tableNames) {
             $table->increments('id');
@@ -107,9 +108,10 @@ return new class extends Migration
     {
         $tableNames = $this->getTableNames();
 
-        Schema::drop($tableNames->owner);
+        // Tables that hold foreign keys go first: PostgreSQL and MySQL refuse to drop a table others point at.
+        Schema::drop($tableNames->permission);
         Schema::drop($tableNames->inheritance);
         Schema::drop($tableNames->rule);
-        Schema::drop($tableNames->permission);
+        Schema::drop($tableNames->owner);
     }
 };

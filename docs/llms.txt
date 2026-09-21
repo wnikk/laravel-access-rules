@@ -1,0 +1,38 @@
+# Laravel Access Rules (wnikk/laravel-access-rules), version 3
+
+> Authorization for Laravel 13+ / PHP 8.4+: roles with unlimited inheritance (RBAC) and permissions that depend on data (ABAC), through the standard Laravel Gate. One line of text is both the check of one record and the WHERE clause of a list, so a list never shows a record that the detail page refuses. After the first check of a request a check costs a few microseconds and no queries.
+
+The model (a separate owner with dynamic binding, unlimited inheritance, hybrid rules and options) has been in production since 2013, on Zend Framework, then Yii2, and since 2023 as this Laravel package. Design goal from the start: as few classes as possible, the most access control for the least code on the path of a check.
+
+Install: `composer require wnikk/laravel-access-rules`, publish, migrate, add the trait `HasPermissions` to the User model and `HasAccessScope` to models whose lists are filtered.
+
+```php
+Access::newRule('orders.view', 'View orders', resource: 'order');
+Access::for('Role', 'manager')->allow('orders.view', when: 'order.cost > 100 && order.items.count < 3');
+$user->inheritPermissionFrom('Role', 'manager');
+
+$user->can('orders.view', $order);             // one record, in memory
+Order::allowedTo('orders.view')->paginate();   // the list, filtered by the database in the same query
+```
+
+Choose it when access depends on data of the record, its relations or aggregates; when lists must be filtered by the same rules; when roles inherit from roles to any depth; when prohibitions are needed on top of roles; when owners of permissions are not only users. Choose a plain role package when access is a fixed list of role names and nothing depends on data.
+
+Version 2 (PHP 7.4 - 8.4, Laravel 8 - 13) is RBAC only and is documented in the same repository history; everything below describes version 3. Tables and the public API of version 2 stay compatible.
+
+## Documentation
+
+- [Installation](installation.md): requirements, publishing, config `owner_types`, traits
+- [Basic usage](basic-usage.md): rules and their origin, permissions and prohibitions, roles and inheritance, the five-step priority, options, the suffix `.self`, guests, cache, events, console commands
+- [Conditions (ABAC)](conditions.md): the whole language on one page, list filtering, NULL as in SQL, numbers and text, trees, pivot columns, three ways to ask (record, class, nothing), `acr:explain`, debug mode, `acr:lint`
+- [Performance](performance.md): why a check is cheap, measured numbers, comparison with other packages, what is expensive
+- [XACML 3.0](xacml.md): export as a standard policy, import with a plan of changes, what does not convert
+- [Upgrade from 2.x to 3.x](upgrade-2-to-3.md)
+
+## Tutorials
+
+- [ABAC step by step](tutorial-abac-step-by-step.md): seventeen short examples on six orders, from the first condition to XACML; every result is shown
+- [RBAC step by step](tutorial-basic-step-by-step.md): roles, options, `.self`, policies; written for version 2, works on 3
+
+## For coding agents inside an application
+
+The package ships Laravel Boost guidelines and a skill (`resources/boost/`), installed by `php artisan boost:install`. The rules they teach: check through Gate; express data-dependent access as a condition, not as a Policy plus a hand-written query; filter lists with `allowedTo()`, never with `can()` in a loop; create rules in migrations; list models in config `access.resources`.

@@ -1,78 +1,53 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
-use Wnikk\LaravelAccessRules\AccessRules;
 use App\Models\User;
+use Illuminate\Database\Migrations\Migration;
+use Wnikk\LaravelAccessRules\Facades\Access;
 
+/**
+ * An example to start from: two rules, the role "RootAdmin" that holds them, and the first user
+ * of the application as a member of that role. Edit it to the rules of your project before "migrate".
+ *
+ * It expects "Role" and App\Models\User in "owner_types" of config/access.php,
+ * and the trait Wnikk\LaravelAccessRules\Traits\HasPermissions on the User model.
+ */
 return new class extends Migration
 {
     /**
-     * Add rules to AccessRules instance.
-     *
-     * @param AccessRules $acr
-     * @return int|false
+     * Rules are the things that can be permitted. A rule is created once, in a migration.
      */
-    protected function addRules(AccessRules $acr)
+    protected function addRules(): void
     {
-        /**
-         * Add rule
-         */
-        $ruleId = $acr->newRule(
+        Access::newRule(
             'Test.rule',
             'Test rule for first user',
             'This is a test rule for first user with validation',
-            null, // Parent rule ID, if any
-            'nullable|string|in:test,example,demo' // Options for validation
+            options: 'nullable|string|in:test,example,demo' // A permission may name one of these options
         );
-        return $ruleId;
     }
 
     /**
-     * Add owner to AccessRules instance and set her.
-     *
-     * @param AccessRules $root
+     * A role is an owner of permissions like a user is, only without a model behind it.
      */
-    protected function addRoleAdmin(AccessRules $root)
+    protected function addRoleAdmin(): void
     {
-        /**
-         * Check config/access.php of type available "Role" in owner_types list
-         * @throw LogicException
-         */
-        $typeName = 'Role';
-        $typeId   = $root->getTypeID($typeName);
+        Access::for('Role', 'RootAdmin')->create('RootAdmin role');
 
-        /**
-         * Make default role
-         */
-        $root->newOwner(
-            $typeName,       // This is type, it is used to identify the owner
-            'RootAdmin', // This is original_id, it is used to identify the owner
-            'RootAdmin role' // This is description, it is used to describe the owner
-        );
-        // Set owner for existing role/group/user or other type from config/access.php
-        //$root->setOwner($typeName, 'RootAdmin');
-        //$root->setOwner('Role', '00000000-0000-0000-0000-000000000000');
-        //$root->setOwner('Group', 123);
-        //$root->setOwner('Group', '23f45e89-8b5a-5c55-9df7-240d78a3ce15');
-        //$root->setOwner(User::class, 1);
+        // Other owners are addressed the same way, the type comes from "owner_types":
+        //Access::for('Group', 123)->create('Editors');
+        //Access::for('Group', '23f45e89-8b5a-5c55-9df7-240d78a3ce15')->create('Partners');
+        //Access::for($user);   // a model, its owner is created on the first permission
     }
 
-    /**
-     * Add permission to AccessRules instance of admin role.
-     *
-     * @param AccessRules $root
-     */
-    protected function addPermToAdmin(AccessRules $root)
+    protected function addPermToAdmin(): void
     {
-        /**
-         * Add permission for this rule to owner (group, role or user)
-         */
-        // This will add permission without options, because rule has nullable validation
-        $root->addPermission('Test.rule');
-        $root->addPermission('Test.rule', 'test');
-        $root->addPermission('Test.rule', 'demo');
-        $root->addPermission('Test.rule', 'example');
+        $root = Access::for('Role', 'RootAdmin');
+
+        // Without an option, because the rule lets it be empty, and then one by one with options
+        $root->allow('Test.rule');
+        $root->allow('Test.rule', 'test');
+        $root->allow('Test.rule', 'demo');
+        $root->allow('Test.rule', 'example');
     }
 
     /**
@@ -82,33 +57,33 @@ return new class extends Migration
      *     'resources' => ['order' => App\Models\Order::class, 'item' => App\Models\OrderItem::class],
      * and add the trait Wnikk\LaravelAccessRules\Traits\HasAccessScope to the model to filter lists.
      * The examples below are commented out, because models of your application are not known here.
-     *
-     * @param AccessRules $root
      */
-    protected function addConditionalPermissions(AccessRules $root)
+    protected function addConditionalPermissions(): void
     {
+        $root = Access::for('Role', 'RootAdmin');
+
         /**
          * A condition that is only about the user or the environment needs no record and no model
          */
-        $root->newRule('Test.worktime', 'Test rule that works on working days only');
-        $root->addPermission('Test.worktime', when: 'env.weekday in [1, 2, 3, 4, 5]');
+        Access::newRule('Test.worktime', 'Test rule that works on working days only');
+        $root->allow('Test.worktime', when: 'env.weekday in [1, 2, 3, 4, 5]');
 
         /**
          * The rule is about orders: "order." in conditions is the record that is checked
          */
-        //$root->newRule('orders.view', 'View orders', resource: 'order');
-        //$root->newRule('orders.update', 'Update orders', resource: 'order');
+        //Access::newRule('orders.view', 'View orders', resource: 'order');
+        //Access::newRule('orders.update', 'Update orders', resource: 'order');
 
         // columns of the record, number of related records
-        //$root->addPermission('orders.view', when: 'order.cost > 100 && order.items.count < 3');
+        //$root->allow('orders.view', when: 'order.cost > 100 && order.items.count < 3');
 
         // the record against the user, a related record, state of the record
-        //$root->addPermission('orders.update', when: "order.department_id == user.department_id && order.status in ['draft', 'review']");
-        //$root->addPermission('orders.update', when: 'order.client.manager_id == user.id');
+        //$root->allow('orders.update', when: "order.department_id == user.department_id && order.status in ['draft', 'review']");
+        //$root->allow('orders.update', when: 'order.client.manager_id == user.id');
 
         // an aggregate with a filter: clients with turnover of the last month above 1000
-        //$root->newRule('clients.view', 'View clients', resource: 'client');
-        //$root->addPermission('clients.view', when: 'sum(client.payments.amount, paid_at >= monthStart(-1) && paid_at < monthStart(0)) > 1000');
+        //Access::newRule('clients.view', 'View clients', resource: 'client');
+        //$root->allow('clients.view', when: 'sum(client.payments.amount, paid_at >= monthStart(-1) && paid_at < monthStart(0)) > 1000');
 
         // a prohibition for one owner on top of what it inherits from a role
         //$user->addProhibition('clients.view', when: "client.city == 'Y'");
@@ -122,27 +97,23 @@ return new class extends Migration
     }
 
     /**
-     * Add inheritance from admin role to first user.
-     *
-     * @param AccessRules $root
+     * @return (User&\Wnikk\LaravelAccessRules\Traits\HasPermissions)|null
      */
-    protected function addInheritFromAdmin(AccessRules $root)
+    protected function firstUser(): ?User
     {
-        /**
-         * The user class should already have trait added.
-         *
-         * @var Illuminate\Database\Eloquent\Model & Wnikk\LaravelAccessRules\Traits\HasPermissions $user
-         */
-        $user = User::orderBy('id')
-            ->limit(1)
-            ->first();
-        $user->inheritPermissionFrom($root);
-        // Or add permission to user directly
-        //$user->addPermission('Test.rule', 'test');
-        //$user->addPermission('Test.rule', 'demo');
-        //$user->addPermission('Test.rule', 'example');
-        //$user->addPermission('Test.rule');
+        return User::orderBy('id')->first();
+    }
 
+    /**
+     * The first user gets everything the role has, now and later.
+     */
+    protected function addInheritFromAdmin(): void
+    {
+        $this->firstUser()?->inheritPermissionFrom('Role', 'RootAdmin');
+
+        // Or permissions of the user itself, next to the role or instead of it
+        //$user->addPermission('Test.rule');
+        //$user->addPermission('Test.rule', 'test');
     }
 
     /**
@@ -152,15 +123,14 @@ return new class extends Migration
      */
     public function up()
     {
-        $acr = new AccessRules;
-
-        $this->addRules($acr);
-        $this->addRoleAdmin($acr);
-        $this->addPermToAdmin($acr);
-        $this->addConditionalPermissions($acr);
-        $this->addInheritFromAdmin($acr);
-
-        // Nothing to do about cache: it follows every change by itself
+        // Cached permissions are reset once, after all changes, and not after every line
+        Access::batch(function () {
+            $this->addRules();
+            $this->addRoleAdmin();
+            $this->addPermToAdmin();
+            $this->addConditionalPermissions();
+            $this->addInheritFromAdmin();
+        });
     }
 
     /**
@@ -170,20 +140,14 @@ return new class extends Migration
      */
     public function down()
     {
-        $root = new AccessRules;
-        $type = $root->getTypeID('Role');
-        $root->setOwner('Role', 'RootAdmin');
+        Access::batch(function () {
+            $this->firstUser()?->remInheritFrom('Role', 'RootAdmin');
 
-        $user = User::orderBy('id')
-            ->limit(1)
-            ->first();
-        $user->remInheritFrom($root);
+            // "true": the role holds these rules, and a rule somebody holds is not deleted without it
+            Access::delRule('Test.rule', true);
+            Access::delRule('Test.worktime', true);
 
-        $root->delRule('Test.rule', true);
-
-        DB::table(config('access.table_names.owner'))
-            ->where('type', $type)
-            ->where('original_id', 'RootAdmin')
-            ->delete();
+            Access::for('Role', 'RootAdmin')->delete();
+        });
     }
 };

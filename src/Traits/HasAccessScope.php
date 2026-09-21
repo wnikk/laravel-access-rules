@@ -8,13 +8,11 @@ use BackedEnum;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Wnikk\LaravelAccessRules\Administration\Owners;
-use Wnikk\LaravelAccessRules\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Authorization\GateHook;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
-
-use function Illuminate\Support\enum_value;
+use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
+use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Internal\Authorization\GateHook;
 
 /**
  * Adds allowedTo() to models that permissions with conditions are about.
@@ -52,11 +50,12 @@ trait HasAccessScope
             return;
         }
 
-        $applied = app(DecisionPoint::class)->constrain($query, $address[0], $address[1], $owner instanceof Model ? $owner : null, enum_value($ability));
+        $ability = $ability instanceof BackedEnum ? $ability->value : $ability;
+        $applied = app(DecisionPoint::class)->constrain($query, $address[0], $address[1], $owner instanceof Model ? $owner : null, $ability);
 
         // A query runs right after this, so one more container lookup is nothing next to it.
         if (app(Explainer::class)->enabled()) {
-            app(Explainer::class)->listed($address[0], $address[1], enum_value($ability), $query->getModel()::class, $applied);
+            app(Explainer::class)->listed($address[0], $address[1], $ability, $query->getModel()::class, $applied);
         }
     }
 }

@@ -1,23 +1,26 @@
 <?php
-
 namespace Tests\Unit;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
-use Tests\Fixtures\TestUser;
+use Illuminate\Auth\Access\AuthorizationException;
 use Tests\TestCase;
+use Tests\Fixtures\TestUser;
 
 /**
- *     Gate::authorize() of Laravel asks the package, without a policy class and without Gate::define().
+ * Unit tests for Gate::authorize with access rules.
  *
- *
- * The file comes from version 2 and its scenarios stay as they were written. It is part of the
- * compatibility contract: when a test here needs a change, docs/upgrade-2-to-3.md needs a line as well.
+ * Ensures that authorization via Gate works correctly
+ * for users with and without the required permission.
  */
 class gateAuthorizeTest extends TestCase
 {
-    protected function setUp(): void
+    /**
+     * Set up the test environment.
+     *
+     * Configures owner types and creates a test permission.
+     */
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -31,6 +34,12 @@ class gateAuthorizeTest extends TestCase
         );
     }
 
+    /**
+     * Test that a user with the required permission
+     * is authorized by the gate.
+     *
+     * @return void
+     */
     public function test_gate_authorize_allows_access()
     {
         $user = TestUser::factory()->make();
@@ -38,10 +47,18 @@ class gateAuthorizeTest extends TestCase
 
         $this->be($user);
 
+        // Should not throw an exception
         Gate::authorize('view-gate-authorize');
+        // Explicitly assert success
         $this->assertTrue(true);
     }
 
+    /**
+     * Test that a user without the required permission
+     * is denied by the gate and an exception is thrown.
+     *
+     * @return void
+     */
     public function test_gate_authorize_denies_access()
     {
         $user = TestUser::factory()->make();
@@ -50,6 +67,7 @@ class gateAuthorizeTest extends TestCase
 
         $this->expectException(AuthorizationException::class);
         Gate::authorize('view-gate-authorize');
+        // If we reach here, the test failed
         $this->assertFalse(true, 'Expected AuthorizationException was not thrown');
     }
 }

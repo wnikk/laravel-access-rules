@@ -57,7 +57,7 @@ trait HasPermissions
      */
     public function access(): OwnerAccess
     {
-        return app(AccessManager::class)->for($this)->createdAs($this->accessOwnerName());
+        return app(AccessManager::class)->for($this)->createdAs(fn () => $this->accessOwnerName());
     }
 
     public function getOwner(): OwnerContract

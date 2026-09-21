@@ -7,9 +7,9 @@ namespace Wnikk\LaravelAccessRules\Commands;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Wnikk\LaravelAccessRules\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Conditions\ResourceRegistry;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
+use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
 
 /**
  * "Why can't Ann see order 17", answered from the console:

@@ -12,7 +12,8 @@ class AccessRuleCreate extends AccessCommand
 {
     protected $signature = 'acr:create {rule} {title?} {options?} {description?} {parent_id?}
         {--resource= : Alias of the entity from config access.resources the rule is about}
-        {--when= : Condition valid for everybody who has the rule}';
+        {--when= : Condition valid for everybody who has the rule}
+        {--origin=code : "code" for a rule that code checks by name, "custom" for one that an admin panel may rename and delete}';
 
     protected $description = 'Access rules and inheritance: create new rule';
 
@@ -26,6 +27,7 @@ class AccessRuleCreate extends AccessCommand
             'parent_id'   => $this->argument('parent_id'),
             'resource'    => $this->option('resource'),
             'when'        => $this->option('when'),
+            'origin'      => $this->option('origin'),
         ]);
 
         if (! $id) {
