@@ -183,6 +183,12 @@ class ShowcaseTagTreeTest extends FeatureTestCase
      */
     public function test_relations_of_laravel_adjacency_list_work_in_conditions(): void
     {
+        // MariaDB cannot look from a CTE at the query around it (MDEV-19077), and that package says so about
+        // its whereHas('descendants'). Nothing of this package is involved: below() and above() pass there.
+        if (DB::getDriverName() === 'mariadb') {
+            $this->markTestSkipped('MariaDB does not support correlated CTEs in subqueries, MDEV-19077.');
+        }
+
         Config::set('access.resources', [
             'product' => Product::class, 'comment' => Comment::class, 'like' => Like::class,
             // The relation methods of that package declare no return types, so they are listed by name.

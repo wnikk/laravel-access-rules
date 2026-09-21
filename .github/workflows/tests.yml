@@ -15,11 +15,10 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.4']
-        db: [sqlite, pgsql]
+        db: [sqlite, pgsql, mysql]
         include:
-          # MySQL is verified locally on 9.7, MariaDB is not. They run and report, and do not turn the badge red
-          # until they have passed here once; then move them into "db" above.
-          - { php: '8.4', db: mysql, experimental: true }
+          # No MariaDB to verify on locally. It runs and reports, and does not turn the badge red
+          # until it has passed here once; then move it into "db" above.
           - { php: '8.4', db: mariadb, experimental: true }
 
     continue-on-error: ${{ matrix.experimental == true }}

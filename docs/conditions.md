@@ -158,6 +158,8 @@ An application that uses [staudenmeir/laravel-adjacency-list](https://github.com
 its relations as they are, `exists(product.tags, exists(ancestors, name == 'sale'))`. Their methods declare no return types,
 so list them: `'tag' => ['model' => Tag::class, 'relations' => ['ancestors', 'descendants']]`. The tree is then walked by
 the database for every row, and cycles in data need `enableCycleDetection()` of that package; `below()` walks it once and is safe with cycles.
+On **MariaDB** such relations cannot be used in a condition: the server does not support a recursive query that looks at
+the query around it ([MDEV-19077](https://jira.mariadb.org/browse/MDEV-19077)). `below()` and `above()` work there as everywhere.
 
 Without the functions a tree can be handled by a fixed depth, `parent.name == 'sale' || parent.parent.name == 'sale'`,
 or by a closure table and a nested `exists(product.tags, exists(ancestors, name == 'sale'))`.
