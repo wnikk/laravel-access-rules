@@ -326,7 +326,7 @@ final class PermissionCache
         }
 
         // One line per process. A store that is down fails on every check, and a log line per
-        // check would bury the first one, which is the only one that carries news.
+        // check would bury the first one, and the rest repeat it.
         if (! self::$warningLogged) {
             self::$warningLogged = true;
             try {

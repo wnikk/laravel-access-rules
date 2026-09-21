@@ -13,14 +13,13 @@ $user->addPermission('orders.view');                                            
 $user->addPermission('orders.export', when: 'order.cost > 100 && order.items.count < 3'); // ABAC: depends on the record
 ```
 
-A check costs **4 µs and no queries** after the first one of a request, and a list is filtered by the database in the
-same query that loads it. Speed and flexibility have been the design goals since version 1.
+A check costs **4 µs and no queries** after the first one of a request, and the database filters a list in the
+same query that loads it.
 
-**Background.** The model behind this package, a separate *owner* with dynamic binding, unlimited inheritance,
-hybrid rules and options, has been in production since 2013: first on Zend Framework, then on Yii2, and since 2023
-as this Laravel package. The Laravel version was written against the grain of heavyweight access-control frameworks:
-as few classes as possible, leaning on what Laravel already gives, to get the most RBAC, and now ABAC, for the least
-code on the path of a check.
+**Background.** The model of this package has run in production since 2013: first on Zend Framework, then on Yii2,
+since 2023 as this Laravel package. Its parts are a separate *owner* with dynamic binding, inheritance of any depth,
+hybrid rules and options. The Laravel version keeps the number of classes low and uses what Laravel already has,
+so a check passes through little code.
 
 ## Contents
 
@@ -41,7 +40,7 @@ code on the path of a check.
 - **Conditions (ABAC)**: a permission or a prohibition can depend on the record, its relations of any kind
   and their aggregates, on the user and on the environment.
 - **Filtering of lists** by the same conditions, in the same query: `Order::query()->allowedTo('orders.view')`.
-  A list and a detail page cannot disagree, both read one condition.
+  A list and a detail page read one condition, so they agree.
 - **A language for conditions**: arithmetic, `between`, exact text functions, aggregates with filters over any relation,
   columns of pivot tables, time functions, and trees: "this category and everything under it".
 - **Safe to edit in an admin panel**: a condition is checked when it is saved, reads only models listed
@@ -51,9 +50,9 @@ code on the path of a check.
 - **`acr:explain`** tells why a check answers what it answers, **`acr:lint`** finds stored conditions
   that a migration or a refactoring has broken.
 - **Debug mode** for support sessions: `Access::debug()` explains every refusal and records what narrowed every
-  `allowedTo()` list. It only observes and changes no decision.
+  `allowedTo()` list. It observes; decisions stay as they are.
 - **XACML 3.0**: export of permissions as a standard policy, import of policies with a plan of what would change.
-  No XACML engine on the path of a check.
+  A check runs no XACML engine.
 - Guests, tenants, abilities as enums, the `Access` facade, rules of code and rules of an admin panel,
   event `AccessChanged` for an audit log.
 - Guidelines and a skill for AI coding agents through Laravel Boost.
@@ -200,8 +199,8 @@ Choose it when:
 - owners of permissions are **not only users**: roles, groups, teams, API clients, records of another system;
 - every request makes **many checks**: menus, tables with buttons per row, API resources;
 - an administrator edits access **at run time** and must not be able to break the application with a typo;
-- somebody will ask **"why can't I see it?"** and the answer has to be found in a minute;
-- policies have to be handed to an auditor or another system as **XACML**.
+- a user asks **"why can't I see it?"** and you need the answer in a minute;
+- you hand policies to an auditor or another system as **XACML**.
 
 Look elsewhere when:
 
@@ -235,16 +234,15 @@ Measured on one machine with the same data (MySQL, 2 000 abilities, the user hol
 
 Versions, the method, a smaller data set and what these numbers do not say are in [Performance](docs/performance.md).
 
-If you also need authentication, API tokens or social login, those are other packages: this one decides
-what a user may do, not who the user is.
+Authentication, API tokens and social login belong to other packages. This one decides what a signed-in user may do.
 
 ## For AI coding agents
 
 The package ships [Laravel Boost](https://laravel.com/docs/boost) guidelines and a skill in `resources/boost/`;
 `php artisan boost:install` adds them to `CLAUDE.md` / `AGENTS.md` of your application. [docs/llms.txt](docs/llms.txt)
 is a map of the documentation, and [AGENTS.md](AGENTS.md) is for agents that work on the package itself.
-The short version: check through Gate, express data-dependent access as a condition and not as a policy plus
-a hand-written query, filter lists with `allowedTo()`, create rules in migrations.
+They tell an agent to check through Gate, to write data-dependent access as a condition instead of a policy plus
+a hand-written query, to filter lists with `allowedTo()` and to create rules in migrations.
 
 ## Opening an Issue
 

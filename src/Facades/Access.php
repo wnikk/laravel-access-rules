@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Facade;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 
 /**
- * Static door to Contracts\AccessManager.
+ * Static access to Contracts\AccessManager.
  *
  * It is called Access, not AccessRules: the class AccessRules of version 2 lives in the root
  * namespace, and two imports with one short name in a seeder would force an alias on every user.

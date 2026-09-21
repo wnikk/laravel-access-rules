@@ -15,14 +15,13 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
 /**
  * Turns a condition into a fragment of WHERE, so a list is filtered by the database.
  *
- * It is the second reader of the condition tree, next to Evaluator, and the two must never
- * disagree: a list that shows a record the detail page refuses is the failure this whole
- * layer exists to prevent. The test suite runs every scenario through both and compares.
+ * It is the second reader of the condition tree, next to Evaluator, and the two must
+ * agree: a list must not show a record that the detail page refuses. The test suite runs every scenario through both and compares.
  * DecisionPoint::constrain() is the caller.
  *
  * Three choices keep the two readers in step:
  *   A relation to one record becomes a scalar subquery, not EXISTS. For a record without
- *   the related row the subquery gives NULL, "unknown", exactly what the evaluator sees.
+ *   the related row the subquery gives NULL, "unknown", which is what the evaluator sees.
  *   whereHas() gives false there, and its negation gives true.
  *   Aggregates are built by the relation objects themselves, the way has() and withCount()
  *   do it. Keys, pivot tables, morph types, soft deletes and global scopes of related models
@@ -379,7 +378,7 @@ final class SqlCompiler
      * and costs the same 0.5 s for a page and for the whole list, because LIMIT does not pass
      * through GROUP BY. It also loses parents with no related rows, so "count < 3" needs a
      * different query than "count > 10". The correlated form is kept: lists are read by pages.
-     * A counter column on the parent model makes the question disappear, since it is an
+     * A counter column on the parent model avoids the subquery, since it is an
      * ordinary attribute for a condition.
      */
     private static function aggregate(Builder $parent, array $node, Context $context): array

@@ -43,7 +43,7 @@ trait HasAccessScope
             ? app(GateHook::class)->owner(null)
             : ($owner instanceof Model ? app(Owners::class)->addressOfModel($owner) : app(Owners::class)->address($owner));
 
-        // Nobody to check as: an empty list, not an unfiltered one.
+        // No owner to check as: the list is empty. An unfiltered list would show every record.
         if ($address === null) {
             $query->whereRaw('0 = 1');
 

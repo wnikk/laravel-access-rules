@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Contracts;
 
 /**
- * The entry point of version 2, kept as an empty shell so that code which names it breaks
- * loudly and in the right place.
+ * The entry point of version 2, kept as an empty shell so that code which names it still loads.
  *
  * Version 2 described here an object with state: choose an owner, then act on it. Version 3
  * replaced it with Contracts\AccessManager, which keeps nothing between calls. The interface

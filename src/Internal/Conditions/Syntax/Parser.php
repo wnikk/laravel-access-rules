@@ -100,7 +100,7 @@ final class Parser
 
     /**
      * Comparisons do not chain: "a < b < c" stops after "a < b" and parse() reports the rest.
-     * A chained comparison means something else in every language, and guessing is worse than refusing.
+     * A chained comparison means something else in every language, so the parser refuses instead of guessing.
      */
     private function expr(int $minPrec): array
     {

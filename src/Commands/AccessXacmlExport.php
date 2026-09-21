@@ -10,7 +10,7 @@ use Wnikk\LaravelAccessRules\Xacml\Xacml;
 
 /**
  * Extends Command and not AccessCommand: that base class exists for commands that address one
- * owner by type and id, and an export addresses everybody. All the work is in Xacml\Xacml, which
+ * owner by type and id, and an export covers all owners. All the work is in Xacml\Xacml, which
  * a controller calls the same way.
  */
 #[AsCommand(name: 'acr:xacml:export')]

@@ -24,7 +24,7 @@ use ReflectionNamedType;
  *
  * The list of models comes from config access.resources and is a whitelist: a relation that
  * leads to a model outside of the list is refused, so a condition on orders cannot read
- * salaries through a chain of relations nobody thought about.
+ * salaries through a chain of relations the project did not list.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
  */
@@ -114,8 +114,8 @@ final class ResourceRegistry
      * The question exists because of one reader. The database knows its types and compares
      * "01234" with "1234" as text. PHP sees two strings that look like numbers and compares them
      * as numbers, and it cannot tell a varchar from a decimal either: both arrive from PDO as
-     * strings. The query builder is no help, it passes values to PDO and knows nothing of columns.
-     * Casts of the model are no help, nobody declares a cast for a plain varchar. So the schema
+     * strings. The query builder passes values to PDO and knows nothing of columns.
+     * Casts of the model do not help either: projects declare no cast for a plain varchar. So the schema
      * is asked, once per table and only while a condition is saved or linted.
      *
      * @return 'num'|'text'|null Null also for an accessor, a missing table or a database that does not answer. Comparisons then work as PHP and the database each see fit.

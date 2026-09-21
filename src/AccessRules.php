@@ -24,7 +24,7 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * rewrite them. So the class stays, with the same method names, as a thin shell over
  * Contracts\AccessManager.
  *
- * New code is better off with the manager or Facades\Access. This class remembers a selected
+ * New code uses the manager or Facades\Access. This class remembers a selected
  * owner between calls, and an instance reused for a second owner without setOwner() works
  * with the first one. The manager has no such memory.
  *
@@ -103,7 +103,7 @@ class AccessRules implements Contracts\AccessRules
 
     /**
      * The ability of the last refusal of this request, as in version 2. Error pages use it to say
-     * what exactly was refused. Access::debug() gives the whole cause, this gives the name for free.
+     * what was refused. Access::debug() gives the cause; the name costs one assignment.
      */
     public static function getLastDisallowPermission(): ?string
     {
@@ -114,7 +114,7 @@ class AccessRules implements Contracts\AccessRules
      * The migration that version 2 published for the first user ends with this call. Removing the
      * method would break "migrate:fresh" in every project that kept that file.
      */
-    #[\Deprecated('cache follows every change by itself, use AccessRules::flush() when it is really needed', '3.0.0')]
+    #[\Deprecated('cache follows every change by itself, use Access::flush() after changes made straight in the tables', '3.0.0')]
     public function clearAllCachedPermissions(): void
     {
         static::flush();

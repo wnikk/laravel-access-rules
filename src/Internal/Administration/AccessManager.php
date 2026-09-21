@@ -23,8 +23,8 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  *
  * The class keeps nothing between calls. The AccessRules object of version 2 remembered
  * a "selected owner", and an instance reused for a second owner served permissions of the
- * first one. Here for() returns a new immutable OwnerAccess every time, so that mistake has
- * no place to happen.
+ * first one. Here for() returns a new immutable OwnerAccess on each call, which
+ * rules that mistake out.
  *
  * It belongs to the administration layer and only delegates: Owners writes, RuleCatalog
  * manages rules, DecisionPoint answers. Inject Contracts\AccessManager or use Facades\Access;

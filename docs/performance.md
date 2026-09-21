@@ -26,7 +26,7 @@ and what is expensive, so you can judge it for your own project.
   `env.weekday in [1,2,3,4,5] && ...` reaches the database as `0 = 1`.
 - **The cache has generations instead of a list of keys.** A change replaces one token, and everything cached before
   becomes unreachable at once, on any cache driver, without tags and without scanning.
-- **A store that is down costs speed, not an outage**: the package reads from the database and logs one warning.
+- **A store that is down slows checks and breaks nothing**: the package reads from the database and logs one warning.
 
 ## Measured
 
@@ -103,5 +103,5 @@ Laravel application, seed the same roles and abilities, and time `Gate::forUser(
 - **Aggregates for one loaded record** load the related rows as models. Eager load the relation when you check
   many records in a loop, or better, filter the list with `allowedTo()`.
 - **An explained refusal** (`acr:explain`, debug mode) reads permissions from the database again, several queries.
-  That is why it is a tool and a mode, and never part of a check.
+  You run it as a tool or turn it on as a mode; a check does not include it.
 - **The first check after a change** recompiles the permissions of the owner: 3 queries.

@@ -24,7 +24,7 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  *
  * Every change of access goes through this class of the administration layer, whether it
  * comes from a model trait, from OwnerAccess, from a console command or from a future admin
- * panel. One door keeps one order of steps: write the row, drop cached permissions, announce
+ * panel. One entry keeps one order of steps: write the row, drop cached permissions, announce
  * the change. Version 2 dropped the cache first, and a request that slipped in between cached
  * the old rows for a day.
  *

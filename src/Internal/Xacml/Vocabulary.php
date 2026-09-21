@@ -9,8 +9,8 @@ namespace Wnikk\LaravelAccessRules\Internal\Xacml;
  *
  * XACML names everything with long URNs, and their version prefixes do not follow the version
  * of the standard: "first-applicable" of XACML 3.0 still carries "1.0", text functions carry
- * "3.0", the role attribute "2.0". One table kept in one place is the only way both directions
- * of the module agree on them. Everything the package invents sits under "urn:wnikk:access:",
+ * "3.0", the role attribute "2.0". Both directions of the module read this one table,
+ * so they agree on them. Everything the package invents sits under "urn:wnikk:access:",
  * which is also how the importer tells its own documents from foreign ones.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.

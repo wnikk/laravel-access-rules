@@ -20,7 +20,7 @@ abstract class AccessCommand extends Command implements PromptsForMissingInput
 {
     /**
      * The owner has to exist. A command that created owners on the fly would turn a typo in an id
-     * into a new, empty owner, and the permission would land on nobody.
+     * into a new, empty owner that receives the permission instead of the intended one.
      *
      * @throws InvalidArgumentException
      */

@@ -219,7 +219,7 @@ From the weakest to the strongest, the same with and without conditions:
 4. own permission
 5. own prohibition
 
-So "may see clients with turnover above 1000, but not from city Y" is simply a permission and a prohibition of the same owner:
+"May see clients with turnover above 1000, but not from city Y" is a permission and a prohibition of the same owner:
 
 ```php
 $user->addPermission('clients.view', when: 'sum(client.payments.amount, paid_at >= monthStart(-1)) > 1000');

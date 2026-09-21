@@ -81,7 +81,7 @@ class XacmlRoundTripTest extends FeatureTestCase
             DB::table(config('access.table_names.'.$table))->delete();
         }
         Access::flush();
-        $this->assertNotSame($before['decisions'], $this->snapshot()['decisions'], 'the database is really empty in between');
+        $this->assertNotSame($before['decisions'], $this->snapshot()['decisions'], 'the database is empty in between');
 
         $report = app(Xacml::class)->import($export['policy'], $export['manifest']);
 

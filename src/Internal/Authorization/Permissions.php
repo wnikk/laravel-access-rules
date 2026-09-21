@@ -27,7 +27,7 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  *   4. own permission
  *   5. own prohibition
  *
- * The order is linear on purpose: one glance tells who wins. The code of version 2 let an own
+ * The order is linear on purpose: the higher step wins, without exceptions. The code of version 2 let an own
  * permission beat an own prohibition. With conditions that order defeats itself: "clients
  * above 1000 of turnover" plus "not from city Y", both given to one user, showed city Y.
  *

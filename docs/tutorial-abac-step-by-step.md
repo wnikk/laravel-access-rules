@@ -335,9 +335,9 @@ Access::for('Role', 'manager')->deny('orders.view', when: 'order.locked');  // A
 $ann->addPermission('orders.view', when: 'order.cost > 400');               // Ann sees 1 2 3 4 5 6
 $ann->addProhibition('orders.view', when: "order.status == 'paid'");        // Ann sees 1 2 4 5 6
 ```
-The third line is the interesting one. The role hides locked orders from everybody. Ann's **own** permission is stronger, so she gets order 4 back. No need to clone the role for one person.
+Look at the third line. The role hides locked orders from all its members. Ann's **own** permission is stronger, so she gets order 4 back. No need to clone the role for one person.
 
-One more thing to know: a prohibition **takes a permission away**, it is not a veto over your application. Your `Gate::before` for a super administrator, your policies and other packages keep their word, exactly as in 2.x.
+A prohibition **takes a permission away** and vetoes nothing. Your `Gate::before` for a super administrator, your policies and other packages keep their word, as in 2.x.
 
 ## Example 6
 Sometimes there is no record yet. A menu item, a "New order" button. There are **three ways to ask**:

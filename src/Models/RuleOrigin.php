@@ -8,10 +8,10 @@ namespace Wnikk\LaravelAccessRules\Models;
  * Where a rule comes from, which decides what an admin panel may do with it.
  *
  * A rule is a name that code asks about: $user->can('orders.view'). Deleting such a rule in
- * an admin panel silently turns a check off, and a rule that no code asks about does nothing.
+ * an admin panel turns a check off without an error, and a rule that no code asks about does nothing.
  * So rules written together with code are created and removed by migrations, and a panel may
  * only reword them and edit their options. Code that builds names at run time,
- * can('news.edit.'.$category->slug), needs rules a panel can create and delete freely.
+ * can('news.edit.'.$category->slug), needs rules a panel can create and delete.
  *
  * The column is text and not a boolean "locked", because there are three sources already: the
  * XACML import creates rules that neither code nor an administrator has named. Stored values

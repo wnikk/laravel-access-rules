@@ -15,7 +15,7 @@ use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
  *     exists(product.tags, id in belowOrSelf('tag.name', 'sale'))     the tag "sale" and every tag under it
  *     category.id in aboveOrSelf('category.id', user.category_id)     the category of the user and all its parents
  *
- * "This category and everything under it" is what every catalogue asks for, and the language of
+ * Catalogues ask for "this category and everything under it", and the language of
  * conditions has no recursion: each construct must become one SQL fragment and one walk over
  * a loaded record. A recursive operator inside the language would need WITH RECURSIVE inside
  * a subquery, which SQL Server and MySQL 5.7 refuse. A function that returns a list of ids works
@@ -27,8 +27,8 @@ use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
  * layer, Normalizer asks it to check arguments when a condition is saved.
  *
  * Results are remembered in the object, and the provider registers it per request. A page that
- * checks fifty products one by one walks the tree once. A static memory would do the same and
- * then serve yesterday's tree to the next request of an Octane worker.
+ * checks fifty products one by one walks the tree once. A static memory would also
+ * serve a stale tree to the next request of an Octane worker.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
  */
@@ -60,7 +60,7 @@ final class TreeFunctions
     /**
      * Checks what can be checked without data: the alias is a listed model, the column is a plain
      * name, the relation leads from the model to itself. Normalizer calls it when a condition is
-     * saved, so "below('tags.name', ...)" with a typo fails there and not as a refusal at night.
+     * saved, so "below('tags.name', ...)" with a typo fails there and not as a refusal during a check.
      *
      * @return array{0:class-string, 1:string, 2:BelongsTo} Model, column, relation to the parent.
      *

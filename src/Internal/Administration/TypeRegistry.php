@@ -22,7 +22,7 @@ use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
  * of every check. Owner classes are User and Client, and projects do not rename them.
  *
  * The administration layer owns this class. Administration\Owners and Authorization\GateHook
- * call it on every check, which is why it holds the config repository instead of calling the
+ * call it on every check, so it holds the config repository instead of calling the
  * config() helper: the helper costs 0.9 microseconds, the repository 0.3.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
@@ -123,7 +123,7 @@ final class TypeRegistry
         foreach ($source as $name) {
             $id = self::crc16((string) $name);
 
-            // Two names with one number would share permissions without a word. The chance is one in
+            // Two names with one number would share permissions without an error. The chance is one in
             // 65536 per pair, and the check runs only here, when the list changes, never on a check.
             if (isset($this->names[$id])) {
                 throw new AccessRulesException('Error: config/access.php owner_types "'.$this->names[$id].'" and "'.$name.'" get the same id #'.$id.'.', AccessRulesException::UNKNOWN_OWNER_TYPE);

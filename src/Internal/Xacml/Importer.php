@@ -31,8 +31,8 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * package cannot: "permit unless denied", obligations, references to other documents, regular
  * expressions. A rule that carries one of them is reported with its address in the document
  * and not written. Nothing is written at all while the report holds an error, unless the caller
- * asks for a partial import: a prohibition that silently failed to convert leaves access wider
- * than its author meant, and that is the one mistake an import must not make.
+ * asks for a partial import: a prohibition that failed to convert without notice leaves access wider
+ * than its author meant.
  *
  * check() answers "what would this document change" as a plan and writes nothing; import()
  * executes that same plan. A user interface shows the first and offers the second.
@@ -73,9 +73,9 @@ final class Importer
      * The answer is a plan: every rule, owner, permission and link of inheritance the document
      * speaks about, each marked "create", "same" or "differs" against the database as it is now,
      * and for an export of this package also "only_in_database" for what the document lacks.
-     * import() executes that very plan, so what an administrator reads is what happens next.
-     * A dry run that only counted would hide the one thing worth seeing before an import: the
-     * permission that exists already with another condition.
+     * import() executes that plan, so what an administrator reads is what happens next.
+     * A dry run that only counted would hide
+     * permissions that exist already with another condition.
      *
      * @param array|null                                                                                       $manifest The manifest written by Exporter, when there is one.
      * @param array{subject_type?:?string, role_type?:string, everyone?:?string, partial?:bool, replace?:bool} $options
@@ -649,7 +649,7 @@ final class Importer
             unset($links[$pair]);
         }
 
-        // ---- what the database has and a complete document lacks. An import never deletes; this is for the eye.
+        // ---- what the database has and a complete document lacks. An import never deletes; the list is for the reader.
         if ($complete) {
             foreach (array_diff_key($held, $seen) as $row) {
                 $plan[] = ['kind' => 'permission', 'action' => 'only_in_database', 'what' => $row['what'], 'document' => null, 'database' => $this->conditions->describe($row['condition'], $row['resource']) ?? 'no condition'];

@@ -73,7 +73,7 @@ cause of a refusal see debug mode in [conditions.md](conditions.md).
   error page to name what was refused, and see debug mode for the cause.
 - `AccessRules::getThisPermitMap()`, `checkOwnerPermission()`, `checkUserIsAuthor()`,
   `checkMagicRuleSelf()`, `refreshPermission()`, `forgetCachedPermissions()`, `forgetSelectedCachePermission()`.
-  The cache follows every change by itself; `AccessRules::flush()` when it is really needed,
+  The cache follows every change by itself; `Access::flush()` after changes made past the package, straight in the tables,
   `Access::batch(fn () => ...)` to flush once after many changes. `clearAllCachedPermissions()` is kept as deprecated:
   migrations written for 2.x end with it.
 - Methods of models: `Owner::findOwner()`, `addPermission()`, `addInheritance()` ..., `Rule::findRule()`.

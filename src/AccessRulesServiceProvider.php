@@ -33,7 +33,7 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 /**
  * Wires the package into an application: bindings, the Gate hooks, commands, publishing.
  *
- * The interesting part is lifetimes. Facts about the application and the database server,
+ * Bindings differ by lifetime. Facts about the application and the database server,
  * such as the type map and "this server has WITH RECURSIVE", live as long as the process.
  * Everything that remembers permissions lives as long as a request. Under Octane or in
  * a queue worker a process serves many users, and a singleton that remembers permissions
@@ -92,7 +92,7 @@ class AccessRulesServiceProvider extends ServiceProvider
     /**
      * Registers closures and resolves GateHook inside of them. The hook lives as long as a
      * request, and a Gate that captured one instance at boot would keep using it in an Octane
-     * worker forever.
+     * worker until the process ends.
      *
      * The user parameter is nullable on purpose: Gate reads the signature and skips callbacks
      * that cannot take a guest.

@@ -11,7 +11,7 @@ use Wnikk\LaravelAccessRules\Internal\Xacml\Importer;
 use ZipArchive;
 
 /**
- * The one door to the XACML module: export to anywhere, check and import from anywhere.
+ * The entry to the XACML module: export to any target, check and import from any source.
  *
  * A console command writes files, a controller sends a download to a browser, another controller
  * receives an upload, a queued job reads from a disk of the application. They differ in where

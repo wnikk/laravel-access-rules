@@ -19,7 +19,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\SqlCompiler;
  * loads the relation once.
  *
  * DecisionPoint creates one Context per check, SqlCompiler gets one to compute the parts of
- * a condition that do not depend on the record. The class reads and never decides anything.
+ * a condition that do not depend on the record. The class reads values and makes no decisions.
  */
 final class Context
 {

@@ -19,16 +19,16 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  * Checks everything stored in the database against the application as it is today.
  *
  * Conditions are validated when they are saved, and then code changes under them: a migration
- * renames a column, a refactoring removes a relation, somebody drops a model from config. Nothing
- * fails at that moment. It fails weeks later, as a user who lost access or as an SQL error in a list.
+ * renames a column, a refactoring removes a relation, somebody drops a model from config. No error
+ * appears at that moment. It appears later, as a user who lost access or as an SQL error in a list.
  *
  * The check lived inside the console command. It is a service of the administration layer now,
  * because an admin panel needs the same answer on a "health" screen, as data and not as a printed
  * table, with enough of an address to link every finding to the rule or the permission it is about.
  * "artisan acr:lint" prints what this class returns and adds nothing.
  *
- * It reads every stored rule and every permission with a condition or an option, which is why
- * it runs on demand and never as a part of a check.
+ * It reads every stored rule and every permission with a condition or an option, so
+ * it runs on demand, outside of checks.
  */
 final class Linter
 {
@@ -97,7 +97,7 @@ final class Linter
             $found = static fn (string $code, string $problem) => ['code' => $code, 'subject' => 'permission', 'id' => $permission->getKey(), 'where' => $where, 'problem' => $problem];
 
             // Options are validated when they are granted. An administrator who narrows "in:csv,pdf" to "in:csv"
-            // leaves permissions for "pdf" that keep working, and nothing else would ever mention them.
+            // leaves permissions for "pdf" that keep working, and no other part of the package reports them.
             try {
                 $this->rules->checkOption($permission->rule, $permission->option);
             } catch (AccessRulesException) {

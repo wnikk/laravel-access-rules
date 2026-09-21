@@ -19,8 +19,8 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * Holds the list of things that can be permitted at all, and matches an ability to its rule.
  *
  * Permissions point at rules by id, so a name that is not in this catalogue cannot be granted.
- * That is deliberate: a typo in addPermission('ordres.view') fails at once instead of creating
- * a permission that no check ever asks about.
+ * A typo in addPermission('ordres.view') fails at once instead of creating
+ * a permission that no check asks about.
  *
  * The class belongs to the administration layer. Administration\Owners calls resolve() for
  * every grant and revoke, AccessManager calls create() and delete().
@@ -72,7 +72,7 @@ final class RuleCatalog
      * A rule that somebody still holds is not deleted. Deleting takes permissions and
      * prohibitions along, and a prohibition that disappears widens access without a trace;
      * nothing brings the rows back afterwards. Version 2 answered this with a soft delete, see
-     * Models\Rule. The caller takes permissions away first, or says $force and means it:
+     * Models\Rule. The caller takes permissions away first, or passes $force:
      * a migration that rolls back, a test that cleans up.
      *
      * @param bool $force Delete the rule together with every permission and prohibition for it.
@@ -101,7 +101,7 @@ final class RuleCatalog
     /**
      * Deleting as an admin panel may do it: only rules that do not come with code, and never
      * with force. A panel that wants a rule gone shows who holds it and lets the administrator
-     * take the permissions away knowingly.
+     * take the permissions away first.
      *
      * @throws AccessRulesException With code RULE_MANAGED_BY_CODE or RULE_IN_USE.
      */
@@ -204,7 +204,7 @@ final class RuleCatalog
      * the validator keeps options as expressive as form input without a format of our own.
      *
      * A rule without validation rules accepts no option at all. Otherwise "news.edit.anything"
-     * becomes a grantable name that no check will ever ask about.
+     * becomes a grantable name that no check asks about.
      */
     public function checkOption(RuleContract $rule, $option): void
     {

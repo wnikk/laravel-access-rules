@@ -15,10 +15,9 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\SqlCompiler;
 /**
  * Answers "may this owner do that", for one record and for a whole query.
  *
- * Both answers come from the same compiled permissions and the same condition trees. That is
- * the point of keeping them in one class of the authorization layer: a list that shows
- * a record the detail page then refuses is the classic failure of attribute based access,
- * and it appears the moment the two paths are written separately.
+ * Both answers come from the same compiled permissions and the same condition trees, and both
+ * live in this one class of the authorization layer. Written as two separate paths they part
+ * ways, and a list shows a record that the detail page then refuses.
  *
  * GateHook calls decide() for Laravel Gate, OwnerAccess calls it for direct checks, the
  * HasAccessScope trait calls constrain() for lists.
@@ -65,8 +64,8 @@ class DecisionPoint
     /**
      * Walks permissions of one ability, strongest first, and lets the first applicable one decide.
      *
-     * Public because Explainer runs the very same loop with a trace. A second loop for explaining
-     * would drift from this one, and an explanation that disagrees with the decision is worse than none.
+     * Public because Explainer runs this loop with a trace. A second loop for explaining
+     * would differ from this one in time, and the explanation would contradict the decision.
      * The trace costs a null check per entry when nobody asks for it.
      *
      * @param list<array{0:bool, 1:?array, 2:bool}> $entries

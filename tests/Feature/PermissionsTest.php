@@ -208,7 +208,7 @@ class PermissionsTest extends FeatureTestCase
 
     public function test_author_key_can_be_configured(): void
     {
-        Config::set('access.author_key', 'department_id');   // just another integer column
+        Config::set('access.author_key', 'department_id');   // another integer column
 
         $this->user->forceFill(['id' => 2]);
         $this->user->addPermission('orders.update.self');

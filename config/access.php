@@ -64,7 +64,7 @@ return [
 
     /*
      * True: every refusal is explained and every list narrowed by allowedTo() is written down, see
-     * Access::debugLog(). The mode only observes: it changes no decision and no message.
+     * Access::debugLog(). The mode observes: it changes no decision and no message.
      *
      * Keep it false in production. An explanation shows rules of other owners, their conditions and
      * values of attributes. For a support session turn it on for one request instead: a middleware
@@ -119,8 +119,8 @@ return [
      * Attributes of your own for conditions, by their full name:
      *     'env.region' => App\Access\RegionAttribute::class     an invokable class: __invoke(Context $context)
      *
-     * Use class names, not closures. "php artisan config:cache" cannot store a closure, and the
-     * deploy that caches config is the one that would find out.
+     * Use class names. "php artisan config:cache" cannot store a closure, and the
+     * failure would show up on the deploy that caches config.
      */
     'attributes' => [],
 
@@ -205,7 +205,7 @@ return [
 
         /*
          * A store from config/cache.php, or 'default'. An unknown name falls back to the array
-         * store, which lives for one request: a typo here costs speed, not an outage.
+         * store, which lives for one request: a typo here slows checks down and breaks nothing.
          */
         'store' => 'default',
 

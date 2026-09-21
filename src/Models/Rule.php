@@ -16,8 +16,8 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  * admin screens and, with config access.rule_tree_inheritance, passes permissions down.
  *
  * A rule is deleted for good. Version 2 soft deleted rules, which left the name taken, had no
- * way back and made every reader of the table remember to skip "sleeping" rows. What protects
- * from a delete by mistake now is RuleCatalog: a rule that still has permissions is not deleted.
+ * way back and made every reader of the table remember to skip "sleeping" rows. RuleCatalog
+ * protects from a delete by mistake now: a rule that still has permissions is not deleted.
  *
  * @property int         $id
  * @property int         $parent_id

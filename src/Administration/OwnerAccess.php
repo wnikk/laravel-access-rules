@@ -17,7 +17,7 @@ use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
 use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
 
 /**
- * Access of exactly one owner: what it is permitted, what it inherits, what it may do.
+ * Access of one owner: what it is permitted, what it inherits, what it may do.
  *
  * The owner cannot be changed after construction. Version 2 had one object with setOwner(),
  * and code that forgot to call it again worked with the previous owner. Another owner is
@@ -88,7 +88,7 @@ final class OwnerAccess
 
     /**
      * A prohibition of the owner itself is the strongest statement in the package: it beats its
-     * own permissions and everything inherited. Reach for it when a role permits something and
+     * own permissions and everything inherited. Use it when a role permits something and
      * one owner must be the exception.
      *
      * @throws AccessRulesException See Owners::grant().
@@ -159,9 +159,9 @@ final class OwnerAccess
      * Options are compared as text with names like "news.edit.2". Callers of version 2 pass integers.
      */
     /**
-     * Why can() answers what it answers: permissions that took part, strongest first, where each
+     * The reasons behind an answer of can(): permissions that took part, strongest first, where each
      * comes from, what conditions read, and whether the cache agrees with the database.
-     * For people and for "artisan acr:explain"; several queries, never on the path of a request.
+     * For people and for "artisan acr:explain". It runs several queries, so keep it off the path of a request.
      *
      * @return array See Explainer::explain().
      */

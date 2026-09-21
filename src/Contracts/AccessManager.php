@@ -14,7 +14,7 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * What application code may rely on: access of owners, rules, control over the cache.
  *
  * An interface exists for this one class because applications inject it, and their tests
- * replace it with a fake. The inner services have no interfaces on purpose. Nobody swaps
+ * replace it with a fake. The inner services have no interfaces on purpose. No project replaces
  * them, and an interface per class doubles the files without a second implementation.
  *
  * Implementations keep nothing between calls, so one instance is safe to share.
@@ -53,7 +53,7 @@ interface AccessManager
      * Debug mode for the rest of the request: every refusal carries the explanation of its cause, and
      * every list narrowed by allowedTo() is written down. Meant for a support session, when an
      * administrator looks at the application as the user who complains. Config access.debug turns it
-     * on for everybody, which suits a local environment and nothing else: explanations show rules
+     * on for all users, which suits a local environment only: explanations show rules
      * of other owners and values of attributes.
      */
     public function debug(bool $on = true): void;

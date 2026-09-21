@@ -58,7 +58,7 @@ final class Exporter
      * ten times that in memory. Only the policy of one owner is ever a DOM here.
      *
      * The four tiers need four passes over permissions. The alternative is to keep the policies
-     * of three tiers in memory while the first is written, which is the very thing to avoid.
+     * of three tiers in memory while the first is written, which the stream exists to avoid.
      *
      * @param  resource     $stream
      * @return list<string> Warnings: parts of conditions that went out as text of the package, owners of unknown types.

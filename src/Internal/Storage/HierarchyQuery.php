@@ -24,7 +24,7 @@ use Throwable;
  * PostgreSQL a level costs about 0.11 ms, so twenty levels of roles cost 2.2 ms against 0.15 ms.
  *
  * The two ways live in one class on purpose. An interface with two strategy classes was tried
- * and removed: nobody swaps the strategy, and four files carried one decision.
+ * and removed: no project swaps the strategy, and four files carried one decision.
  *
  * The class is open for extension because the fallback test replaces byRecursiveQuery() with a
  * method that throws.
@@ -159,7 +159,7 @@ class HierarchyQuery
     /**
      * A level holds only ids that no earlier level has seen, so the loop ends on any data,
      * cycles included. Version 2 stopped after 100 levels and returned a partial list without
-     * a word; this loop has no limit to hit.
+     * an error; this loop has no limit to hit.
      */
     protected function byLevels(Connection $db, string $table, string $from, string $to, array $start, ?string $softDeleteColumn): array
     {

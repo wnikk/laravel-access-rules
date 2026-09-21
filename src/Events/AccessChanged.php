@@ -8,7 +8,7 @@ namespace Wnikk\LaravelAccessRules\Events;
  * Tells the application that something about access was written to the database.
  *
  * The package keeps no audit log. What to record, where, and for how long differs from one
- * project to the next, and compliance rules decide it, not a library. This event is the hook:
+ * project to the next, and compliance rules of the project decide it. This event is the hook:
  * it fires after the write and after cached permissions are dropped, so a listener that
  * checks a permission already sees the new state.
  *

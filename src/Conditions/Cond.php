@@ -20,7 +20,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * parts, where gluing strings together invites quoting mistakes. It produces the raw tree
  * of Parser and nothing else, so both ways pass through the same Normalizer and the same
  * checks. A builder with a tree of its own would need its own validation, and the two would
- * disagree sooner or later.
+ * differ.
  *
  * Every method returns a new object, so a partial condition can be reused in two places.
  */

@@ -18,10 +18,10 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * Tells why a check answers what it answers: which permission decided, where it came from,
  * what its condition read.
  *
- * "Why can't Ann see this order" is the question an access system gets asked most, and compiled
+ * Support gets asked "why can't Ann see this order", and compiled
  * permissions cannot answer it: they drop everything that does not change a decision, origins first.
  * This class of the authorization layer reads permissions from the database again, keeps what
- * compiling throws away, and runs them through DecisionPoint::firstApplicable(), the very loop
+ * compiling throws away, and runs them through DecisionPoint::firstApplicable(), the loop
  * that makes real decisions. It has no decision logic of its own, so it cannot disagree with a check.
  *
  * A permitted check never calls this class. GateHook and OwnerAccess turn to it on the way to a
@@ -30,7 +30,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * time it answers OwnerAccess::explain() and "artisan acr:explain".
  *
  * It also decides once more from the cache and compares. When the two answers differ, the cache is
- * stale, which is the one failure no amount of staring at rules in the database reveals.
+ * stale: a failure that rows in the database do not show.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
  */
@@ -44,10 +44,10 @@ class Explainer
     public ?string $lastDenied = null;
 
     /**
-     * Whether anybody in this process may be in debug mode. The listener of GateEvaluated looks at
+     * True when some request of this process may be in debug mode. The listener of GateEvaluated looks at
      * it on every check of every request, so it has to be one comparison and not a container call.
-     * Null means "not decided": the first check reads config access.debug. It only ever turns on;
-     * whether this very request is in debug mode is still asked of enabled().
+     * Null means "not decided": the first check reads config access.debug. It turns on and stays on;
+     * enabled() answers for the current request.
      */
     public static ?bool $watching = null;
 
@@ -95,7 +95,7 @@ class Explainer
         foreach ($entries as $i => [$permit, $condition, , $origin]) {
             $result = $trace[$i]['result'] ?? 'not reached';
 
-            // Values are shown for conditions that really ran. Reading them for the rest could load
+            // Values are shown for conditions that ran. Reading them for the rest could load
             // relations that the real check never touches, and the explanation would lie about its cost.
             if ($condition !== null && ! in_array($result, ['skipped', 'not reached', 'general'], true)) {
                 $values += $this->read($condition, $context, $alias ?? 'resource');
@@ -135,12 +135,12 @@ class Explainer
      * page prints the last refusal with its cause, the way error pages of version 2 projects
      * print getLastDisallowPermission().
      *
-     * The mode observes and never takes part. An earlier draft put the explanation into the
-     * message of the 403, which meant answering Gate with a denial of its own, and a tool that
-     * changes the outcome of what it looks at cannot be trusted with the question "why".
+     * The mode observes. An earlier draft put the explanation into the
+     * message of the 403, which meant answering Gate with a denial of its own, and that
+     * changed the decisions the mode was meant to explain.
      *
      * It is off by default and should stay off for ordinary users. An explanation shows rules of
-     * other owners, their conditions and values of attributes, which is more than a stranger may learn.
+     * other owners, their conditions and values of attributes, which an ordinary user must not see.
      */
     public function enabled(): bool
     {
@@ -178,7 +178,7 @@ class Explainer
 
     /**
      * Explains a refusal and keeps it for log(), with the explanation as text under "text".
-     * Runs several queries, which is why nobody calls it outside of debug mode.
+     * Runs several queries, so the package calls it in debug mode only.
      *
      * @param bool $byGate True when Laravel Gate gave the final answer, false for a direct hasPermission().
      */

@@ -19,7 +19,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * Every mistake of a condition surfaces in this class, at the moment of saving: a typo in
  * a column path, a model missing from config, a relation used as a column. The alternative is
  * finding out during a permission check, where the only safe reaction is a refusal and the
- * person who made the typo is long gone.
+ * author of the typo does not see it.
  *
  * The class does not evaluate anything. Evaluation\Evaluator and Evaluation\SqlCompiler read
  * the tree it produces.

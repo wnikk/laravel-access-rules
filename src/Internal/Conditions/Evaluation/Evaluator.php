@@ -18,7 +18,7 @@ use Wnikk\LaravelAccessRules\Conditions\Context;
  *
  * The evaluator follows the three-valued logic of SQL. A comparison with NULL, a missing
  * attribute or a missing related record gives "unknown", null in PHP, and "not unknown"
- * stays unknown. Plain boolean logic is simpler and wrong: "!(order.client.city == 'Y')"
+ * stays unknown. Plain boolean logic answers differently from the database: "!(order.client.city == 'Y')"
  * would be true for an order without a client, while the WHERE clause built from the same
  * tree drops that order. The user would see the record refused in the list and opened by URL.
  *

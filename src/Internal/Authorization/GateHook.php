@@ -19,9 +19,9 @@ use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
  * changes no existing check. Registering abilities one by one through Gate::define() was the
  * alternative; it needs the full list of rules at boot, which means a query on every request.
  *
- * A prohibition does not answer "no". Like the packages around it, this one starts from
- * "everything is forbidden" and hands out permissions, and a prohibition takes a permission
- * away; it is not a veto over the rest of the application. An earlier draft of version 3
+ * A prohibition answers null as well. The package starts from "everything is forbidden" and
+ * hands out permissions; a prohibition takes a permission away and vetoes nothing in the rest
+ * of the application. An earlier draft of version 3
  * returned a denial from here and named the ability from Gate::after. Both were removed:
  *   Gate stops at the first callback that answers, and package providers boot before those
  *   of the application. The usual "Gate::before(fn ($user) => $user->isAdmin() ? true : null)"
@@ -30,7 +30,7 @@ use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
  *   for every model and every policy, Nova and Filament included.
  *   An answer from Gate::after takes the place of every callback registered after it, so
  *   the message would have silenced an application that decides there.
- * What a project loses is a veto, which nobody had asked for. Version 2 behaved this way.
+ * A project loses the veto, which no user had requested. Version 2 behaved this way.
  *
  * The provider calls before() from a closure. The class belongs to the authorization layer and
  * holds the config repository for the same reason TypeRegistry does: the config() helper costs

@@ -327,7 +327,7 @@ final class Normalizer
             return ['res', $resolved['chain'], $resolved['col']];
         }
         // "order.items.count" reads naturally and means count(order.items). Only "count" gets the
-        // shortcut: the other aggregates need a column, and "order.items.price.sum" helps nobody.
+        // shortcut: the other aggregates need a column, and "order.items.price.sum" reads worse than sum(order.items.price).
         if ($resolved['col'] === 'count') {
             return ['agg', 'count', $resolved['chain'], $resolved['many'], null, null];
         }
