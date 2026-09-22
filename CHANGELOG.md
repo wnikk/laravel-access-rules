@@ -2,6 +2,19 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.1.3 - 2026-09-22
+
+- `Cond::compile()`: check a condition and get its tree without saving, for editors of admin panels
+- XACML: the plan of `check()` no longer reports `not x` as a difference after a round trip
+- `AccessRules`: methods of 2.x carry `@deprecated` with the form of 3.x
+- CI runs only when code, tests, config or migrations change
+- Improved documentation and examples
+
+## 3.1.1 - 2026-09-22
+
+- Laravel Boost guideline: `@can` rendered as written
+- Description of the package on Packagist without a dash
+
 ## 3.1.0 - 2026-09-21
 
 - XACML 3.0: `acr:xacml:export`, `acr:xacml:import`, entry class `Xacml\Xacml`

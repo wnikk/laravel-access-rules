@@ -115,6 +115,8 @@ The builder has the whole language: `->times(1.2)`, `->plus()`, `->minus()`, `->
 A condition is checked when it is saved: a mistake in a name, an unknown function, a model that is not listed,
 a wrong use of a relation throw `InvalidConditionException` right away, not later when permissions are checked.
 What is stored is a tree, its text for an editor is given by `Cond::describe($permission->condition, $rule->resource)`.
+An editor checks what was typed before saving with `Cond::compile($text, $rule->resource)`: the same compiler as saving,
+`InvalidConditionException` with the message, and the tree that saving would store. Nothing on the path of a check calls it.
 
 ## Arithmetic, between, text
 

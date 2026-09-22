@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules\Conditions;
 
+use Wnikk\LaravelAccessRules\Exceptions\InvalidConditionException;
+use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
 use Wnikk\LaravelAccessRules\Internal\Conditions\Normalizer;
 use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Parser;
 use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
@@ -213,6 +215,20 @@ final class Cond
     public static function describe(?array $stored, ?string $resource = null): ?string
     {
         return $stored === null ? null : Printer::print($stored, $resource ?? 'resource');
+    }
+
+    /**
+     * The tree a condition would be stored as, without storing it. An editor of an admin panel
+     * checks what an administrator typed on every pause and shows the message before "Save".
+     *
+     * The same compiler that saving uses, so what passes here is what saving accepts. It runs
+     * only when somebody asks; nothing on the path of a check calls it.
+     *
+     * @throws InvalidConditionException With the message that names the mistake: an unknown model, relation, function or column type.
+     */
+    public static function compile(string|self|array|null $when, ?string $resource = null): ?array
+    {
+        return app(ConditionCompiler::class)->compile($when, $resource);
     }
 
     public function toRaw(): array

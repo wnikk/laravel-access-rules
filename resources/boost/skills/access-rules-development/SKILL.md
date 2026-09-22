@@ -173,7 +173,7 @@ $catalog->edit('orders.export', ['title' => 'Export orders', 'options' => 'requi
 $catalog->discard('news.edit.sport');     // refuses rules of code (RULE_MANAGED_BY_CODE) and rules somebody holds (RULE_IN_USE)
 ```
 
-Show a stored condition as text with `Cond::describe($permission->condition, $rule->resource)`. Never store a condition tree that came from a browser without passing it through `addPermission()` / `allow()`; they validate it.
+Check a typed condition before saving with `Cond::compile($text, $rule->resource)` (throws `InvalidConditionException` with the message). Show a stored condition as text with `Cond::describe($permission->condition, $rule->resource)`. Never store a condition tree that came from a browser without passing it through `addPermission()` / `allow()`; they validate it.
 
 Every change fires `Wnikk\LaravelAccessRules\Events\AccessChanged` (`$event->action`, `$event->details`): listen to it for an audit log.
 

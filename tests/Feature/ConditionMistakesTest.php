@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\Shop\Order;
 use Tests\Fixtures\Shop\ShopSchema;
 use Tests\Fixtures\TestUser;
+use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Exceptions\InvalidConditionException;
 
 /**
@@ -86,6 +87,29 @@ class ConditionMistakesTest extends FeatureTestCase
         $this->expectException(InvalidConditionException::class);
 
         $this->user->addPermission('orders.view', when: $condition);
+    }
+
+    /**
+     * An editor of an admin panel checks what an administrator typed before "Save": the same
+     * compiler, the same message, nothing written, and the tree it returns is what saving stores.
+     */
+    #[DataProvider('invalidConditions')]
+    public function test_a_condition_can_be_checked_without_saving_it(string $condition): void
+    {
+        $this->assertSame(0, $this->user->getOwner()->permission()->count());
+
+        try {
+            Cond::compile($condition, 'order');
+            $this->fail('had to be refused');
+        } catch (InvalidConditionException $e) {
+            $this->assertNotSame('', $e->getMessage());
+        }
+
+        $tree = Cond::compile('order.cost > 100 && order.items.count < 3', 'order');
+        $this->user->addPermission('orders.view', when: 'order.cost > 100 && order.items.count < 3');
+
+        $this->assertSame($tree, $this->user->getOwner()->permission()->first()->condition);
+        $this->assertNull(Cond::compile(null, 'order'));
     }
 
     public function test_nothing_is_saved_when_condition_is_invalid(): void

@@ -27,7 +27,7 @@ src/                     what an application may rely on
   Facades/Access           the entry point of version 3; Contracts/AccessManager is what it resolves
   Traits/                  HasPermissions for owners, HasAccessScope for models whose lists are filtered
   Administration/          OwnerAccess (one owner), RuleCatalog (edit and discard for admin panels), Linter
-  Conditions/              Cond (builder, and describe() for showing a stored condition), Context (argument of own attributes and functions)
+  Conditions/              Cond (builder; describe() shows a stored condition, compile() checks one without saving), Context (argument of own attributes and functions)
   Xacml/Xacml              export, check and import
   Commands/ Contracts/ Events/ Exceptions/ Models/
 src/Internal/            everything else, marked @internal; free to change in any release
