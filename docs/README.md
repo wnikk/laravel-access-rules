@@ -11,7 +11,7 @@ Everything goes through the standard Laravel Gate.
 - [XACML 3.0](xacml.md), new in 3.x: export of permissions as a policy, import of policies with a report of what does not convert
 - [Upgrade from 2.x to 3.x](upgrade-2-to-3.md)
 - [Tutorial step by step](tutorial-basic-step-by-step.md): an application with seven ways to check access, written for 2.x
-- [Tutorial, part two: ABAC step by step](tutorial-abac-step-by-step.md), new in 3.x: seventeen short examples on six orders, from the first condition to XACML
+- [Tutorial, part two: ABAC step by step](tutorial-abac-step-by-step.md), new in 3.x: eighteen short examples on six orders, from the first condition to XACML and polymorphic relations
 
 ## In short
 

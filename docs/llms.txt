@@ -30,7 +30,7 @@ Version 2 (PHP 7.4 - 8.4, Laravel 8 - 13) is RBAC only and is documented in the 
 
 ## Tutorials
 
-- [ABAC step by step](tutorial-abac-step-by-step.md): seventeen short examples on six orders, from the first condition to XACML; every result is shown
+- [ABAC step by step](tutorial-abac-step-by-step.md): eighteen short examples on six orders, from the first condition to XACML and polymorphic relations; every result is shown
 - [RBAC step by step](tutorial-basic-step-by-step.md): roles, options, `.self`, policies; written for version 2, works on 3
 
 ## For coding agents inside an application

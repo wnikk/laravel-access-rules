@@ -38,7 +38,6 @@ src/Internal/            everything else, marked @internal; free to change in an
   Xacml/                   Exporter, Importer, Expressions, Vocabulary
 resources/boost          guidelines and a skill for agents inside applications; keep them true to the code
 docs/                    user documentation; docs/llms.txt is its map for agents
-_dev/                    research notes and decisions (Russian), 08-decisions.md is the log of why
 ```
 
 Nothing in `tests/Feature`, `docs/` or `resources/` names a class of `src/Internal`. When a test or a page needs one,
@@ -57,5 +56,5 @@ add what is missing to the public surface, as `Cond::describe()` was added.
 - `Gate::before` answers `true` or `null`. The package denies nothing through Gate and registers nothing at `Gate::after`.
 - Every change of access goes through `Administration\Owners` or `RuleCatalog`: write the row, switch the cache generation, dispatch `AccessChanged`, in that order.
 - Conditions are parsed and validated when they are saved. Nothing parses text during a check.
-- Documentation is part of the change: `docs/`, `resources/boost/`, `CHANGELOG.md` (short phrases), and a decision in `_dev/08-decisions.md` when behaviour changes.
+- Documentation is part of the change: `docs/`, `resources/boost/`, `CHANGELOG.md` (short phrases).
 - Commits and tags are made by the owner. Do not commit, push or touch the index.
