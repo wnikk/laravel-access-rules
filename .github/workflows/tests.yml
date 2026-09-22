@@ -1,9 +1,27 @@
 name: tests
 
+# Runs only when something the tests can see has changed. A push that touches documentation,
+# the changelog or the Boost guidelines alone does not start four database jobs.
 on:
   push:
     branches: [main, 3.x]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'config/**'
+      - 'database/**'
+      - 'composer.json'
+      - 'phpunit.xml'
+      - '.github/workflows/tests.yml'
   pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'config/**'
+      - 'database/**'
+      - 'composer.json'
+      - 'phpunit.xml'
+      - '.github/workflows/tests.yml'
 
 jobs:
   tests:
