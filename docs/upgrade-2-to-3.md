@@ -27,7 +27,9 @@ and methods of the trait `HasPermissions` are compatible. Nothing has to be conv
    `author_key`, `attributes`, `functions`, `xacml`). All of them have defaults, the file may stay as it is.
 4. `php artisan acr:cache:clear` - format of cached permissions has changed.
 
-Code written for 2.x keeps working. What new code uses instead:
+Code written for 2.x keeps working. The methods of the class `AccessRules` that have a form in 3.x are marked
+`@deprecated` in PHPDoc with that form, so an IDE and static analysis show it; nothing is reported at run time.
+What new code uses instead:
 
 | 2.x, still works | 3.x |
 |---|---|
@@ -40,7 +42,8 @@ Code written for 2.x keeps working. What new code uses instead:
 | `$acr->can('x')` | `Access::for(...)->can('x')` |
 | `AccessRules::getLastDisallowPermission()` | `Access::lastDenied()` |
 
-Methods of the trait `HasPermissions` are the same in both versions.
+Methods of the trait `HasPermissions` are the same in both versions. `AccessRules::getTypeID()`, `getListTypes()`,
+`getAllPermittedRule()` and `getAllProhibitedRule()` are not deprecated: 3.x has no other public way to ask for them yet.
 
 ## Changes of behaviour
 

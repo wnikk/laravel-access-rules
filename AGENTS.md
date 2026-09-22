@@ -23,7 +23,7 @@ Run the suite on SQLite, PostgreSQL and MySQL after any change to SQL, condition
 
 ```
 src/                     what an application may rely on
-  AccessRules.php          the entry point of version 2, kept compatible
+  AccessRules.php          the entry point of version 2, kept compatible; its methods carry @deprecated with the 3.x form
   Facades/Access           the entry point of version 3; Contracts/AccessManager is what it resolves
   Traits/                  HasPermissions for owners, HasAccessScope for models whose lists are filtered
   Administration/          OwnerAccess (one owner), RuleCatalog (edit and discard for admin panels), Linter

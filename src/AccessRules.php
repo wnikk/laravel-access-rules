@@ -35,6 +35,12 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  *
  * No logic lives here. Every method forwards to the manager or to the OwnerAccess of the
  * selected owner, so the two entry points cannot drift apart.
+ *
+ * Methods that have a form in version 3 carry the tag "deprecated" with that form. The tag is
+ * PHPDoc and not the attribute #[\Deprecated]: the attribute reports at run time, and code of
+ * version 2 that works must not fill the log of its project with notices on every seeder run.
+ * getTypeID(), getListTypes(), getAllPermittedRule() and getAllProhibitedRule() carry no tag,
+ * because version 3 has no other public way to ask for them yet.
  */
 class AccessRules implements Contracts\AccessRules
 {
@@ -47,6 +53,8 @@ class AccessRules implements Contracts\AccessRules
      * @param  string|Cond|array|null  $when      Condition for everybody who holds the rule.
      * @param  RuleOrigin|string|null  $origin    Where the rule comes from, see RuleOrigin. Null means code.
      * @return int|false               Id of the rule.
+     *
+     * @deprecated 3.0.0 Use Facades\Access::newRule(), or Contracts\AccessManager::newRule() where the manager is injected. They take the same arguments; instead of the array form pass arguments by name: Access::newRule('profile.update', options: 'required|in:name,email').
      */
     public static function newRule(string|BackedEnum|array $guardName, ?string $title = null, ?string $description = null, ?int $parentRuleID = null, ?string $options = null, ?string $resource = null, string|Cond|array|null $when = null, RuleOrigin|string|null $origin = null): int|false
     {
@@ -69,6 +77,8 @@ class AccessRules implements Contracts\AccessRules
     /**
      * A rule that still has permissions is not deleted and the call throws RULE_IN_USE; $force deletes both.
      * Version 2 soft deleted here. A migration that rolls a rule back says delRule('x', true).
+     *
+     * @deprecated 3.0.0 Use Facades\Access::delRule($guardName, $force).
      */
     public static function delRule(string|BackedEnum $guardName, bool $force = false): bool
     {
@@ -95,6 +105,8 @@ class AccessRules implements Contracts\AccessRules
 
     /**
      * Leave behind all cached permissions. Changes made through the package do it by themselves.
+     *
+     * @deprecated 3.0.0 Use Facades\Access::flush(), and Access::batch() to drop the cache once after many changes.
      */
     public static function flush(): void
     {
@@ -104,6 +116,8 @@ class AccessRules implements Contracts\AccessRules
     /**
      * The ability of the last refusal of this request, as in version 2. Error pages use it to say
      * what was refused. Access::debug() gives the cause; the name costs one assignment.
+     *
+     * @deprecated 3.1.0 Use Facades\Access::lastDenied().
      */
     public static function getLastDisallowPermission(): ?string
     {
@@ -133,6 +147,8 @@ class AccessRules implements Contracts\AccessRules
      * Select the owner to work with.
      *
      * @param mixed $type model, record of owner, name or id of a type
+     *
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id). It returns an OwnerAccess bound to that owner for good, so there is no selected owner to forget about.
      */
     public function setOwner(mixed $type, string|int|null $id = null): static
     {
@@ -143,12 +159,17 @@ class AccessRules implements Contracts\AccessRules
 
     /**
      * Select the owner and create its record when absent.
+     *
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->create($name).
      */
     public function newOwner(mixed $type, string|int|null $id = null, ?string $name = null): OwnerContract
     {
         return $this->setOwner($type, $id)->access()->create($name);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->record(). A model with the trait HasPermissions has $model->getOwner().
+     */
     public function getOwner(): ?OwnerContract
     {
         return $this->access?->record();
@@ -158,37 +179,57 @@ class AccessRules implements Contracts\AccessRules
      * Permissions of the selected owner.
      *
      * @throws AccessRulesException when no owner is selected
+     *
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id), which returns the same OwnerAccess without a selected owner in between.
      */
     public function access(): OwnerAccess
     {
         return $this->access ?? throw new AccessRulesException('Owner is not selected, call setOwner() or newOwner() first.', AccessRulesException::OWNER_NOT_SELECTED);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->allow($ability, $option, $when). On a model with the trait HasPermissions, $model->addPermission() stays as it is.
+     */
     public function addPermission(string|BackedEnum $ability, string|int|null $option = null, string|Cond|array|null $when = null): bool
     {
         return $this->access()->allow($ability, $option, $when);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->deny($ability, $option, $when). On a model with the trait HasPermissions, $model->addProhibition() stays as it is.
+     */
     public function addProhibition(string|BackedEnum $ability, string|int|null $option = null, string|Cond|array|null $when = null): bool
     {
         return $this->access()->deny($ability, $option, $when);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->removeAllow($ability, $option).
+     */
     public function remPermission(string|BackedEnum $ability, string|int|null $option = null): bool
     {
         return $this->access()->removeAllow($ability, $option);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->removeDeny($ability, $option).
+     */
     public function remProhibition(string|BackedEnum $ability, string|int|null $option = null): bool
     {
         return $this->access()->removeDeny($ability, $option);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->inheritFrom($parentType, $parentId). On a model with the trait HasPermissions, $model->inheritPermissionFrom() stays as it is.
+     */
     public function inheritFrom(mixed $type, string|int|null $id = null): bool
     {
         return $this->access()->inheritFrom($type, $id);
     }
 
+    /**
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->stopInheritingFrom($parentType, $parentId).
+     */
     public function remInheritFrom(mixed $type, string|int|null $id = null): bool
     {
         return $this->access()->stopInheritingFrom($type, $id);
@@ -196,6 +237,8 @@ class AccessRules implements Contracts\AccessRules
 
     /**
      * @return bool|null True permitted, false prohibited, null when the package knows nothing about the ability. Version 2 returned true or null only; false is new and comes from prohibitions.
+     *
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->can($ability, $record). For a signed in user prefer $user->can() of Laravel, which goes through Gate.
      */
     public function hasPermission(string|BackedEnum $ability, mixed $record = null): ?bool
     {
@@ -204,6 +247,8 @@ class AccessRules implements Contracts\AccessRules
 
     /**
      * Same as hasPermission(). Version 2 had both names, and seeders use either.
+     *
+     * @deprecated 3.0.0 Use Facades\Access::for($type, $id)->can($ability, $record).
      */
     public function can(string|BackedEnum $ability, mixed $record = null): ?bool
     {

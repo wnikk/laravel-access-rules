@@ -92,6 +92,11 @@ class XacmlRoundTripTest extends FeatureTestCase
 
     public function test_a_second_import_changes_nothing(): void
     {
+        // XACML has no "not equal": it negates, and "not (a == b)" comes back as "a != b", which means
+        // the same. A plan must not call that a difference, for a whole condition and inside of one.
+        $this->users[9]->addPermission('orders.export', 'pdf', when: 'not order.locked');
+        $this->users[9]->addProhibition('orders.update', when: "not order.locked || order.status == 'paid'");
+
         $export = $this->exportXacml();
         $before = $this->snapshot();
 

@@ -16,11 +16,11 @@ class AccessPermissionAssign extends AccessCommand
 
     public function handle(): int
     {
-        $acr = $this->owner();
+        $owner = $this->owner();
 
         $this->availability()
-            ? $acr->addPermission($this->argument('rule'), $this->argument('option'), $this->option('when'))
-            : $acr->addProhibition($this->argument('rule'), $this->argument('option'), $this->option('when'));
+            ? $owner->allow($this->argument('rule'), $this->argument('option'), $this->option('when'))
+            : $owner->deny($this->argument('rule'), $this->argument('option'), $this->option('when'));
 
         $this->info('Permission assigned.');
 

@@ -76,6 +76,9 @@ export prints a warning for every one of them.
 - **NULL.** A comparison with NULL is *unknown* for the package, and the permission is skipped. In XACML the attribute
   is missing and the decision is `Indeterminate`, which an enforcement point turns into a refusal. So an exported
   policy is never wider than the package and is stricter for records with NULL in a compared column.
+- **Negation.** XACML has no "not equal", it negates. `not order.locked` is stored as `!(order.locked == true)`, travels
+  as a negation and comes back as `order.locked != true`. The two mean the same, and a check of the document against
+  the database calls them the same.
 - **Checks without a record.** `$user->can('orders.view')` and `can('orders.view', Order::class)` are conventions of
   the package. A request to an XACML engine always describes a resource.
 - **`rule_tree_inheritance`.** With the option on, a permission for `reports` covers `reports.sales` inside the package,

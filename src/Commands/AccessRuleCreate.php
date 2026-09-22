@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Commands;
 
 use Symfony\Component\Console\Attribute\AsCommand;
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 
 #[AsCommand(name: 'acr:create')]
 class AccessRuleCreate extends AccessCommand
@@ -19,16 +19,16 @@ class AccessRuleCreate extends AccessCommand
 
     public function handle(): int
     {
-        $id = AccessRules::newRule([
-            'guard_name'  => $this->argument('rule'),
-            'title'       => $this->argument('title'),
-            'options'     => $this->argument('options'),
-            'description' => $this->argument('description'),
-            'parent_id'   => $this->argument('parent_id'),
-            'resource'    => $this->option('resource'),
-            'when'        => $this->option('when'),
-            'origin'      => $this->option('origin'),
-        ]);
+        $id = app(AccessManager::class)->newRule(
+            $this->argument('rule'),
+            $this->argument('title'),
+            $this->argument('description'),
+            $this->argument('parent_id') === null ? null : (int) $this->argument('parent_id'),
+            $this->argument('options'),
+            $this->option('resource'),
+            $this->option('when'),
+            $this->option('origin'),
+        );
 
         if (! $id) {
             $this->error("Rule '{$this->argument('rule')}' was not created.");

@@ -15,7 +15,7 @@ class AccessPermissionNotInherit extends AccessCommand
 
     public function handle(): int
     {
-        if (! $this->owner()->remInheritFrom($this->owner('primary_'))) {
+        if (! $this->owner()->stopInheritingFrom($this->owner('primary_'))) {
             $this->error('Remove inherit permission failed.');
 
             return self::FAILURE;

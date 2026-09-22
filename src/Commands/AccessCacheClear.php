@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Commands;
 
 use Symfony\Component\Console\Attribute\AsCommand;
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 
 #[AsCommand(name: 'acr:cache:clear')]
 class AccessCacheClear extends AccessCommand
@@ -16,7 +16,7 @@ class AccessCacheClear extends AccessCommand
 
     public function handle(): int
     {
-        AccessRules::flush();
+        app(AccessManager::class)->flush();
 
         $this->info('Cached permissions cleared.');
 

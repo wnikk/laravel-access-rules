@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Commands;
 
 use Symfony\Component\Console\Attribute\AsCommand;
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
 
 #[AsCommand(name: 'acr:delete')]
@@ -18,7 +18,7 @@ class AccessRuleDelete extends AccessCommand
     public function handle(): int
     {
         try {
-            $deleted = AccessRules::delRule($this->argument('rule'), (bool) $this->option('force'));
+            $deleted = app(AccessManager::class)->delRule($this->argument('rule'), (bool) $this->option('force'));
         } catch (AccessRulesException $e) {
             $this->error($e->getMessage());
 

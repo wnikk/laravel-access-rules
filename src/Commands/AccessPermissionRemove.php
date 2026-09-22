@@ -15,11 +15,11 @@ class AccessPermissionRemove extends AccessCommand
 
     public function handle(): int
     {
-        $acr = $this->owner();
+        $owner = $this->owner();
 
         $removed = $this->availability()
-            ? $acr->remPermission($this->argument('rule'), $this->argument('option'))
-            : $acr->remProhibition($this->argument('rule'), $this->argument('option'));
+            ? $owner->removeAllow($this->argument('rule'), $this->argument('option'))
+            : $owner->removeDeny($this->argument('rule'), $this->argument('option'));
 
         if (! $removed) {
             $this->error('Permission not found.');

@@ -161,14 +161,22 @@ Route::get('/articles', [ArticleController::class, 'index'])->middleware('can:ar
 ```
 
 `authorizeResource()` checks `viewAny`, `view`, `create`, `update` and `delete` for the actions of a resource
-controller. The controller needs the trait `Illuminate\Foundation\Auth\Access\AuthorizesRequests`, which the base
-controller of a fresh Laravel application no longer has:
+controller. Since Laravel 11 the base controller of a fresh application is empty, and `authorizeResource()` needs two
+things back: the trait `Illuminate\Foundation\Auth\Access\AuthorizesRequests`, and the parent
+`Illuminate\Routing\Controller`, whose `middleware()` it calls. Without the parent the call fails with
+"Call to undefined method middleware()".
 
 ```php
-class ArticleController extends Controller
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Routing\Controller as BaseController;
+
+abstract class Controller extends BaseController   // app/Http/Controllers/Controller.php
 {
     use AuthorizesRequests;
+}
 
+class ArticleController extends Controller
+{
     public function __construct()
     {
         $this->authorizeResource(Article::class);

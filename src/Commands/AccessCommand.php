@@ -7,14 +7,14 @@ namespace Wnikk\LaravelAccessRules\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use InvalidArgumentException;
-use Wnikk\LaravelAccessRules\AccessRules;
+use Wnikk\LaravelAccessRules\Administration\OwnerAccess;
+use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 
 /**
  * Shared part of the "acr:" commands: selecting an owner from arguments.
  *
- * The commands go through AccessRules, the entry point of version 2, because their arguments
- * match it one to one: a type, an id, a rule. PromptsForMissingInput makes artisan ask for
- * a forgotten argument instead of failing with a usage line.
+ * The arguments are those of version 2: a type, an id, a rule. PromptsForMissingInput makes
+ * artisan ask for a forgotten argument instead of failing with a usage line.
  */
 abstract class AccessCommand extends Command implements PromptsForMissingInput
 {
@@ -24,15 +24,15 @@ abstract class AccessCommand extends Command implements PromptsForMissingInput
      *
      * @throws InvalidArgumentException
      */
-    protected function owner(string $prefix = ''): AccessRules
+    protected function owner(string $prefix = ''): OwnerAccess
     {
-        $acr = (new AccessRules)->setOwner($this->argument($prefix.'owner_type'), $this->argument($prefix.'owner_id'));
+        $access = app(AccessManager::class)->for($this->argument($prefix.'owner_type'), $this->argument($prefix.'owner_id'));
 
-        if (! $acr->getOwner()) {
+        if (! $access->record()) {
             throw new InvalidArgumentException('Owner '.$this->argument($prefix.'owner_type').' #'.$this->argument($prefix.'owner_id').' not found');
         }
 
-        return $acr;
+        return $access;
     }
 
     /**

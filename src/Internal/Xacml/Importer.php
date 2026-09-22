@@ -625,7 +625,7 @@ final class Importer
             $key        = self::permissionKey($ownerKey, $name, $option, $s['permit']);
             $seen[$key] = true;
             $text       = $this->conditions->describe($tree, $rules[$name]['resource']) ?? 'no condition';
-            $current    = isset($held[$key]) ? ($this->conditions->describe($held[$key]['condition'], $rules[$name]['resource']) ?? 'no condition') : null;
+            $current    = isset($held[$key]) ? ($this->conditions->describe(self::canonical($held[$key]['condition']), $rules[$name]['resource']) ?? 'no condition') : null;
 
             $plan[] = [
                 'kind'     => 'permission', 'action' => $current === null ? 'create' : ($current === $text ? 'same' : 'differs'),
@@ -839,14 +839,29 @@ final class Importer
             return [...self::conjuncts($tree[1]), ...self::conjuncts($tree[2])];
         }
 
-        // XACML writes "a != b" and "!(a == b)" the same way, and both come back as the first.
-        // The condition of a rule is compiled from the manifest and may still be the second.
-        if ($tree[0] === 'not' && $tree[1][0] === 'cmp' && $tree[1][1] === '==') {
-            $tree    = $tree[1];
-            $tree[1] = '!=';
+        // The condition of a rule is compiled from the manifest and may still say "!(a == b)".
+        return [self::canonical($tree)];
+    }
+
+    /**
+     * XACML has no "not equal". It writes "a != b" and "!(a == b)" the same way, and both come
+     * back as the first. The two mean the same in three-valued logic, so a stored condition is
+     * brought to that form before it is compared with the document. Without it the plan of an
+     * unchanged export reported every "not order.locked" as a difference, and "replace" rewrote it.
+     */
+    private static function canonical(mixed $node): mixed
+    {
+        // Literals are left alone: a list of values may start with any word.
+        if (! is_array($node) || ! is_string($node[0] ?? null) || $node[0] === 'val') {
+            return $node;
         }
 
-        return [$tree];
+        if ($node[0] === 'not' && ($node[1][0] ?? null) === 'cmp' && $node[1][1] === '==') {
+            $node    = $node[1];
+            $node[1] = '!=';
+        }
+
+        return array_map(self::canonical(...), $node);
     }
 
     private function existingRule(string $name): ?RuleContract
