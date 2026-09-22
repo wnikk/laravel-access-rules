@@ -572,144 +572,51 @@ public function preview(Request $request, Xacml $xacml)
 > 📷 **Screenshot 7.** `policy.xml` opened in an editor: the root `PolicySet` and one `Rule` with its `Condition`, so the reader sees it is ordinary XACML.
 
 ## Example 18
-The last one is about **polymorphic relations**. Comments, tags and likes usually belong to several models at once:
-a comment is about a product or about an article, a tag hangs on both. Eloquent spells that as `morphMany`,
-`morphToMany` and a morph map. Example 11 said they need nothing special. This example shows it on the products
-of Step 6 and adds what it needs by itself, so Steps 4 to 7 stay as they are.
-
-Three tables, all polymorphic:
-```bash
-php artisan make:migration create_catalog_tables
-```
+The last one is about **polymorphic relations**. A tag hangs on a product and on a category alike: `morphToMany`
+and a morph map. Example 11 said they need nothing special. Two tables, added for this example only:
 ```php
-public function up(): void
-{
-    Schema::create('articles', function (Blueprint $table) {
-        $table->id();
-        $table->string('title');
-    });
-    Schema::create('tags', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-    });
-    Schema::create('taggables', function (Blueprint $table) {   // a tag on a product or on an article
-        $table->integer('tag_id');
-        $table->morphs('taggable');
-    });
-    Schema::create('comments', function (Blueprint $table) {    // about a product or about an article
-        $table->id();
-        $table->morphs('commentable');
-        $table->string('text');
-    });
-    Schema::create('likes', function (Blueprint $table) {       // of a comment, or of anything else later
-        $table->id();
-        $table->morphs('likeable');
-    });
-}
+Schema::create('tags', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+});
+Schema::create('taggables', function (Blueprint $table) {   // a tag on a product or on a category
+    $table->integer('tag_id');
+    $table->morphs('taggable');
+});
 ```
-
-The product gets the relations. As in Step 5, every relation **declares its return type**:
+The product gets the relation, with its return type as in Step 5. The morph map goes to `AppServiceProvider::boot()`,
+and `Tag` is a plain model listed in `resources` of _config/access.php_ as `'tag' => App\Models\Tag::class`:
 ```php
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-
 class Product extends Model
 {
     use HasAccessScope;
 
-    public function tags(): MorphToMany
-    {
-        return $this->morphToMany(Tag::class, 'taggable');
-    }
-
-    public function comments(): MorphMany
-    {
-        return $this->morphMany(Comment::class, 'commentable');
-    }
-
-    // Likes of all comments of the product together. Eloquent has no polymorphic "through",
-    // so both morph types are written out; without them likes of articles with the same ids join in.
-    public function commentLikes(): HasManyThrough
-    {
-        return $this->hasManyThrough(Like::class, Comment::class, 'commentable_id', 'likeable_id')
-            ->where('comments.commentable_type', 'product')
-            ->where('likes.likeable_type', 'comment');
-    }
+    public function tags(): MorphToMany { return $this->morphToMany(Tag::class, 'taggable'); }
 }
 
-class Comment extends Model
-{
-    public function likes(): MorphMany { return $this->morphMany(Like::class, 'likeable'); }
-}
+Relation::enforceMorphMap(['product' => Product::class, 'category' => Category::class]);
 ```
-`Tag`, `Like` and `Article` are plain models. The morph map goes where Laravel wants it, `AppServiceProvider::boot()`:
-```php
-Relation::enforceMorphMap([
-    'product' => Product::class,
-    'article' => Article::class,
-    'comment' => Comment::class,
-]);
-```
-With the map the tables store `product` instead of `App\Models\Product`. The package needs nothing for it: the relation
-knows its type and writes it into every subquery itself.
-
-Two more lines in `resources` of _config/access.php_. The list is a whitelist, and a condition walks `product.comments.likes`,
-so **every model on the path** is listed:
-```php
-'tag'     => App\Models\Tag::class,
-'comment' => App\Models\Comment::class,
-'like'    => App\Models\Like::class,
-```
-
-**Data.** Tags `sale` and `new`. Phone is tagged both, Charger `sale`, Battery pack `new`. Phone has one comment with **12**
-likes. Charger has two comments, **7** and **6** likes: 13 together, none above 10. Battery pack has one comment with **11**.
-And one **article**, with id 1, tagged `sale`, with a comment of **20** likes. It shares its id with the Phone on purpose:
-a subquery that forgot the morph type would let it in as product 1.
-
-A rule about products, and the sentence from the README:
+**Data.** Phone is tagged `sale` and `new`, Charger `sale`, Battery pack `new`. And the category **Laptops**, id 3, is
+tagged `sale`: it shares its id with the Battery pack, so a subquery that forgot the morph type would let the Battery pack in.
 ```php
 Access::newRule('products.view', 'View products', resource: 'product');
+$ann->addPermission('products.view', when: "exists(product.tags, name == 'sale')");            // Phone, Charger
 
-$ann->addPermission('products.view', when: "exists(product.tags, name == 'sale') && exists(product.comments, likes.count > 10)");
+$ann->addPermission('orders.view', when: "exists(order.products, exists(tags, name == 'sale'))");   // orders 1, 4, 6
 ```
-```php
-Product::allowedTo('products.view')->get();       // Phone
-$ann->can('products.view', $charger);             // false: tagged "sale", but no comment gets past 10
-```
-Only the Phone. The Charger has 13 likes spread over two comments, and the sentence asked for **one comment** with more than 10.
-The other reading, likes of all comments together, is the relation `commentLikes`:
-```php
-'exists(product.tags, name == "sale") && count(product.commentLikes) > 10'   // Phone, Charger
-```
-The article never appears in either list, although it is tagged `sale` and its comment has 20 likes.
-
-The same relations from the other side. Orders have products (Step 5), products have tags, so an order **with a product on sale**:
-```php
-$ann->addPermission('orders.view', when: "exists(order.products, exists(tags, name == 'sale'))");
-```
-Result: **1, 4, 6**. Order 2 holds only the Battery pack, which is `new`.
-
-What the database gets for the first condition, with the morph types the relations put in:
+The second line reads the tags from the other side: orders that hold a product on sale. Order 2 holds only the Battery pack.
 ```sql
-select * from "products" where (
-  exists (select 1 from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id"
-          where "products"."id" = "taggables"."taggable_id" and "taggables"."taggable_type" = ? and "tags"."name" = ?)
-  and exists (select 1 from "comments"
-          where "products"."id" = "comments"."commentable_id" and "comments"."commentable_type" = ?
-            and (select count(*) from "likes"
-                 where "comments"."id" = "likes"."likeable_id" and "likes"."likeable_type" = ?) > ?))
--- bindings: ["product", "sale", "product", "comment", 10]
+select * from "products" where exists (
+  select 1 from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id"
+  where "products"."id" = "taggables"."taggable_id" and "taggables"."taggable_type" = ? and "tags"."name" = ?)
+-- bindings: ["product", "sale"]
 ```
-**How it works.** The package writes no joins of its own. For every relation in a condition it asks Eloquent for the same
-subquery that `whereHas()` and `withCount()` build, and adds the comparison to it. Keys, the pivot table, the morph type,
-the morph map, soft deletes and a `where()` inside the relation come along, and a relation type that Laravel adds
-tomorrow works the day it ships. The one relation the package refuses is `morphTo`: its far end is a different model
-for every row, so no single subquery describes it, and no model could be checked against the whitelist. Ask from the
-other side, `exists(product.comments, ...)` instead of `comment.commentable`.
+The package writes no joins of its own. For every relation in a condition it asks Eloquent for the subquery that
+`whereHas()` builds, so the pivot table, the morph type and the morph map come along. `morphMany` works the same way.
+The one relation the package refuses is `morphTo`: its far end is a different model for every row, so no single
+subquery describes it. Ask from the other side, `exists(product.tags, ...)` instead of `tag.taggable`.
 
-> 📷 **Screenshot 8.** `/products` as Ann with the first condition: the JSON list holds the Phone alone, and next to it
-> the same page after the condition was changed to `commentLikes`: the Phone and the Charger.
+> 📷 **Screenshot 8.** `/products` as Ann: the JSON list with the Phone and the Charger, and the Battery pack absent.
 
 ## Coming from 2.x?
 Nothing has to be converted. Tables, names of rules, options, `.self`, the trait and the console commands stay compatible.
@@ -743,4 +650,4 @@ Where to go next:
 | 5 | Example 15 | Terminal, `acr:lint` with one problem and green after the fix |
 | 6 | Example 17 | Terminal, `acr:xacml:import --check` with the table of differences |
 | 7 | Example 17 | `policy.xml` in an editor, root `PolicySet` and one `Rule` with a `Condition` |
-| 8 | Example 18 | `/products` as Ann: the Phone alone, and the Phone with the Charger after the condition changed to `commentLikes` |
+| 8 | Example 18 | `/products` as Ann: the Phone and the Charger, the Battery pack absent |
