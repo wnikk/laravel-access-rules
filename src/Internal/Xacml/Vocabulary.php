@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules\Internal\Xacml;
 
+use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
+
 /**
  * Identifiers of XACML 3.0 that the exporter writes and the importer recognises.
  *
@@ -131,10 +133,55 @@ final class Vocabulary
     }
 
     /**
-     * @return string "Type:id", the value of the role attribute and the tail of policy ids. A class name has no colon, so the first one separates.
+     * @param  string $name The name of the type as the document writes it, see typeName().
+     * @return string "Name:id", the value of the role attribute and the tail of policy ids. A name has no colon, so the first one separates.
      */
-    public static function ownerKey(string $type, string|int|null $id): string
+    public static function ownerKey(string $name, string|int|null $id): string
     {
-        return $type.':'.$id;
+        return $name.':'.$id;
+    }
+
+    /**
+     * The name of an owner type in a document. In this order: config xacml.types, keyed by the
+     * type or by its number; the short name of a class or the plain name of a type without a
+     * model; and when two types end up with one name, the number the core keeps them under, the
+     * CRC-16 of the name, which is the one form that is never ambiguous. A class is a detail of
+     * this application and would carry a piece of its source into a document another system reads.
+     */
+    public static function typeName(string $type): string
+    {
+        $registry = app(TypeRegistry::class);
+        $named    = (array) config('access.xacml.types', []);
+        $name     = self::plainName($type, $named);
+
+        foreach ($registry->all() as $id => $other) {
+            if ($other !== $type && self::plainName($other, $named) === $name) {
+                try {
+                    return (string) $registry->id($type);
+                } catch (\Throwable) {
+                    return $name;
+                }
+            }
+        }
+
+        return $name;
+    }
+
+    /**
+     * @param array<int|string, string> $named config xacml.types
+     */
+    private static function plainName(string $type, array $named): string
+    {
+        if (isset($named[$type])) {
+            return (string) $named[$type];
+        }
+
+        try {
+            $id = app(TypeRegistry::class)->id($type);
+        } catch (\Throwable) {
+            return class_basename($type);
+        }
+
+        return (string) ($named[$id] ?? class_basename($type));
     }
 }

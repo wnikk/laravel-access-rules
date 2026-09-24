@@ -70,8 +70,9 @@ class XacmlExchangeTest extends FeatureTestCase
 
         // One file: the manifest set travels inside the document.
         $manifest = $this->manifestOf($sent);
-        $this->assertSame([[TestUser::class.':7', 'Role:manager']], $manifest['inheritance']);
-        $this->assertSame(['Role:manager'], $manifest['roles'][TestUser::class.':7']);
+        $this->assertSame([['TestUser:7', 'Role:manager']], $manifest['inheritance'], 'owners are named by the short name of their type, never by a class');
+        $this->assertSame(['Role:manager'], $manifest['roles']['TestUser:7']);
+        $this->assertStringNotContainsString('Tests\\Fixtures', $sent, 'nothing of the source of the application is in the document');
         $this->assertSame(['orders', 'orders.view', 'orders.update'], array_column($manifest['rules'], 'guard_name'));
         $this->assertSame('orders', $manifest['rules'][1]['parent']);
 
@@ -175,8 +176,8 @@ class XacmlExchangeTest extends FeatureTestCase
             ->map(fn ($c) => $c['kind'].' '.$c['action'].': '.$c['what'].' | '.($c['document'] ?? '-').' | '.($c['database'] ?? '-'))->sort()->values()->all();
 
         $this->assertSame([
-            'inheritance create: '.TestUser::class.':7 inherits from Role:manager | - | -',
-            'inheritance only_in_database: '.TestUser::class.':9 inherits from Role:manager | - | -',
+            'inheritance create: TestUser:7 inherits from Role:manager | - | -',
+            'inheritance only_in_database: TestUser:9 inherits from Role:manager | - | -',
             'owner differs: Role:manager | Managers | Sales managers',
             'permission create: Role:manager may not orders.update | order.locked == true | -',
             'permission differs: Role:manager may orders.view | order.cost > 100 | order.cost > 500',
@@ -241,6 +242,43 @@ class XacmlExchangeTest extends FeatureTestCase
         $this->assertStringContainsString('Role:manager may orders.view: written in the database on 2030-01-01 11:00, after the export of 2030-01-01 10:00', $warnings[0]);
         $this->assertStringContainsString('/: the database changed on 2030-01-01 11:00, after the export of 2030-01-01 10:00: a row marked "create" may be one that was removed since', $warnings[1]);
         $this->assertSame([], $report['errors'], 'a warning is not an error: the import stays possible');
+    }
+
+    /**
+     * A document names an owner type, never a class: a class is a detail of this application.
+     * The name comes from config xacml.types or the short name of the class, and the import
+     * resolves it back, with a named type first and an ambiguous short name refused.
+     */
+    public function test_owner_types_travel_by_name_and_come_back_as_types(): void
+    {
+        Config::set('access.xacml.types', [TestUser::class => 'employee']);
+        $xacml = app(Xacml::class);
+
+        $export = $this->exportXacml();
+        $this->assertSame([['employee:7', 'Role:manager']], $export['manifest']['inheritance']);
+        $this->assertStringContainsString('employee', $export['policy']);
+        $this->assertStringNotContainsString(TestUser::class, $export['policy']);
+
+        // Back into an empty table of links: the name resolves to the class of config owner_types.
+        TestUser::factory()->make()->forceFill(['id' => 7])->remInheritFrom('Role', 'manager');
+        $report = $xacml->import($export['policy']);
+        $this->assertSame([], $report['errors']);
+        $this->assertSame(1, $report['applied']['inheritance']);
+        $this->assertSame(['same'], array_values(array_unique(array_column($xacml->check($export['policy'])['changes'], 'action'))), 'the link is back under the type of the application');
+
+        // Two types with one short name go by the number the core keeps them under, and come back by it.
+        Config::set('access.xacml.types', []);
+        Config::set('access.owner_types', [TestUser::class, 'Role', 'Other\\TestUser']);
+        AccessRules::resetCacheState();
+        $number = (string) AccessRules::getTypeID(TestUser::class);
+        $export = $this->exportXacml();
+        $this->assertSame([[$number.':7', 'Role:manager']], $export['manifest']['inheritance']);
+        $this->assertSame(['same'], array_values(array_unique(array_column($xacml->check($export['policy'])['changes'], 'action'))));
+
+        // The number is a key of config too, and a name of config wins over the number.
+        Config::set('access.xacml.types', [(int) $number => 'staff']);
+        $this->assertSame([['staff:7', 'Role:manager']], $this->exportXacml()['manifest']['inheritance']);
+        $this->assertSame(['same'], array_values(array_unique(array_column($xacml->check($this->exportXacml()['policy'])['changes'], 'action'))));
     }
 
     public function test_the_console_commands_are_the_same_calls(): void

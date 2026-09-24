@@ -146,12 +146,12 @@ class XacmlMeaningTest extends FeatureTestCase
     private function decide(array $export, string $ability, Model $record, string $alias): string
     {
         $user  = $this->user;
-        $roles = $export['manifest']['roles'][TestUser::class.':7'] ?? [];
+        $roles = $export['manifest']['roles']['TestUser:7'] ?? [];
 
         $attributes = function (string $category, string $id) use ($user, $roles, $ability, $record, $alias): array {
             $value = match (true) {
                 $id === 'urn:oasis:names:tc:xacml:1.0:subject:subject-id' => '7',
-                $id === self::OWN.'subject:type'                          => TestUser::class,
+                $id === self::OWN.'subject:type'                          => 'TestUser',
                 $id === 'urn:oasis:names:tc:xacml:2.0:subject:role'       => $roles,
                 $id === 'urn:oasis:names:tc:xacml:1.0:action:action-id'   => $ability,
                 $id === self::OWN.'resource:author'                       => $record->getAttribute('testuser_id'),

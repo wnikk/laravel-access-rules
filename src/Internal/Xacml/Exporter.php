@@ -50,10 +50,10 @@ final class Exporter
 
     /** What each tier says about itself, for whoever edits the document without the package at hand. */
     private const TIER_NOTES = [
-        'own:prohibitions'       => 'Prohibitions of every owner, addressed by subject-id and type. Edit here: an import reads this set.',
-        'own:permissions'        => 'Permissions of every owner, addressed by subject-id and type. Edit here: an import reads this set.',
-        'inherited:prohibitions' => 'The prohibitions of own:prohibitions again, addressed to the role attribute for an engine. Derived: an import ignores this set.',
-        'inherited:permissions'  => 'The permissions of own:permissions again, addressed to the role attribute for an engine. Derived: an import ignores this set.',
+        'own:prohibitions'       => 'Prohibitions of every owner, addressed by subject-id and type. Edit here; an import reads this set.',
+        'own:permissions'        => 'Permissions of every owner, addressed by subject-id and type. Edit here; an import reads this set.',
+        'inherited:prohibitions' => 'The prohibitions of own:prohibitions again, addressed to the role attribute for an engine. Derived; an import ignores this set.',
+        'inherited:permissions'  => 'The permissions of own:permissions again, addressed to the role attribute for an engine. Derived; an import ignores this set.',
     ];
 
     public function __construct(
@@ -78,17 +78,18 @@ final class Exporter
     public function document($stream): array
     {
         $warnings = [];
-        $rules    = app(RuleContract::class)->newQuery()->get()->keyBy('id');
-        $parents  = app(InheritanceContract::class)->newQuery()->select('owner_parent_id');
+
+        $rules   = app(RuleContract::class)->newQuery()->get()->keyBy('id');
+        $parents = app(InheritanceContract::class)->newQuery()->select('owner_parent_id');
 
         fwrite($stream, '<?xml version="1.0" encoding="UTF-8"?>'."\n"
             .'<PolicySet xmlns="'.Vocabulary::NS.'" PolicySetId="'.Vocabulary::ROOT.'" Version="1.0" PolicyCombiningAlgId="'.Vocabulary::ALG_FIRST_APPLICABLE.'">'."\n"
-            .'  <Description>Exported by wnikk/laravel-access-rules. The four policy sets are the priority of the package, strongest first. '
-            .'To edit by hand: the own:* sets are what an import reads, the inherited:* sets are derived from them and ignored on import. '
-            .'A Policy is one owner, a Rule is one permission or prohibition, action-id is the name of the rule, with an option as a suffix (orders.export.csv). '
-            .'A Condition may be written as the text of the package inside Apply FunctionId="'.Vocabulary::FN_DSL.'", for example order.cost > 100 and user.tenant; '
-            .'a rule with the suffix .self travels as the main name with the condition isAuthor(). '
-            .'Titles of rules, names of owners and inheritance are the last policy set, '.Vocabulary::MANIFEST.'.</Description>'."\n"
+            .'  <Description>The sets are combined first-applicable, strongest first. An import reads the own:* sets; the inherited:* sets are derived from them and ignored. '
+            .'A Policy is one owner: subject-id is its id, '.Vocabulary::SUBJECT_TYPE.' the name of its type, or its number when two types share a name. '
+            .'A Rule is one permission or prohibition: action-id is the name of the rule, an option value is its suffix (orders.export.csv). '
+            .'A Condition may be the text of a condition inside Apply FunctionId="'.Vocabulary::FN_DSL.'", for example order.cost > 100 and user.tenant. '
+            .'A rule with the suffix .self travels as the main name with the condition isAuthor(). '
+            .'Titles of rules, names of owners and inheritance are in the last policy set, '.Vocabulary::MANIFEST.'.</Description>'."\n"
             ."  <Target/>\n");
 
         foreach (Vocabulary::TIERS as $name => $tier) {
@@ -110,6 +111,7 @@ final class Exporter
                     $this->flush($stream, $doc, $policy);
                     $ownerId = $permission->owner_id;
                     $type    = $permission->owner === null ? null : $this->types->name((int) $permission->owner->type);
+                    $type    = $type === null ? null : Vocabulary::typeName($type);
 
                     if ($type === null) {
                         $warnings[] = 'permissions of owner record #'.$ownerId.' are skipped: its type is not in config access.owner_types';
@@ -165,8 +167,7 @@ final class Exporter
         $rules    = app(RuleContract::class)->newQuery()->get()->keyBy('id');
 
         fwrite($stream, '  <PolicySet PolicySetId="'.Vocabulary::MANIFEST.'" Version="1.0" PolicyCombiningAlgId="'.Vocabulary::ALG_FIRST_APPLICABLE.'">'."\n"
-            .'    <Description>What the policy cannot hold. Addressed to an action no request names, so an engine never evaluates it. '
-            .'One AdviceExpression is one item, its AdviceId ends with the kind, its AttributeAssignmentExpressions are the fields, a missing field is null: '
+            .'    <Description>Never applies to a request. One AdviceExpression is one item, its AdviceId ends with the kind, its AttributeAssignmentExpressions are the fields, a missing field is null: '
             .'config (rule_tree_inheritance, exported_at); warning (text); '
             .'rule (guard_name, title, description, options, resource, origin, parent, condition); owner (type, id, name); '
             .'inheritance (child, parent, as Type:id); roles (owner, then role for every owner in the chain of inheritance). '
@@ -204,8 +205,8 @@ final class Exporter
         foreach (app(OwnerContract::class)->newQuery()->orderBy('id')->lazy(self::PORTION) as $owner) {
             $type = $this->types->name((int) $owner->type);
             if ($type !== null) {
-                $keys[$owner->getKey()] = Vocabulary::ownerKey($type, $owner->original_id);
-                $this->advice($stream, 'owner', ['type' => $type, 'id' => (string) $owner->original_id, 'name' => $owner->name]);
+                $keys[$owner->getKey()] = Vocabulary::ownerKey(Vocabulary::typeName($type), $owner->original_id);
+                $this->advice($stream, 'owner', ['type' => Vocabulary::typeName($type), 'id' => (string) $owner->original_id, 'name' => $owner->name]);
             }
         }
 
@@ -308,7 +309,7 @@ final class Exporter
         $policy->setAttribute('RuleCombiningAlgId', sprintf($tier['permit'] ? Vocabulary::ALG_PERMIT_OVERRIDES : Vocabulary::ALG_DENY_OVERRIDES, 'rule'));
 
         $policy->appendChild($doc->createElementNS(Vocabulary::NS, 'Description'))
-            ->appendChild($doc->createTextNode(trim(class_basename($type).' '.$owner->original_id.' '.($owner->name === null ? '' : '('.$owner->name.')'))));
+            ->appendChild($doc->createTextNode(trim($type.' '.$owner->original_id.' '.($owner->name === null ? '' : '('.$owner->name.')'))));
 
         $matches = $tier['own']
             ? [[Vocabulary::SUBJECT, Vocabulary::SUBJECT_TYPE, $type], [Vocabulary::SUBJECT, Vocabulary::SUBJECT_ID, (string) $owner->original_id]]

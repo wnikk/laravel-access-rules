@@ -108,9 +108,10 @@ final class Importer
 
     private function run(string $xml, array $options, bool $apply): array
     {
-        $this->errors  = $this->warnings = $this->statements = [];
-        $this->options = ['subject_type' => $options['subject_type'] ?? null, 'role_type' => $options['role_type'] ?? 'Role', 'everyone' => $options['everyone'] ?? null];
-        $applied       = ['rules' => 0, 'owners' => 0, 'permissions' => 0, 'inheritance' => 0, 'replaced' => 0];
+        $this->errors               = $this->warnings = $this->statements = [];
+        $this->options              = ['subject_type' => $options['subject_type'] ?? null, 'role_type' => $options['role_type'] ?? 'Role', 'everyone' => $options['everyone'] ?? null];
+        $this->options['role_type'] = $this->typeOf($this->options['role_type']) ?? $this->options['role_type'];
+        $applied                    = ['rules' => 0, 'owners' => 0, 'permissions' => 0, 'inheritance' => 0, 'replaced' => 0];
 
         $own      = false;
         $manifest = null;
@@ -409,7 +410,8 @@ final class Importer
 
                 return [$permit];
             }
-            $subjects = [self::splitKey($this->options['everyone'])];
+            [$everyoneType, $everyoneId] = self::splitKey($this->options['everyone']);
+            $subjects                    = [[$this->typeOf($everyoneType) ?? $everyoneType, $everyoneId]];
         }
 
         if ($context['actions'] === null) {
@@ -532,10 +534,11 @@ final class Importer
             [$type, $id] = self::splitKey($part['role']);
 
             // "Role:manager" of our own export, or a bare "manager" of a foreign document.
-            return $this->knownType($type) && $id !== '' ? [$type, $id] : [$this->options['role_type'], $part['role']];
+            return $this->knownType($type) && $id !== '' ? [$this->typeOf($type), $id] : [$this->options['role_type'], $part['role']];
         }
 
         $type = $part['type'] ?? $this->options['subject_type'];
+        $type = $type === null ? null : ($this->typeOf($type) ?? $type);
         if ($part['id'] === null || $type === null) {
             $this->errors[] = [$at, $part['id'] === null
                 ? 'Target names a type of subject without an id'
@@ -587,13 +590,13 @@ final class Importer
         $roleDenies = [];
         foreach ($this->statements as $s) {
             if (! $s['permit'] && ! class_exists($s['owner'][0])) {
-                $roleDenies[$s['ability']][] = Vocabulary::ownerKey(...$s['owner']);
+                $roleDenies[$s['ability']][] = self::keyOfOwner($s['owner']);
             }
         }
 
         foreach ($this->statements as $s) {
             if ($s['permit'] && class_exists($s['owner'][0]) && isset($roleDenies[$s['ability']])) {
-                $this->warnings[] = [$s['at'], '"'.$s['ability'].'" is permitted to '.Vocabulary::ownerKey(...$s['owner']).' and prohibited to '.implode(', ', array_unique($roleDenies[$s['ability']]))
+                $this->warnings[] = [$s['at'], '"'.$s['ability'].'" is permitted to '.self::keyOfOwner($s['owner']).' and prohibited to '.implode(', ', array_unique($roleDenies[$s['ability']]))
                     .'. If this subject holds that role, XACML denies and the package permits: an own permission is stronger than an inherited prohibition'];
             }
         }
@@ -654,7 +657,7 @@ final class Importer
         foreach (app(OwnerContract::class)->newQuery()->get() as $owner) {
             $type = $this->types->name((int) $owner->type);
             if ($type !== null) {
-                $key                     = Vocabulary::ownerKey($type, $owner->original_id);
+                $key                     = Vocabulary::ownerKey(Vocabulary::typeName($type), $owner->original_id);
                 $owners[$key]            = $owner->name;
                 $keyOf[$owner->getKey()] = $key;
             }
@@ -671,7 +674,7 @@ final class Importer
 
             $planned[$key] = true;
             $action        = ! array_key_exists($key, $owners) ? 'create' : ($owners[$key] == ($owner['name'] ?? null) ? 'same' : 'differs');
-            $plan[]        = ['kind' => 'owner', 'action' => $action, 'what' => $key, 'document' => $owner['name'] ?? null, 'database' => $action === 'differs' ? $owners[$key] : null, 'owner' => [$owner['type'], $owner['id']]];
+            $plan[]        = ['kind' => 'owner', 'action' => $action, 'what' => $key, 'document' => $owner['name'] ?? null, 'database' => $action === 'differs' ? $owners[$key] : null, 'owner' => [$this->typeOf((string) $owner['type']), $owner['id']]];
         }
 
         // ---- permissions
@@ -689,7 +692,7 @@ final class Importer
 
         $seen = [];
         foreach ($this->merged() as $s) {
-            $ownerKey = Vocabulary::ownerKey(...$s['owner']);
+            $ownerKey = self::keyOfOwner($s['owner']);
 
             if (! $this->knownType($s['owner'][0])) {
                 $this->errors[] = [$s['at'], 'owner type "'.$s['owner'][0].'" is not in config access.owner_types'];
@@ -792,7 +795,7 @@ final class Importer
     {
         $merged = [];
         foreach ($this->statements as $s) {
-            $key = Vocabulary::ownerKey(...$s['owner']).'|'.$s['ability'].'|'.(int) $s['permit'];
+            $key = self::keyOfOwner($s['owner']).'|'.$s['ability'].'|'.(int) $s['permit'];
 
             if (! isset($merged[$key])) {
                 $merged[$key] = $s;
@@ -890,7 +893,7 @@ final class Importer
         foreach ($of('inheritance') as $change) {
             [[$childType, $childId], [$parentType, $parentId]] = $change['link'];
 
-            if ($this->knownType($childType) && $this->knownType($parentType) && $this->access->for($childType, $childId)->inheritFrom($parentType, $parentId)) {
+            if ($this->knownType($childType) && $this->knownType($parentType) && $this->access->for($this->typeOf($childType), $childId)->inheritFrom($this->typeOf($parentType), $parentId)) {
                 $applied['inheritance']++;
             }
         }
@@ -999,9 +1002,51 @@ final class Importer
         return null;
     }
 
+    /**
+     * @param array{0:string, 1:string} $owner A type of the application and an id.
+     */
+    private static function keyOfOwner(array $owner): string
+    {
+        return Vocabulary::ownerKey(Vocabulary::typeName($owner[0]), $owner[1]);
+    }
+
     private function knownType(string $type): bool
     {
-        return in_array($type, $this->types->all(), true);
+        return $this->typeOf($type) !== null;
+    }
+
+    /**
+     * The owner type behind a name of the document, in the order the export names them: an entry
+     * of config xacml.types, keyed by the type or by its number; the number the core keeps the
+     * type under; the type as config owner_types spells it; the one type with that short name.
+     * Two types with one short name resolve to nothing, and the export never writes such a name.
+     */
+    private function typeOf(string $name): ?string
+    {
+        $types = $this->types->all();
+
+        foreach ((array) config('access.xacml.types', []) as $key => $value) {
+            if ((string) $value !== $name) {
+                continue;
+            }
+            if (is_int($key) || ctype_digit((string) $key)) {
+                return $types[(int) $key] ?? null;
+            }
+            if (in_array($key, $types, true)) {
+                return $key;
+            }
+        }
+
+        if (ctype_digit($name) && isset($types[(int) $name])) {
+            return $types[(int) $name];
+        }
+        if (in_array($name, $types, true)) {
+            return $name;
+        }
+
+        $found = array_values(array_filter($types, static fn (string $type): bool => class_basename($type) === $name));
+
+        return count($found) === 1 ? $found[0] : null;
     }
 
     /**

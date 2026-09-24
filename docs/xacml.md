@@ -21,15 +21,15 @@ php artisan acr:xacml:export storage/app/access.xml
 ```
 
 One file, written as it is produced, one owner at a time, so a large export does not need a large memory. The
-document describes itself: the `Description` of the root, of every policy set and of the manifest set says what may
-be edited by hand and how, so a person with the file alone can add a permission, an owner, a rule or a link.
+document describes itself: the `Description` of the root, of every policy set and of the manifest set says how to
+edit it by hand and nothing else, so a person with the file alone can add a permission, an owner, a rule or a link.
 
 The policy is one flat document. Its root combines four policy sets with `first-applicable`, which is the
 priority of the package word for word:
 
 | policy set | holds | addressed to |
 |---|---|---|
-| `own:prohibitions` | prohibitions of every owner | the subject, by `subject-id` and `urn:wnikk:access:subject:type` |
+| `own:prohibitions` | prohibitions of every owner | the subject, by `subject-id` and `urn:wnikk:access:subject:type`, the name of its type |
 | `own:permissions` | permissions of every owner | the same |
 | `inherited:prohibitions` | the same prohibitions of owners somebody inherits from | everybody whose attribute `urn:oasis:names:tc:xacml:2.0:subject:role` holds `Type:id` of the owner |
 | `inherited:permissions` | the same permissions of those owners | the same |
@@ -37,6 +37,22 @@ priority of the package word for word:
 So inheritance travels as the role attribute of the RBAC profile. The side that supplies attributes to the XACML
 engine fills it with the whole chain, not only direct parents; the `roles` items of the manifest set list the chain
 for every owner.
+
+An owner type is named, never spelled as a class: `User:7`, not `App\Models\User:7`. A class is a detail of this
+application and means nothing to another system, and a document should carry none of its source. The name is, in
+this order: an entry of config `xacml.types`, keyed by the type or by its number; the short name of the class, or the
+plain name of a type without a model (`Role`); and when two types end up with one name, the number the core keeps
+the type under, the CRC-16 of its name, which is never ambiguous. The import reads all three forms back to a type of
+`owner_types`.
+
+```php
+'xacml' => [
+    'types' => [
+        App\Models\User::class => 'employee',
+        12345                  => 'admin',      // by the number of the type
+    ],
+],
+```
 
 A rule is the `action-id`: `orders.view`, with an option `orders.export.csv`. The suffix `.self` goes out as the main
 ability with the condition "the author of the record is the subject", which reads the attribute

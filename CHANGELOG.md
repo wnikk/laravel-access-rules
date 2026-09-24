@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.2.3 - 2026-09-24
+
+- XACML: owner types are named in the document
+- XACML: the descriptions inside the document
+
 ## 3.2.2 - 2026-09-24
 
 - XACML: the export is one file

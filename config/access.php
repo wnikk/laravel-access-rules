@@ -145,6 +145,19 @@ return [
          * that is not listed here stops the import of the rule that reads it.
          */
         'attributes' => [],
+
+        /*
+         * Names of owner types in XACML documents. A document says "User:7", never the class
+         * of the model: a class is a detail of this application, and the import resolves the
+         * name back to a type of config owner_types. Optional, and first when present. Without
+         * an entry the name is the short name of the class ("App\Models\User" is "User") or the
+         * plain name of a type without a model ("Role"). Two types that end up with one name are
+         * written by the number the core keeps them under, the CRC-16 of the name, which the
+         * import reads as well. A key may be the type or that number:
+         *     App\Models\User::class => 'employee',
+         *     12345 => 'admin',
+         */
+        'types' => [],
     ],
 
     /*
