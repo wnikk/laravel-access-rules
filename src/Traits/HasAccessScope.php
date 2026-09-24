@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Internal\Authorization\GateHook;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Authorization\GateHook;
 
 /**
  * Adds allowedTo() to models that permissions with conditions are about.

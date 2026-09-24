@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -26,7 +26,7 @@ use Wnikk\LaravelAccessRules\Conditions\Context;
  * predicates against 0.1 for generated code, and both disappear next to one database query.
  * Generated code would put text from an admin panel on a path that ends in include.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Evaluator
 {

@@ -26,11 +26,11 @@ src/                     what an application may rely on
   AccessRules.php          the entry point of version 2, kept compatible; its methods carry @deprecated with the 3.x form
   Facades/Access           the entry point of version 3; Contracts/AccessManager is what it resolves
   Traits/                  HasPermissions for owners, HasAccessScope for models whose lists are filtered
-  Administration/          OwnerAccess (one owner), RuleCatalog (edit and discard for admin panels), Linter
+  Administration/          OwnerAccess (one owner: changes, can(), explain(), and permissions()/sources()/heirs() as data for panels), RuleCatalog (edit and discard for admin panels), Linter
   Conditions/              Cond (builder; describe() shows a stored condition, compile() checks one without saving), Context (argument of own attributes and functions)
   Xacml/Xacml              export, check and import
   Commands/ Contracts/ Events/ Exceptions/ Models/
-src/Internal/            everything else, marked @internal; free to change in any release
+src/Protected/            everything else, marked @internal; free to change in any release
   Administration/          AccessManager, Owners, TypeRegistry
   Authorization/           Permissions, DecisionPoint, GateHook, Explainer       the path of a check
   Conditions/              ConditionCompiler, Normalizer, ResourceRegistry, Syntax/, Evaluation/
@@ -40,10 +40,10 @@ resources/boost          guidelines and a skill for agents inside applications; 
 docs/                    user documentation; docs/llms.txt is its map for agents
 ```
 
-Nothing in `tests/Feature`, `docs/` or `resources/` names a class of `src/Internal`. When a test or a page needs one,
+Nothing in `tests/Feature`, `docs/` or `resources/` names a class of `src/Protected`. When a test or a page needs one,
 add what is missing to the public surface, as `Cond::describe()` was added.
 
-`src/Internal/Authorization` and `src/Internal/Storage/PermissionCache.php` are the hot path. A change there comes with
+`src/Protected/Authorization` and `src/Protected/Storage/PermissionCache.php` are the hot path. A change there comes with
 `./vendor/bin/phpunit --testsuite Bench` before and after.
 
 ## Rules of this repository

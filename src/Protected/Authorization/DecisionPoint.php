@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Authorization;
+namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 use Wnikk\LaravelAccessRules\Conditions\Context;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\Evaluator;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\SqlCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\Evaluator;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\SqlCompiler;
 
 /**
  * Answers "may this owner do that", for one record and for a whole query.
@@ -26,9 +26,9 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\SqlCompiler;
  * a plain ?bool instead of an enum: the three states map one to one onto what Gate::before
  * expects, and an enum added a translation step on the hottest path of the package.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class DecisionPoint
+final class DecisionPoint
 {
     public function __construct(private Permissions $permissions) {}
 

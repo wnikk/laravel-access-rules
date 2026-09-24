@@ -10,10 +10,10 @@ use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Events\AccessChanged;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 use Wnikk\LaravelAccessRules\Models\RuleOrigin;
+use Wnikk\LaravelAccessRules\Protected\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Holds the list of things that can be permitted at all, and matches an ability to its rule.

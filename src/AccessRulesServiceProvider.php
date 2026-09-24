@@ -17,18 +17,18 @@ use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Internal\Authorization\GateHook;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Permissions;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\TreeFunctions;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
-use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Protected\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Authorization\GateHook;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Permissions;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\TreeFunctions;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Storage\HierarchyQuery;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Wires the package into an application: bindings, the Gate hooks, commands, publishing.

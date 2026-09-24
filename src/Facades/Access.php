@@ -22,7 +22,7 @@ use Wnikk\LaravelAccessRules\Contracts\AccessManager;
  * @method static array                                                debugLog()
  * @method static ?string                                              lastDenied()
  *
- * @see \Wnikk\LaravelAccessRules\Internal\Administration\AccessManager
+ * @see \Wnikk\LaravelAccessRules\Protected\Administration\AccessManager
  */
 class Access extends Facade
 {

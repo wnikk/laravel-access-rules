@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Wnikk\LaravelAccessRules\Exceptions\InvalidConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\Evaluator;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\TreeFunctions;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\Evaluator;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\TreeFunctions;
 
 /**
  * Resolves the names of a raw syntax tree against real models and produces the stored tree.
@@ -36,7 +36,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\TreeFunctions;
  * "type" is null for most comparisons. 'num' or 'text' marks the ones where PHP and the database
  * would compare differently, see compared().
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Normalizer
 {

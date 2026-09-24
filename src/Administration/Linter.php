@@ -9,11 +9,11 @@ use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Checks everything stored in the database against the application as it is today.

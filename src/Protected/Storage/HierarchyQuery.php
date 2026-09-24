@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Storage;
+namespace Wnikk\LaravelAccessRules\Protected\Storage;
 
 use Closure;
 use Illuminate\Database\Connection;
@@ -29,9 +29,9 @@ use Throwable;
  * The class is open for extension because the fallback test replaces byRecursiveQuery() with a
  * method that throws.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class HierarchyQuery
+final class HierarchyQuery
 {
     /**
      * Whether WITH RECURSIVE works, by connection name. It is a fact about the server, so the

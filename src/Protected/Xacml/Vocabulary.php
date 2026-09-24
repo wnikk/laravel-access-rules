@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Xacml;
+namespace Wnikk\LaravelAccessRules\Protected\Xacml;
 
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
 
 /**
  * Identifiers of XACML 3.0 that the exporter writes and the importer recognises.
@@ -15,7 +15,7 @@ use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
  * so they agree on them. Everything the package invents sits under "urn:wnikk:access:",
  * which is also how the importer tells its own documents from foreign ones.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Vocabulary
 {

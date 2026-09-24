@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Something that can be permitted. Rules form a tree through parent_id, which groups them in

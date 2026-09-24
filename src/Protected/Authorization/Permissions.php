@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Authorization;
+namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Compiles everything an owner holds and inherits into arrays that answer a check with isset().
@@ -46,9 +46,9 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  * The class belongs to the authorization layer. DecisionPoint is its only reader on the path
  * of a check; AccessRules::getAllPermittedRule() calls build() for listings.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class Permissions
+final class Permissions
 {
     private const SELF_SUFFIX = '.self';
 

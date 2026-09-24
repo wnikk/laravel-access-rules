@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions\Syntax;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions\Syntax;
 
 use LogicException;
 
@@ -17,7 +17,7 @@ use LogicException;
  * The output is valid input of Parser, and the test suite holds the round trip for every
  * scenario of its catalogue. ConditionCompiler::describe() is the caller.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Printer
 {

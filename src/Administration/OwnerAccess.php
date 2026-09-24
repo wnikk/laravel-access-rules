@@ -11,10 +11,10 @@ use Illuminate\Support\Arr;
 use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Administration\AccessManager;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Administration\AccessManager;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
 
 /**
  * Access of one owner: what it is permitted, what it inherits, what it may do.
@@ -168,6 +168,45 @@ final class OwnerAccess
     public function explain(string|BackedEnum $ability, mixed $record = null): array
     {
         return app(Explainer::class)->explain($this->type, $this->id, $this->subject, self::ability($ability), Arr::wrap($record));
+    }
+
+    /**
+     * Every permission row that reaches this owner, with where it comes from: the rule, the
+     * option, the effect, the condition as text, own or inherited and from whom, strongest first
+     * inside a rule. For admin panels and consoles; a few queries, so keep it off the path of a
+     * request. An owner without a record holds nothing. See Owners::rowsOf().
+     *
+     * @return list<array{rule:string, rule_id:int, option:?string, effect:string, when:?string, own:bool, from:array{type:string, id:string, name:?string, record:int}, via:?string, via_rule:?string}>
+     */
+    public function permissions(): array
+    {
+        $record = $this->record();
+
+        return $record === null ? [] : $this->owners->rowsOf($record);
+    }
+
+    /**
+     * Whom this owner inherits from, at any depth, each with the direct link it came through.
+     *
+     * @return list<array{type:string, id:string, name:?string, record:int, direct:bool, link:?int, through:?int}>
+     */
+    public function sources(): array
+    {
+        $record = $this->record();
+
+        return $record === null ? [] : $this->owners->sourcesOf($record);
+    }
+
+    /**
+     * Who inherits from this owner, at any depth: everyone a change here reaches.
+     *
+     * @return list<array{type:string, id:string, name:?string, record:int, direct:bool, link:?int, through:?int}>
+     */
+    public function heirs(): array
+    {
+        $record = $this->record();
+
+        return $record === null ? [] : $this->owners->heirsOf($record);
     }
 
     private function name(): string|false|null

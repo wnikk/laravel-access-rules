@@ -6,8 +6,8 @@ namespace Wnikk\LaravelAccessRules\Xacml;
 
 use SplFileInfo;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Xacml\Exporter;
-use Wnikk\LaravelAccessRules\Internal\Xacml\Importer;
+use Wnikk\LaravelAccessRules\Protected\Xacml\Exporter;
+use Wnikk\LaravelAccessRules\Protected\Xacml\Importer;
 
 /**
  * The entry to the XACML module: export to any target, check and import from any source.

@@ -201,6 +201,26 @@ $user->hasPermission('articles.edit');             // true, false, or null when 
 Access::for('Role', 'editor')->can('articles.edit');
 ```
 
+### Reading what an owner holds
+
+For an admin panel or a console: every row that reaches an owner with where it comes from, whom it inherits
+from and who inherits from it. Data, not decisions; a few queries, so keep it off the path of a request.
+
+```php
+Access::for($user)->permissions();
+// [['rule' => 'orders.view', 'rule_id' => 12, 'option' => null, 'effect' => 'deny', 'when' => 'order.locked == true',
+//   'own' => false, 'from' => ['type' => 'Role', 'id' => 'manager', 'name' => 'Managers', 'record' => 3],
+//   'via' => null, 'via_rule' => null], ...]
+
+Access::for($user)->sources();   // whom it inherits from, at any depth: type, id, name, record, direct, link, through
+Access::for('Role', 'manager')->heirs();   // who inherits from it, the same shape
+```
+
+Rows are grouped by rule and ordered strongest first inside a rule, by the five steps. An indirect source or
+heir names in `through` the record of the direct one it is reached by, the link to change when it should go.
+With `rule_tree_inheritance` on, a row on a rule is listed under every rule below it too, with `via` set to
+`tree` and `via_rule` naming the rule it sits on.
+
 ### Guests
 
 Requests without a user have no permissions unless config names the owner they are checked as:

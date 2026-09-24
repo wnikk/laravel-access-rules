@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
 
 /**
  * "Why can't Ann see order 17", answered from the console:

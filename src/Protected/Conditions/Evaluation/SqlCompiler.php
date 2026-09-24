@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Expression;
 use Wnikk\LaravelAccessRules\Conditions\Context;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
 
 /**
  * Turns a condition into a fragment of WHERE, so a list is filtered by the database.
@@ -32,7 +32,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
  * Values travel as bindings only. Names come from a tree that ConditionCompiler has checked,
  * and the grammar of the connection wraps them.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class SqlCompiler
 {

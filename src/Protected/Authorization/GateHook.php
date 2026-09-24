@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Authorization;
+namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
-use Wnikk\LaravelAccessRules\Internal\Administration\Owners;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
 
 /**
  * Plugs the package into Laravel Gate, so can(), @can, the "can:" middleware and
@@ -36,9 +36,9 @@ use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
  * holds the config repository for the same reason TypeRegistry does: the config() helper costs
  * three times more, and this code runs on every check.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class GateHook
+final class GateHook
 {
     public function __construct(
         private DecisionPoint $decisions,

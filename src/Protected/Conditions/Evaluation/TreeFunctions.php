@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Wnikk\LaravelAccessRules\Exceptions\InvalidConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
-use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Storage\HierarchyQuery;
 
 /**
  * Built-in functions for trees: ids of everything below or above a node of a model that points at itself.
@@ -30,7 +30,7 @@ use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
  * checks fifty products one by one walks the tree once. A static memory would also
  * serve a stale tree to the next request of an Octane worker.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class TreeFunctions
 {

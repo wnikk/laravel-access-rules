@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Storage;
+namespace Wnikk\LaravelAccessRules\Protected\Storage;
 
 use Closure;
 use Illuminate\Cache\CacheManager;
@@ -30,7 +30,7 @@ use Throwable;
  * Nothing here remembers values within a request. Authorization\Permissions does that, because
  * it knows when an entry stops being valid for the running process.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class PermissionCache
 {

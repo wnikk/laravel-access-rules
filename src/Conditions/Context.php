@@ -8,7 +8,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Context as LaravelContext;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\SqlCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\SqlCompiler;
 
 /**
  * Supplies the values a condition asks about: the subject, the record, the action, the environment.

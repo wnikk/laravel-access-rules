@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Administration;
+namespace Wnikk\LaravelAccessRules\Protected\Administration;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
@@ -13,11 +13,12 @@ use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
+use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Events\AccessChanged;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Storage\HierarchyQuery;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Storage\HierarchyQuery;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Writes who holds what: records of owners, their permissions and prohibitions, their inheritance.
@@ -35,9 +36,9 @@ use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
  * Reading for a permission check does not belong here. Authorization\Permissions compiles
  * what this class writes, and nothing on the path of a check touches these tables.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class Owners
+final class Owners
 {
     public function __construct(
         private TypeRegistry $types,
@@ -296,6 +297,160 @@ class Owners
         $links = app(InheritanceContract::class);
 
         return array_map('intval', $this->hierarchy->reachable($links->getConnection(), $links->getTable(), $from, $to, [$owner->getKey()]));
+    }
+
+    /**
+     * Every permission row that reaches an owner, its own and those of everything it inherits
+     * from, as data for an admin panel or a console: the rule, the option, the effect, the
+     * condition as text, whether the row is the owner's own and whom it comes from. Rows are
+     * grouped by rule and ordered strongest first inside a rule, by the five steps of the core.
+     *
+     * The compiled set of a check keeps none of this: it folds every row into one answer per
+     * ability. So this reads the tables, four queries whatever the depth of inheritance, and is
+     * for screens and commands, never for the path of a check.
+     *
+     * With config rule_tree_inheritance on, a row on a rule also reaches every rule below it in
+     * the tree at the same step; such a row is listed under the rule it reaches with "via" set to
+     * "tree" and "via_rule" naming the rule it sits on.
+     *
+     * @return list<array{rule:string, rule_id:int, option:?string, effect:string, when:?string, own:bool, from:array{type:string, id:string, name:?string, record:int}, via:?string, via_rule:?string}>
+     */
+    public function rowsOf(OwnerContract $owner): array
+    {
+        $ownId   = (int) $owner->getKey();
+        $sources = [$ownId, ...$this->ancestors($owner)];
+        $names   = $this->present(app(OwnerContract::class)->newQuery()->whereIn('id', $sources)->get());
+
+        $rows = app(PermissionContract::class)->newQuery()->with('rule')->whereIn('owner_id', $sources)->get();
+
+        $byRule = [];
+        foreach ($rows as $row) {
+            if ($row->rule === null || ! isset($names[(int) $row->owner_id])) {
+                continue;
+            }
+
+            $byRule[(int) $row->rule_id][] = [
+                'rule'     => $row->rule->guard_name,
+                'rule_id'  => (int) $row->rule_id,
+                'option'   => $row->option,
+                'effect'   => $row->permission ? 'allow' : 'deny',
+                'when'     => $this->conditions->describe($row->condition, $row->rule->resource),
+                'own'      => (int) $row->owner_id === $ownId,
+                'from'     => $names[(int) $row->owner_id],
+                'via'      => null,
+                'via_rule' => null,
+            ];
+        }
+
+        if (config('access.rule_tree_inheritance') && $byRule !== []) {
+            $rules   = app(RuleContract::class)->newQuery()->get(['id', 'parent_id', 'guard_name']);
+            $parents = $rules->pluck('parent_id', 'id')->map(static fn ($id): int => (int) $id)->all();
+            $labels  = $rules->pluck('guard_name', 'id')->all();
+
+            foreach ($rules as $rule) {
+                $ruleId = (int) $rule->id;
+                for ($above = $parents[$ruleId], $seen = [$ruleId => true]; $above > 0 && ! isset($seen[$above]); $above = $parents[$above] ?? 0) {
+                    $seen[$above] = true;
+                    foreach ($byRule[$above] ?? [] as $entry) {
+                        if ($entry['via'] === null) {
+                            $byRule[$ruleId][] = ['via' => 'tree', 'via_rule' => $labels[$above] ?? null, 'rule' => $labels[$ruleId] ?? '', 'rule_id' => $ruleId] + $entry;
+                        }
+                    }
+                }
+            }
+        }
+
+        $strength = static fn (array $e): int => ($e['own'] ? 2 : 0) + ($e['effect'] === 'deny' ? 1 : 0);
+        $out      = [];
+        foreach ($byRule as $entries) {
+            usort($entries, static fn (array $a, array $b): int => $strength($b) <=> $strength($a));
+            $out = [...$out, ...$entries];
+        }
+        usort($out, static fn (array $a, array $b): int => strcmp($a['rule'], $b['rule']) ?: ($strength($b) <=> $strength($a)));
+
+        return $out;
+    }
+
+    /**
+     * Whom an owner inherits from, at any depth, with the direct link each one came through.
+     *
+     * @return list<array{type:string, id:string, name:?string, record:int, direct:bool, link:?int, through:?int}>
+     */
+    public function sourcesOf(OwnerContract $owner): array
+    {
+        return $this->relatives($owner, 'owner_id', 'owner_parent_id');
+    }
+
+    /**
+     * Who inherits from an owner, at any depth: everyone a change of it reaches.
+     *
+     * @return list<array{type:string, id:string, name:?string, record:int, direct:bool, link:?int, through:?int}>
+     */
+    public function heirsOf(OwnerContract $owner): array
+    {
+        return $this->relatives($owner, 'owner_parent_id', 'owner_id');
+    }
+
+    /**
+     * The reachable set comes from one recursive query; the links among that set from one more,
+     * walked breadth first in memory so the recorded route is the shortest. "through" names the
+     * direct relative an indirect one is reached by: the link to change when it should go.
+     */
+    private function relatives(OwnerContract $owner, string $from, string $to): array
+    {
+        $ownId   = (int) $owner->getKey();
+        $reached = $this->walk($owner, $from, $to);
+        if ($reached === []) {
+            return [];
+        }
+
+        $edges = [];
+        $links = [];
+        foreach (app(InheritanceContract::class)->newQuery()->whereIn($from, [$ownId, ...$reached])->whereIn($to, $reached)->get() as $link) {
+            $edges[(int) $link->{$from}][] = (int) $link->{$to};
+            if ((int) $link->{$from} === $ownId) {
+                $links[(int) $link->{$to}] = (int) $link->getKey();
+            }
+        }
+
+        $through = [];
+        $queue   = [];
+        foreach ($edges[$ownId] ?? [] as $direct) {
+            $through[$direct] = $direct;
+            $queue[]          = $direct;
+        }
+        while ($queue !== []) {
+            $at = array_shift($queue);
+            foreach ($edges[$at] ?? [] as $next) {
+                if ($next !== $ownId && ! isset($through[$next])) {
+                    $through[$next] = $through[$at];
+                    $queue[]        = $next;
+                }
+            }
+        }
+
+        $out = [];
+        foreach ($this->present(app(OwnerContract::class)->newQuery()->whereIn('id', $reached)->orderBy('name')->orderBy('id')->get()) as $id => $data) {
+            $out[] = $data + ['direct' => isset($links[$id]), 'link' => $links[$id] ?? null, 'through' => isset($links[$id]) ? null : ($through[$id] ?? null)];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array<int, array{type:string, id:string, name:?string, record:int}> By record id. Owners of a type that left config are left out: they hold nothing a check sees.
+     */
+    private function present(iterable $owners): array
+    {
+        $out = [];
+        foreach ($owners as $owner) {
+            $type = $this->types->name((int) $owner->type);
+            if ($type !== null) {
+                $out[(int) $owner->getKey()] = ['type' => $type, 'id' => (string) $owner->original_id, 'name' => $owner->name, 'record' => (int) $owner->getKey()];
+            }
+        }
+
+        return $out;
     }
 
     /**

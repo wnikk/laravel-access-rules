@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Xacml;
+namespace Wnikk\LaravelAccessRules\Protected\Xacml;
 
 use DOMDocument;
 use DOMElement;
@@ -14,10 +14,10 @@ use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
 use Wnikk\LaravelAccessRules\Models\RuleOrigin;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
 
 /**
  * Converts an XACML 3.0 policy document into owners, rules and permissions of the package,
@@ -43,7 +43,7 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * a foreign document: every Rule becomes a permission or a prohibition of the subject or the
  * role its Targets name.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Importer
 {

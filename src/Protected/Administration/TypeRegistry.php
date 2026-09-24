@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Administration;
+namespace Wnikk\LaravelAccessRules\Protected\Administration;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +25,7 @@ use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
  * call it on every check, so it holds the config repository instead of calling the
  * config() helper: the helper costs 0.9 microseconds, the repository 0.3.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class TypeRegistry
 {

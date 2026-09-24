@@ -10,11 +10,11 @@ use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Permissions;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 use Wnikk\LaravelAccessRules\Models\RuleOrigin;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Permissions;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * The entry point of version 2, kept so that code written for it runs unchanged.

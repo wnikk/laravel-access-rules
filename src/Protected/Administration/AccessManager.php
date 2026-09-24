@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Administration;
+namespace Wnikk\LaravelAccessRules\Protected\Administration;
 
 use BackedEnum;
 use Closure;
@@ -13,10 +13,10 @@ use Wnikk\LaravelAccessRules\Conditions\Cond;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager as AccessManagerContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
-use Wnikk\LaravelAccessRules\Internal\Authorization\DecisionPoint;
-use Wnikk\LaravelAccessRules\Internal\Authorization\Explainer;
-use Wnikk\LaravelAccessRules\Internal\Storage\PermissionCache;
 use Wnikk\LaravelAccessRules\Models\RuleOrigin;
+use Wnikk\LaravelAccessRules\Protected\Authorization\DecisionPoint;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Entry point of the package for application code: hands out access of owners and manages rules.
@@ -30,9 +30,9 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * manages rules, DecisionPoint answers. Inject Contracts\AccessManager or use Facades\Access;
  * the provider registers one instance per request.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class AccessManager implements AccessManagerContract
+final class AccessManager implements AccessManagerContract
 {
     public function __construct(
         private Owners $owners,

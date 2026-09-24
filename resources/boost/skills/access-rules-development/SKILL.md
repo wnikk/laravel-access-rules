@@ -162,6 +162,8 @@ Debug mode for a support session (turn it on per request, never for ordinary use
 
 `app(\Wnikk\LaravelAccessRules\Administration\Linter::class)->run()` returns the findings of lint as data, for a health screen.
 
+What an owner holds, as data for a screen or a console: `Access::for($user)->permissions()` lists every row that reaches the owner with rule, option, effect, condition text, own or inherited and from whom, strongest first inside a rule; `->sources()` and `->heirs()` list inheritance at any depth with the direct link each one came through. Never on the path of a request.
+
 ## Admin panels
 
 Rules that come with code (`origin = code`) may change their title, description, options and place in the tree (the place stays closed while `rule_tree_inheritance` is on); `custom` and `import` rules are fully editable. Use the two methods that respect this:

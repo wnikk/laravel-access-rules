@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Conditions;
+namespace Wnikk\LaravelAccessRules\Protected\Conditions;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +26,7 @@ use ReflectionNamedType;
  * leads to a model outside of the list is refused, so a condition on orders cannot read
  * salaries through a chain of relations the project did not list.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class ResourceRegistry
 {

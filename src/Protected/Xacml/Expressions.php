@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Xacml;
+namespace Wnikk\LaravelAccessRules\Protected\Xacml;
 
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Syntax\Printer;
 
 /**
  * Translates conditions between the tree of the package and expressions of XACML, both ways.
@@ -36,7 +36,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * compared column. Encoding three-valued logic exactly doubles every condition and makes it
  * unreadable, which defeats the reason to export.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
 final class Expressions
 {

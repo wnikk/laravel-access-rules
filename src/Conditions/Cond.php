@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Wnikk\LaravelAccessRules\Conditions;
 
 use Wnikk\LaravelAccessRules\Exceptions\InvalidConditionException;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Normalizer;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Parser;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Normalizer;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Syntax\Parser;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Syntax\Printer;
 
 /**
  * Builds a condition in PHP code instead of text.

@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.3.0 - 2026-09-25
+
+- Reading API for admin panels and consoles: `Access::for(...)->permissions()`, `->sources()`, `->heirs()`
+- Note and names the public API of `AGENTS.md`
+
 ## 3.2.4 - 2026-09-24
 
 - `RuleCatalog::edit()` opens the place in the tree of a rule of code

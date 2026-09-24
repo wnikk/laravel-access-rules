@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Wnikk\LaravelAccessRules\Internal\Authorization;
+namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 
 use Illuminate\Auth\Access\Events\GateEvaluated;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 use Wnikk\LaravelAccessRules\Conditions\Context;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
-use Wnikk\LaravelAccessRules\Internal\Administration\TypeRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Evaluation\Evaluator;
-use Wnikk\LaravelAccessRules\Internal\Conditions\ResourceRegistry;
-use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
+use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\Evaluator;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
+use Wnikk\LaravelAccessRules\Protected\Conditions\Syntax\Printer;
 
 /**
  * Tells why a check answers what it answers: which permission decided, where it came from,
@@ -32,9 +32,9 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\Syntax\Printer;
  * It also decides once more from the cache and compares. When the two answers differ, the cache is
  * stale: a failure that rows in the database do not show.
  *
- * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
+ * @internal Implementation of the package, not an entry point for applications. The public API is the facade Access, the traits and the classes outside src/Protected; AGENTS.md lists them.
  */
-class Explainer
+final class Explainer
 {
     /**
      * The ability of the last refusal of this request, kept in any mode: it costs one assignment.
