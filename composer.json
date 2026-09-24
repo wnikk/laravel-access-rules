@@ -1,6 +1,6 @@
 {
     "name": "wnikk/laravel-access-rules",
-    "version": "3.2.1",
+    "version": "3.2.2",
     "description": "Fast access control for Laravel: RBAC with roles, groups and unlimited inheritance, extended to ABAC: conditions on any model, its relations and aggregates, with list filtering.",
     "license": "MIT",
     "keywords": [

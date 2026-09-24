@@ -100,8 +100,13 @@ class XacmlExchangeTest extends FeatureTestCase
         $document = new \DOMDocument;
         $document->loadXML($export['policy']);
 
+        // The schema and the xml.xsd it imports are fixtures of the suite: libxml reports a missing file as "Invalid Schema".
+        $schema = __DIR__.'/../Fixtures/Xacml/xacml-core-v3-schema-wd-17.xsd';
+        $this->assertFileExists($schema);
+        $this->assertFileExists(dirname($schema).'/xml.xsd');
+
         $previous = libxml_use_internal_errors(true);
-        $valid    = $document->schemaValidate(__DIR__.'/../Fixtures/Xacml/xacml-core-v3-schema-wd-17.xsd');
+        $valid    = $document->schemaValidate($schema);
         $problems = array_map(static fn ($e) => trim($e->message).' at line '.$e->line, libxml_get_errors());
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
