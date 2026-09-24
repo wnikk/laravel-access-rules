@@ -70,7 +70,7 @@ abstract class FeatureTestCase extends TestCase
         $xpath = new \DOMXPath($document);
         $xpath->registerNamespace('x', 'urn:oasis:names:tc:xacml:3.0:core:schema:wd-17');
 
-        $manifest = ['rules' => [], 'owners' => [], 'inheritance' => [], 'roles' => [], 'warnings' => []];
+        $manifest = ['config' => [], 'rules' => [], 'owners' => [], 'inheritance' => [], 'roles' => [], 'warnings' => []];
 
         foreach ($xpath->query('/x:PolicySet/x:PolicySet[@PolicySetId="urn:wnikk:access:manifest"]/x:AdviceExpressions/x:AdviceExpression') as $item) {
             $lists = [];
@@ -80,6 +80,9 @@ abstract class FeatureTestCase extends TestCase
             $fields = array_map(fn (array $values) => $values[0], $lists);
 
             switch (substr($item->getAttribute('AdviceId'), strlen('urn:wnikk:access:manifest:'))) {
+                case 'config':
+                    $manifest['config'] = $fields;
+                    break;
                 case 'rule':
                     $manifest['rules'][] = $fields;
                     break;

@@ -3,7 +3,7 @@ title: Tutorial ABAC step-by-step
 weight: 4
 ---
 
-> 📷 **Cover image.** A wide banner in the style of the first article: the title "ABAC in Laravel: permissions that look at your data", a Laravel logo, and a short line "roles + conditions + filtered lists".
+![ABAC in Laravel: permissions that look at your data. Roles, conditions and filtered lists with wnikk/laravel-access-rules 3.x](art/abac-00-cover.jpg)
 
 This is the second part. The first one, [How to use Access Control Rules step by step](tutorial-basic-step-by-step.md), built roles and permissions: **RBAC**.
 This one goes further: permissions that **look at the data**. That is **ABAC**, _Attribute-Based Access Control_, and it arrived in version **3.x** of "[**wnikk/laravel-access-rules**](https://github.com/wnikk/laravel-access-rules)".
@@ -286,7 +286,7 @@ One query. Pagination, sorting and your own `where()` work as always.
 
 The list and the single check **always agree**. You will never show a row that answers 403 when clicked.
 
-> 📷 **Screenshot 1.** Browser with `/orders` opened as Ann: the JSON list with orders 1, 4 and 5.
+![The list of orders as Ann: orders 1, 4 and 5, filtered by the condition of her permission](art/abac-01-orders-list.png)
 
 ## Example 3
 Compare a record with **the user**:
@@ -354,7 +354,8 @@ With the permission of Example 1, the second line is **true** and the third is *
 ```
 `authorizeResource()` passes the class for `index` and `create` by itself.
 
-> 📷 **Screenshot 2.** Two menus side by side: for Ann the item "Orders" is visible, for a user without the permission it is not.
+![The menu of Ann has the item Orders, the menu of a user without the permission has not](art/abac-02a-menu-ann.png)
+![The same menu for a user that holds nothing: no Orders](art/abac-02b-menu-user3.png)
 
 ## Example 7
 Aggregates over related records: `count`, `sum`, `min`, `max`, `exists`. Each can take a **filter**:
@@ -465,7 +466,7 @@ orders.view for User 1, asked about a record: PROHIBITED
 ```
 Every permission that takes part, strongest first. The arrow marks the one that **decided**, and you see the value it read.
 
-> 📷 **Screenshot 3.** Terminal with the output of `acr:explain` above.
+![acr:explain in the terminal: the own prohibition decided, the arrow marks it, the value it read is shown](art/abac-03-explain.png)
 
 On production it is even simpler. An administrator looks at the application as the user who complains, and the application turns **debug mode** on for that request:
 ```php
@@ -488,7 +489,8 @@ Print the last one on your 403 page:
 ```
 Keep it off for ordinary users. An explanation shows rules of other people.
 
-> 📷 **Screenshot 4.** A 403 page in the browser. Left: the plain page of Laravel. Right: the same page with debug mode on, the explanation printed under the message.
+![The plain 403 page of Laravel with the name of the refused ability](art/abac-04a-403-plain.png)
+![The same page with debug mode on: the explanation of the refusal under the message](art/abac-04b-403-debug.png)
 
 ## Example 15
 Conditions are checked when you save them. Then the application changes. Somebody renames `cost` to `total` in a migration, and stored conditions still say `cost`.
@@ -496,12 +498,15 @@ Conditions are checked when you save them. Then the application changes. Somebod
 php artisan acr:lint
 ```
 ```
-| permission #4 of User 1 for orders.view | "cost" is not a column of table "orders": ... a list cannot filter by it |
-1 problem(s) found.
+| permission #21 of Role manager for orders.approve | "cost" is not a column of table "orders": ... a list cannot filter by it |
+| permission #21 of Role manager for orders.approve | types of columns have changed since the condition was saved ... run "php artisan acr:lint --fix" |
+2 problem(s) found.
 ```
-It exits with code **1**. Put it into your CI and after `migrate` in the deploy script.
+It exits with code **1**. Put it into your CI and after `migrate` in the deploy script. The second line is the same
+column seen from another side: the stored condition remembers the type of `cost`, and `--fix` saves it again once the
+column is back.
 
-> 📷 **Screenshot 5.** Terminal with `acr:lint` reporting one problem, and the same command green after the fix.
+![acr:lint reports the renamed column, and answers green after the fix](art/abac-05-lint.png)
 
 ## Example 16
 Two small things for real projects.
@@ -529,13 +534,13 @@ By the way, about speed. After the first check of a request, a check runs **no q
 ## Example 17
 This one is for the world outside of Laravel. **XACML 3.0** is the standard language of access policies. Auditors ask for it, other systems speak it.
 ```bash
-php artisan acr:xacml:export storage/app/access.zip
+php artisan acr:xacml:export storage/app/access.xml
 ```
-Inside are `policy.xml`, a valid XACML policy, and `manifest.json` with what XACML has no place for: titles of rules, names of owners, inheritance.
+One file: a valid XACML policy, and at its end a policy set no request reaches, with what XACML has no place for: titles of rules, names of owners, inheritance.
 
 And back. **Look first**, import second:
 ```bash
-php artisan acr:xacml:import storage/app/access.zip --check
+php artisan acr:xacml:import storage/app/access.xml --check
 ```
 ```
 | Kind       | Action  | What                                 | Document         | Database          |
@@ -547,8 +552,8 @@ inheritance: 1 same
 ```
 Nothing was written. You see what an import **would** create, and what differs from the database. Then:
 ```bash
-php artisan acr:xacml:import storage/app/access.zip            # creates what is missing
-php artisan acr:xacml:import storage/app/access.zip --replace  # and brings what differs to the document
+php artisan acr:xacml:import storage/app/access.xml            # creates what is missing
+php artisan acr:xacml:import storage/app/access.xml --replace  # and brings what differs to the document
 ```
 It also reads policies written by **other systems**. What it cannot convert, it reports with an address in the document and writes nothing, because a lost prohibition means wider access.
 
@@ -558,7 +563,7 @@ use Wnikk\LaravelAccessRules\Xacml\Xacml;
 
 public function download(Xacml $xacml)
 {
-    return response()->streamDownload(fn () => $xacml->exportArchive('php://output'), 'access-rules.zip');
+    return response()->streamDownload(fn () => $xacml->export('php://output'), 'access.xml', ['Content-Type' => 'application/xml']);
 }
 
 public function preview(Request $request, Xacml $xacml)
@@ -567,9 +572,9 @@ public function preview(Request $request, Xacml $xacml)
 }
 ```
 
-> 📷 **Screenshot 6.** Terminal with `acr:xacml:import ... --check` and its table of differences.
+![acr:xacml:import --check: the table of what the document would create and what differs from the database](art/abac-06-xacml-check.png)
 >
-> 📷 **Screenshot 7.** `policy.xml` opened in an editor: the root `PolicySet` and one `Rule` with its `Condition`, so the reader sees it is ordinary XACML.
+![policy.xml in an editor: the root PolicySet with first-applicable, and one Rule with its Condition](art/abac-07-policy-xml.png)
 
 ## Example 18
 The last one is about **polymorphic relations**. A tag hangs on a product and on a category alike: `morphToMany`
@@ -616,7 +621,7 @@ The package writes no joins of its own. For every relation in a condition it ask
 The one relation the package refuses is `morphTo`: its far end is a different model for every row, so no single
 subquery describes it. Ask from the other side, `exists(product.tags, ...)` instead of `tag.taggable`.
 
-> 📷 **Screenshot 8.** `/products` as Ann: the JSON list with the Phone and the Charger, and the Battery pack absent.
+![The list of products as Ann: the Phone and the Charger, the Battery pack is absent](art/abac-08-products.png)
 
 ## Coming from 2.x?
 Nothing has to be converted. Tables, names of rules, options, `.self`, the trait and the console commands stay compatible.
@@ -635,19 +640,3 @@ Where to go next:
 - [Conditions](conditions.md): the whole language on one page
 - [Basic usage](basic-usage.md): rules, roles, options, cache, console
 - [XACML](xacml.md): what is exported and how foreign policies convert
-
----
-
-### Screenshots to add
-
-| # | Where | What to capture |
-|---|---|---|
-| cover | top | Banner "ABAC in Laravel: permissions that look at your data" |
-| 1 | Example 2 | `/orders` as Ann, JSON with orders 1, 4, 5 |
-| 2 | Example 6 | Menu with the item "Orders" for Ann, and without it for a user that has no permission |
-| 3 | Example 14 | Terminal, `acr:explain` with the arrow on the deciding line |
-| 4 | Example 14 | 403 page, plain next to the same page with debug mode on and the explanation printed |
-| 5 | Example 15 | Terminal, `acr:lint` with one problem and green after the fix |
-| 6 | Example 17 | Terminal, `acr:xacml:import --check` with the table of differences |
-| 7 | Example 17 | `policy.xml` in an editor, root `PolicySet` and one `Rule` with a `Condition` |
-| 8 | Example 18 | `/products` as Ann: the Phone and the Charger, the Battery pack absent |

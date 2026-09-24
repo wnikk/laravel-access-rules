@@ -2,9 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
-## 3.2.0 - 2026-09-24
+## 3.2.1 - 2026-09-24
 
 - XACML: the export is one file
+- XACML: the export carries date and plan of a check
 - The zip extension is removed
 
 ## 3.1.3 - 2026-09-22

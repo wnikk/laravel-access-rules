@@ -6,6 +6,7 @@ namespace Wnikk\LaravelAccessRules\Internal\Xacml;
 
 use DOMDocument;
 use DOMElement;
+use Illuminate\Support\Carbon;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
@@ -47,6 +48,14 @@ final class Exporter
     /** Permissions are read in portions of this many rows, so memory follows one owner and not the table. */
     private const PORTION = 1000;
 
+    /** What each tier says about itself, for whoever edits the document without the package at hand. */
+    private const TIER_NOTES = [
+        'own:prohibitions'       => 'Prohibitions of every owner, addressed by subject-id and type. Edit here: an import reads this set.',
+        'own:permissions'        => 'Permissions of every owner, addressed by subject-id and type. Edit here: an import reads this set.',
+        'inherited:prohibitions' => 'The prohibitions of own:prohibitions again, addressed to the role attribute for an engine. Derived: an import ignores this set.',
+        'inherited:permissions'  => 'The permissions of own:permissions again, addressed to the role attribute for an engine. Derived: an import ignores this set.',
+    ];
+
     public function __construct(
         private Expressions $expressions,
         private TypeRegistry $types,
@@ -74,12 +83,18 @@ final class Exporter
 
         fwrite($stream, '<?xml version="1.0" encoding="UTF-8"?>'."\n"
             .'<PolicySet xmlns="'.Vocabulary::NS.'" PolicySetId="'.Vocabulary::ROOT.'" Version="1.0" PolicyCombiningAlgId="'.Vocabulary::ALG_FIRST_APPLICABLE.'">'."\n"
-            .'  <Description>Exported by wnikk/laravel-access-rules. The four policy sets are the priority of the package, strongest first.</Description>'."\n"
+            .'  <Description>Exported by wnikk/laravel-access-rules. The four policy sets are the priority of the package, strongest first. '
+            .'To edit by hand: the own:* sets are what an import reads, the inherited:* sets are derived from them and ignored on import. '
+            .'A Policy is one owner, a Rule is one permission or prohibition, action-id is the name of the rule, with an option as a suffix (orders.export.csv). '
+            .'A Condition may be written as the text of the package inside Apply FunctionId="'.Vocabulary::FN_DSL.'", for example order.cost > 100 and user.tenant; '
+            .'a rule with the suffix .self travels as the main name with the condition isAuthor(). '
+            .'Titles of rules, names of owners and inheritance are the last policy set, '.Vocabulary::MANIFEST.'.</Description>'."\n"
             ."  <Target/>\n");
 
         foreach (Vocabulary::TIERS as $name => $tier) {
             fwrite($stream, '  <PolicySet PolicySetId="'.Vocabulary::OWN.$name.'" Version="1.0" PolicyCombiningAlgId="'
-                .sprintf($tier['permit'] ? Vocabulary::ALG_PERMIT_OVERRIDES : Vocabulary::ALG_DENY_OVERRIDES, 'policy').'">'."\n    <Target/>\n");
+                .sprintf($tier['permit'] ? Vocabulary::ALG_PERMIT_OVERRIDES : Vocabulary::ALG_DENY_OVERRIDES, 'policy').'">'."\n"
+                .'    <Description>'.self::TIER_NOTES[$name].'</Description>'."\n    <Target/>\n");
 
             $held = app(PermissionContract::class)->newQuery()->with('owner')
                 ->where('permission', $tier['permit'])
@@ -150,14 +165,23 @@ final class Exporter
         $rules    = app(RuleContract::class)->newQuery()->get()->keyBy('id');
 
         fwrite($stream, '  <PolicySet PolicySetId="'.Vocabulary::MANIFEST.'" Version="1.0" PolicyCombiningAlgId="'.Vocabulary::ALG_FIRST_APPLICABLE.'">'."\n"
-            .'    <Description>What the policy cannot hold: titles and tree of rules, names of owners, inheritance. Addressed to an action no request names, so an engine never evaluates it.</Description>'."\n"
+            .'    <Description>What the policy cannot hold. Addressed to an action no request names, so an engine never evaluates it. '
+            .'One AdviceExpression is one item, its AdviceId ends with the kind, its AttributeAssignmentExpressions are the fields, a missing field is null: '
+            .'config (rule_tree_inheritance, exported_at); warning (text); '
+            .'rule (guard_name, title, description, options, resource, origin, parent, condition); owner (type, id, name); '
+            .'inheritance (child, parent, as Type:id); roles (owner, then role for every owner in the chain of inheritance). '
+            .'To add a rule with a title, an owner with a name or a link of inheritance, add an item here.</Description>'."\n"
             .'    <Target><AnyOf><AllOf><Match MatchId="'.Vocabulary::FN.'string-equal">'
             .'<AttributeValue DataType="'.Vocabulary::XS.'string">'.Vocabulary::MANIFEST.'</AttributeValue>'
             .'<AttributeDesignator Category="'.Vocabulary::ACTION.'" AttributeId="'.Vocabulary::ACTION_ID.'" DataType="'.Vocabulary::XS.'string" MustBePresent="false"/>'
             ."</Match></AllOf></AnyOf></Target>\n"
             ."    <AdviceExpressions>\n");
 
-        $this->advice($stream, 'config', ['rule_tree_inheritance' => config('access.rule_tree_inheritance') ? 'true' : 'false']);
+        // The date lets a check tell an old document from the database that moved on after it.
+        $this->advice($stream, 'config', [
+            'rule_tree_inheritance' => config('access.rule_tree_inheritance') ? 'true' : 'false',
+            'exported_at'           => Carbon::now('UTC')->format(DATE_ATOM),
+        ]);
 
         foreach ($warnings as $warning) {
             $this->advice($stream, 'warning', ['text' => $warning]);

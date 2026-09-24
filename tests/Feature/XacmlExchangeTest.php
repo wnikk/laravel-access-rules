@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Shop\ShopSchema;
@@ -47,6 +48,7 @@ class XacmlExchangeTest extends FeatureTestCase
 
     protected function tearDown(): void
     {
+        Carbon::setTestNow();
         array_map('unlink', glob($this->work.'/*') ?: []);
         rmdir($this->work);
 
@@ -202,6 +204,38 @@ class XacmlExchangeTest extends FeatureTestCase
         $this->assertSame('View orders', DB::table(config('access.table_names.rule'))->where('guard_name', 'orders.view')->value('title'));
 
         $this->assertSame(['same'], array_values(array_unique(array_column($xacml->check($this->work.'/access.xml')['changes'], 'action'))));
+    }
+
+    /**
+     * The usual cycle is export, edit a few rows, import. A plan cannot tell "not created yet"
+     * from "removed since the export", so the date of the export has to say when the database
+     * moved on after the document.
+     */
+    public function test_the_plan_says_when_the_database_moved_on_after_the_export(): void
+    {
+        $xacml = app(Xacml::class);
+
+        Carbon::setTestNow('2030-01-01 10:00:00');
+        $xacml->export($this->work.'/access.xml');
+
+        $this->assertSame('2030-01-01T10:00:00+00:00', $this->manifestOf(file_get_contents($this->work.'/access.xml'))['config']['exported_at']);
+
+        $report = $xacml->check($this->work.'/access.xml');
+        $this->assertSame('2030-01-01T10:00:00+00:00', $report['exported_at']);
+        $this->assertSame([], $report['warnings'], 'nothing moved: nothing to say');
+
+        Carbon::setTestNow('2030-01-01 11:00:00');
+        Access::for('Role', 'manager')->removeAllow('orders.view');
+        Access::for('Role', 'manager')->allow('orders.view', when: 'order.cost > 500');   // rewritten after the export
+        Access::for('Role', 'manager')->removeDeny('orders.update');                        // removed after the export; the document still has it
+
+        $report   = $xacml->check($this->work.'/access.xml');
+        $warnings = array_map(static fn (array $w) => $w[0].': '.$w[1], $report['warnings']);
+
+        $this->assertCount(2, $warnings, implode("\n", $warnings));
+        $this->assertStringContainsString('Role:manager may orders.view: written in the database on 2030-01-01 11:00, after the export of 2030-01-01 10:00', $warnings[0]);
+        $this->assertStringContainsString('/: the database changed on 2030-01-01 11:00, after the export of 2030-01-01 10:00: a row marked "create" may be one that was removed since', $warnings[1]);
+        $this->assertSame([], $report['errors'], 'a warning is not an error: the import stays possible');
     }
 
     public function test_the_console_commands_are_the_same_calls(): void

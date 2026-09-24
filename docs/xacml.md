@@ -20,7 +20,9 @@ and is never loaded by a check.
 php artisan acr:xacml:export storage/app/access.xml
 ```
 
-One file, written as it is produced, one owner at a time, so a large export does not need a large memory.
+One file, written as it is produced, one owner at a time, so a large export does not need a large memory. The
+document describes itself: the `Description` of the root, of every policy set and of the manifest set says what may
+be edited by hand and how, so a person with the file alone can add a permission, an owner, a rule or a link.
 
 The policy is one flat document. Its root combines four policy sets with `first-applicable`, which is the
 priority of the package word for word:
@@ -84,7 +86,7 @@ left out, a list repeats the assignment:
 
 | kind | fields |
 |---|---|
-| `config` | `rule_tree_inheritance` |
+| `config` | `rule_tree_inheritance`, `exported_at` |
 | `warning` | `text`, one per warning of the export |
 | `rule` | `guard_name`, `title`, `description`, `options`, `resource`, `origin`, `parent`, `condition` |
 | `owner` | `type`, `id`, `name` |
@@ -139,7 +141,15 @@ compared with the database as it is now.
 
 The import executes that very plan, so what the check shows is what happens. An export restores everything: rules with
 titles, options, their tree and conditions, owners with names, inheritance, every permission with the text of its
-condition. A second import of the same files changes nothing.
+condition. A second import of the same file changes nothing.
+
+The usual cycle is export, edit a few rows, import, and the database may move on in between. The plan reads the date
+of the export from the document and says so: a permission the database rewrote after that date is named row by row,
+because `--replace` would bring back the older version; and when anything in the database is newer than the document
+while the plan holds a `create`, one warning asks to read those rows first, because a row removed after the export is
+in the document, not in the database, and the plan cannot tell it from a row that is new. Rules and owners carry no
+date of their last change, so only their creation counts. Rows added after the export are `only in database` and
+stay as they are.
 
 Any other XACML 3.0 document is a foreign one. Every `Rule` becomes a permission or a prohibition:
 
@@ -197,9 +207,10 @@ Both `check()` and `import()` return the same report:
 
 ```php
 [
-    'own'      => true,            // an export of this package, or a foreign document
-    'errors'   => [[address, text], ...],
-    'warnings' => [[address, text], ...],
+    'own'         => true,            // an export of this package, or a foreign document
+    'exported_at' => '2026-09-24T10:00:00+00:00',   // null for a foreign document
+    'errors'      => [[address, text], ...],
+    'warnings'    => [[address, text], ...],
     'changes'  => [['kind' => 'permission', 'action' => 'differs', 'what' => 'Role:manager may orders.view',
                     'document' => 'order.cost > 100', 'database' => 'order.cost > 500'], ...],
     'summary'  => ['permission' => ['same' => 12, 'differs' => 1], 'rule' => [...], 'owner' => [...], 'inheritance' => [...]],

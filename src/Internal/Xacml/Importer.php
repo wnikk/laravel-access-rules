@@ -6,6 +6,7 @@ namespace Wnikk\LaravelAccessRules\Internal\Xacml;
 
 use DOMDocument;
 use DOMElement;
+use Illuminate\Support\Carbon;
 use Wnikk\LaravelAccessRules\Administration\RuleCatalog;
 use Wnikk\LaravelAccessRules\Contracts\AccessManager;
 use Wnikk\LaravelAccessRules\Contracts\Inheritance as InheritanceContract;
@@ -136,8 +137,9 @@ final class Importer
             }
         }
 
-        $plan    = $root === null ? [] : $this->plan($manifest ?? [], $own && $manifest !== null);
-        $written = $apply && $root !== null && ($this->errors === [] || ($options['partial'] ?? false));
+        $plan       = $root === null ? [] : $this->plan($manifest ?? [], $own && $manifest !== null);
+        $exportedAt = $this->warnAboutAge($plan, $manifest);
+        $written    = $apply && $root !== null && ($this->errors === [] || ($options['partial'] ?? false));
 
         if ($written) {
             app(RuleContract::class)->getConnection()->transaction(function () use ($plan, $options, &$applied) {
@@ -153,10 +155,62 @@ final class Importer
         }
 
         return [
-            'own'     => $own, 'errors' => $this->errors, 'warnings' => $this->warnings,
-            'changes' => array_map(static fn (array $c) => array_intersect_key($c, array_flip(['kind', 'action', 'what', 'document', 'database'])), $plan),
-            'summary' => $summary, 'written' => $written, 'applied' => $applied,
+            'own'         => $own, 'errors' => $this->errors, 'warnings' => $this->warnings,
+            'exported_at' => $exportedAt?->format(DATE_ATOM),
+            'changes'     => array_map(static fn (array $c) => array_intersect_key($c, array_flip(['kind', 'action', 'what', 'document', 'database'])), $plan),
+            'summary'     => $summary, 'written' => $written, 'applied' => $applied,
         ];
+    }
+
+    /**
+     * The usual cycle is export, edit a few rows, import. Between the two the database may have
+     * moved on, and the plan alone cannot tell "not created yet" from "removed since the export":
+     * a removed row is in the document and not in the database, which reads as "create". The
+     * date of the export makes the difference visible. A permission the database rewrote after
+     * that date is named row by row, because "replace" would bring back the older version; a
+     * row removed since leaves no trace, so when anything in the database is newer than the
+     * document and the plan holds a "create", one warning asks to read those rows first.
+     *
+     * Rules and owners carry no date of their last change, so only their creation counts here.
+     *
+     * @param  list<array> $plan
+     * @return Carbon|null When the document was exported, when it says so.
+     */
+    private function warnAboutAge(array $plan, ?array $manifest): ?Carbon
+    {
+        $since = $manifest['config']['exported_at'] ?? null;
+        if (! is_string($since) || $since === '') {
+            return null;
+        }
+
+        try {
+            $since = Carbon::parse($since);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $creates = false;
+        foreach ($plan as $change) {
+            $creates = $creates || $change['action'] === 'create';
+
+            if ($change['action'] === 'differs' && ! empty($change['written_at']) && Carbon::parse($change['written_at'])->greaterThan($since)) {
+                $this->warnings[] = [$change['what'], 'written in the database on '.Carbon::parse($change['written_at'])->format('Y-m-d H:i').', after the export of '.$since->format('Y-m-d H:i').'; "replace" would bring back the older version of the document'];
+            }
+        }
+
+        $latest = null;
+        foreach ([RuleContract::class, OwnerContract::class, PermissionContract::class, InheritanceContract::class] as $contract) {
+            $at = app($contract)->newQuery()->max('created_at');
+            if ($at !== null && ($latest === null || Carbon::parse($at)->greaterThan($latest))) {
+                $latest = Carbon::parse($at);
+            }
+        }
+
+        if ($creates && $latest !== null && $latest->greaterThan($since)) {
+            $this->warnings[] = ['/', 'the database changed on '.$latest->format('Y-m-d H:i').', after the export of '.$since->format('Y-m-d H:i').': a row marked "create" may be one that was removed since; read those rows before importing'];
+        }
+
+        return $since;
     }
 
     /**
@@ -625,9 +679,10 @@ final class Importer
         foreach (app(PermissionContract::class)->newQuery()->with('rule')->get() as $permission) {
             if (isset($keyOf[$permission->owner_id]) && $permission->rule !== null) {
                 $held[self::permissionKey($keyOf[$permission->owner_id], $permission->rule->guard_name, $permission->option, (bool) $permission->permission)] = [
-                    'condition' => $permission->condition,
-                    'what'      => $keyOf[$permission->owner_id].' '.($permission->permission ? 'may' : 'may not').' '.$permission->rule->guard_name.($permission->option === null ? '' : '.'.$permission->option),
-                    'resource'  => $permission->rule->resource,
+                    'condition'  => $permission->condition,
+                    'created_at' => $permission->created_at,
+                    'what'       => $keyOf[$permission->owner_id].' '.($permission->permission ? 'may' : 'may not').' '.$permission->rule->guard_name.($permission->option === null ? '' : '.'.$permission->option),
+                    'resource'   => $permission->rule->resource,
                 ];
             }
         }
@@ -689,7 +744,9 @@ final class Importer
                 'kind'     => 'permission', 'action' => $current === null ? 'create' : ($current === $text ? 'same' : 'differs'),
                 'what'     => $ownerKey.' '.($s['permit'] ? 'may' : 'may not').' '.$name.($option === null ? '' : '.'.$option),
                 'document' => $text, 'database' => $current === $text ? null : $current,
-                'grant'    => ['owner' => $s['owner'], 'rule' => $name, 'option' => $option, 'permit' => $s['permit'], 'tree' => $tree],
+                // When the row of the database was written, for the warning about a document older than it.
+                'written_at' => isset($held[$key]) ? $held[$key]['created_at'] : null,
+                'grant'      => ['owner' => $s['owner'], 'rule' => $name, 'option' => $option, 'permit' => $s['permit'], 'tree' => $tree],
             ];
         }
 
