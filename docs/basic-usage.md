@@ -53,7 +53,7 @@ A rule is a name that code asks about, so every rule has an **origin**:
 
 | origin | created by | an admin panel may |
 |---|---|---|
-| `code`, the default | a migration or a seeder, together with the code that checks it | change title, description and options |
+| `code`, the default | a migration or a seeder, together with the code that checks it | change title, description, options and the place in the tree (not the place while `rule_tree_inheritance` is on) |
 | `custom` | an administrator, for names that code builds at run time: `can('news.edit.'.$category->slug)` | change everything and delete |
 | `import` | an import, because a foreign document named it | change everything and delete |
 

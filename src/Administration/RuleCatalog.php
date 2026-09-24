@@ -117,10 +117,12 @@ final class RuleCatalog
     }
 
     /**
-     * Editing as an admin panel may do it. Title, description and options are open for every rule.
-     * Name, resource, condition and place in the tree are open only for rules that do not come
-     * with code: code asks for the name, passes a record of that resource and was written with
-     * that condition in mind.
+     * Editing as an admin panel may do it. Title, description, options and the place in the tree
+     * are open for every rule. Name, resource and condition are open only for rules that do not
+     * come with code: code asks for the name, passes a record of that resource and was written
+     * with that condition in mind. The place in the tree is how a list reads, like the title,
+     * with one exception: with config rule_tree_inheritance on, a permission for the parent
+     * covers the children, so the place decides what a permission covers and stays with the code.
      *
      * Options are open although they are a contract too, because lists like "in:1,2,3" follow
      * data. Narrowing them leaves permissions for values that are no longer allowed; they keep
@@ -137,9 +139,12 @@ final class RuleCatalog
             throw new AccessRulesException('Rule "'.$guardName.'" is absent in the database.', AccessRulesException::RULE_NOT_FOUND);
         }
 
-        $closed = array_diff(array_keys($fields), ['title', 'description', 'options']);
+        $open   = config('access.rule_tree_inheritance') ? ['title', 'description', 'options'] : ['title', 'description', 'options', 'parent_id'];
+        $closed = array_diff(array_keys($fields), $open);
         if ($closed !== [] && $rule->origin->isManagedByCode()) {
-            throw new AccessRulesException('Rule "'.$guardName.'" comes with code: '.implode(', ', $closed).' cannot be changed from an admin panel.', AccessRulesException::RULE_MANAGED_BY_CODE);
+            $why = in_array('parent_id', $closed, true) && config('access.rule_tree_inheritance') ? ' With rule_tree_inheritance on, the place in the tree decides what a permission covers.' : '';
+
+            throw new AccessRulesException('Rule "'.$guardName.'" comes with code: '.implode(', ', $closed).' cannot be changed from an admin panel.'.$why, AccessRulesException::RULE_MANAGED_BY_CODE);
         }
 
         if (array_key_exists('when', $fields) || array_key_exists('resource', $fields)) {

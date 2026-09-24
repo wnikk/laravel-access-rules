@@ -164,7 +164,7 @@ Debug mode for a support session (turn it on per request, never for ordinary use
 
 ## Admin panels
 
-Rules that come with code (`origin = code`) may only be reworded and have their options edited; `custom` and `import` rules are fully editable. Use the two methods that respect this:
+Rules that come with code (`origin = code`) may change their title, description, options and place in the tree (the place stays closed while `rule_tree_inheritance` is on); `custom` and `import` rules are fully editable. Use the two methods that respect this:
 
 ```php
 use Wnikk\LaravelAccessRules\Administration\RuleCatalog;

@@ -119,7 +119,24 @@ class RuleOriginsTest extends FeatureTestCase
         Access::for('Role', 'manager')->allow('orders.export', 'pdf');
         $this->assertTrue(Access::for('Role', 'manager')->can('orders.export.pdf'));
 
-        foreach ([['guard_name' => 'orders.download'], ['resource' => 'order'], ['when' => 'user.level > 3'], ['parent_id' => 1], ['title' => 'x', 'guard_name' => 'y']] as $fields) {
+        // The place in the tree is how a list reads: open, and heard as an edit
+        $parent = AccessRules::newRule('orders', 'Orders');
+        $this->assertTrue($catalog->edit('orders.export', ['parent_id' => $parent]));
+        $this->assertSame($parent, (int) DB::table(config('access.table_names.rule'))->where('guard_name', 'orders.export')->value('parent_id'));
+        $this->assertSame([AccessChanged::RULE_EDITED, ['parent_id']], end($heard));
+
+        // unless the tree decides what a permission covers
+        config(['access.rule_tree_inheritance' => true]);
+        try {
+            $catalog->edit('orders.export', ['parent_id' => 0]);
+            $this->fail('the place of a rule of code is closed while the tree inherits');
+        } catch (AccessRulesException $e) {
+            $this->assertSame(AccessRulesException::RULE_MANAGED_BY_CODE, $e->getCode());
+            $this->assertStringContainsString('rule_tree_inheritance', $e->getMessage());
+        }
+        config(['access.rule_tree_inheritance' => false]);
+
+        foreach ([['guard_name' => 'orders.download'], ['resource' => 'order'], ['when' => 'user.level > 3'], ['title' => 'x', 'guard_name' => 'y']] as $fields) {
             try {
                 $catalog->edit('orders.export', $fields);
                 $this->fail(json_encode($fields).' had to be refused');

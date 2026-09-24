@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.2.4 - 2026-09-24
+
+- `RuleCatalog::edit()` opens the place in the tree of a rule of code
+
 ## 3.2.3 - 2026-09-24
 
 - XACML: owner types are named in the document
