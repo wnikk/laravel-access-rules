@@ -44,21 +44,60 @@ abstract class FeatureTestCase extends TestCase
     }
 
     /**
-     * An export the way a controller makes it, through the entry class and into streams.
+     * An export the way a controller makes it, through the entry class and into a stream, with
+     * the manifest set read back the way docs/xacml.md describes it to whoever connects an engine.
      *
      * @return array{policy:string, manifest:array, warnings:list<string>}
      */
     protected function exportXacml(): array
     {
-        $policy   = fopen('php://memory', 'w+');
-        $manifest = fopen('php://memory', 'w+');
+        $stream   = fopen('php://memory', 'w+');
+        $warnings = app(Xacml::class)->export($stream);
+        rewind($stream);
+        $policy = (string) stream_get_contents($stream);
 
-        $warnings = app(Xacml::class)->exportPolicy($policy);
-        app(Xacml::class)->exportManifest($manifest, $warnings);
+        return ['policy' => $policy, 'manifest' => $this->manifestOf($policy), 'warnings' => $warnings];
+    }
 
-        rewind($policy);
-        rewind($manifest);
+    /**
+     * The manifest set of an export as arrays: rules, owners, inheritance, roles, warnings.
+     * Identifiers are spelled out, not taken from constants of the package: a renamed one has to fail here.
+     */
+    protected function manifestOf(string $policy): array
+    {
+        $document = new \DOMDocument;
+        $document->loadXML($policy);
+        $xpath = new \DOMXPath($document);
+        $xpath->registerNamespace('x', 'urn:oasis:names:tc:xacml:3.0:core:schema:wd-17');
 
-        return ['policy' => (string) stream_get_contents($policy), 'manifest' => json_decode((string) stream_get_contents($manifest), true), 'warnings' => $warnings];
+        $manifest = ['rules' => [], 'owners' => [], 'inheritance' => [], 'roles' => [], 'warnings' => []];
+
+        foreach ($xpath->query('/x:PolicySet/x:PolicySet[@PolicySetId="urn:wnikk:access:manifest"]/x:AdviceExpressions/x:AdviceExpression') as $item) {
+            $lists = [];
+            foreach ($xpath->query('x:AttributeAssignmentExpression', $item) as $assignment) {
+                $lists[substr($assignment->getAttribute('AttributeId'), strlen('urn:wnikk:access:manifest:'))][] = $assignment->textContent;
+            }
+            $fields = array_map(fn (array $values) => $values[0], $lists);
+
+            switch (substr($item->getAttribute('AdviceId'), strlen('urn:wnikk:access:manifest:'))) {
+                case 'rule':
+                    $manifest['rules'][] = $fields;
+                    break;
+                case 'owner':
+                    $manifest['owners'][] = $fields;
+                    break;
+                case 'inheritance':
+                    $manifest['inheritance'][] = [$fields['child'], $fields['parent']];
+                    break;
+                case 'roles':
+                    $manifest['roles'][$fields['owner']] = $lists['role'] ?? [];
+                    break;
+                case 'warning':
+                    $manifest['warnings'][] = $fields['text'];
+                    break;
+            }
+        }
+
+        return $manifest;
     }
 }

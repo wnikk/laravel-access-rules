@@ -182,15 +182,15 @@ Every change fires `Wnikk\LaravelAccessRules\Events\AccessChanged` (`$event->act
 ```php
 use Wnikk\LaravelAccessRules\Xacml\Xacml;
 
-return response()->streamDownload(fn () => $xacml->exportArchive('php://output'), 'access-rules.zip');
+return response()->streamDownload(fn () => $xacml->export('php://output'), 'access.xml', ['Content-Type' => 'application/xml']);
 
 $plan = $xacml->check($request->file('policy'));                       // what an import would change, writes nothing
 $done = $xacml->import($request->file('policy'), options: ['replace' => true]);
 ```
 
 ```bash
-php artisan acr:xacml:export storage/app/access.zip
-php artisan acr:xacml:import storage/app/access.zip --check
+php artisan acr:xacml:export storage/app/access.xml
+php artisan acr:xacml:import storage/app/access.xml --check
 ```
 
 ## Testing

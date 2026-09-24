@@ -310,7 +310,7 @@ The package keeps no audit log of its own; a listener of this event writes one.
 | `acr:explain {owner_type} {owner_id} {ability} {record?}` | why a check answers what it answers |
 | `acr:lint --fix` | stored conditions against models and config as they are now; `--fix` saves again those whose column types changed |
 | `acr:cache:clear` | drop cached permissions |
-| `acr:xacml:export {target}` | permissions as an XACML 3.0 policy with a manifest, into a directory or a `.zip`, see [XACML](xacml.md) |
+| `acr:xacml:export {target}` | permissions as one XACML 3.0 policy document, see [XACML](xacml.md) |
 | `acr:xacml:import {source} --check --all --replace --partial --subject-type= --role-type= --everyone=` | show what an XACML 3.0 policy would change, or convert it into permissions |
 
 ## When access is refused and it is not clear why

@@ -83,7 +83,7 @@ class XacmlRoundTripTest extends FeatureTestCase
         Access::flush();
         $this->assertNotSame($before['decisions'], $this->snapshot()['decisions'], 'the database is empty in between');
 
-        $report = app(Xacml::class)->import($export['policy'], $export['manifest']);
+        $report = app(Xacml::class)->import($export['policy']);
 
         $this->assertSame([], $report['errors']);
         $this->assertTrue($report['written']);
@@ -100,7 +100,7 @@ class XacmlRoundTripTest extends FeatureTestCase
         $export = $this->exportXacml();
         $before = $this->snapshot();
 
-        $report = app(Xacml::class)->import($export['policy'], $export['manifest']);
+        $report = app(Xacml::class)->import($export['policy']);
 
         $this->assertSame([], $report['errors']);
         $this->assertSame(['rules' => 0, 'owners' => 0, 'permissions' => 0, 'inheritance' => 0, 'replaced' => 0], $report['applied']);

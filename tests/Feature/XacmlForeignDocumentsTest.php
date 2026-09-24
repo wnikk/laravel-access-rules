@@ -72,7 +72,7 @@ class XacmlForeignDocumentsTest extends FeatureTestCase
           </Policy>
         </PolicySet>';
 
-        $report = app(Xacml::class)->import($xml, null, ['subject_type' => TestUser::class]);
+        $report = app(Xacml::class)->import($xml, ['subject_type' => TestUser::class]);
 
         $this->assertSame([], $report['errors']);
         $this->assertTrue($report['written']);
@@ -146,7 +146,7 @@ class XacmlForeignDocumentsTest extends FeatureTestCase
 
         // The same document with --partial and an owner for "everybody": what converts is written.
         Access::for('Role', 'everyone')->create('Everyone');
-        $partial = app(Xacml::class)->import($xml, null, ['partial' => true, 'everyone' => 'Role:everyone']);
+        $partial = app(Xacml::class)->import($xml, ['partial' => true, 'everyone' => 'Role:everyone']);
 
         $this->assertTrue($partial['written']);
         $this->assertSame(['Role everyone orders.view permit: -'], $this->stored(), 'rules of containers that do not convert stay out as well');

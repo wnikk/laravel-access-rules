@@ -24,6 +24,15 @@ final class Vocabulary
     public const ROOT = self::OWN.'root';
 
     /**
+     * The fifth policy set of an export, after the four tiers: what a rule is called, how rules
+     * are grouped, names of owners, who inherits from whom, the warnings of the export. Its
+     * target names this id as the action, which no request does, so an engine never evaluates
+     * it. Items are AdviceExpressions with this id and a kind, fields are attribute assignments
+     * with this id and a field name.
+     */
+    public const MANIFEST = self::OWN.'manifest';
+
+    /**
      * The four tiers under the root, strongest first. The root combines them with
      * "first-applicable", which is the five-step priority of the package word for word:
      * own prohibition, own permission, inherited prohibition, inherited permission, nothing.

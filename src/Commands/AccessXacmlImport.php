@@ -15,8 +15,7 @@ use Wnikk\LaravelAccessRules\Xacml\Xacml;
 #[AsCommand(name: 'acr:xacml:import')]
 class AccessXacmlImport extends Command
 {
-    protected $signature = 'acr:xacml:import {source : policy.xml, an archive of an export, a directory of an export, or a foreign XACML 3.0 document}
-        {--manifest= : manifest.json when it does not lie next to the policy or inside the archive}
+    protected $signature = 'acr:xacml:import {source : An export of this package, or a foreign XACML 3.0 document}
         {--check : Show what the import would change and write nothing}
         {--all : Also list what is the same in the document and in the database}
         {--replace : Bring rules, names of owners and conditions that differ to the document. Without it they stay as they are}
@@ -39,8 +38,8 @@ class AccessXacmlImport extends Command
 
         try {
             $report = $this->option('check')
-                ? $xacml->check($this->argument('source'), $this->option('manifest'), $options)
-                : $xacml->import($this->argument('source'), $this->option('manifest'), $options);
+                ? $xacml->check($this->argument('source'), $options)
+                : $xacml->import($this->argument('source'), $options);
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
 

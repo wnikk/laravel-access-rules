@@ -17,11 +17,10 @@ and is never loaded by a check.
 ## Export
 
 ```bash
-php artisan acr:xacml:export storage/app/xacml          # policy.xml and manifest.json in a directory
-php artisan acr:xacml:export storage/app/access.zip     # the same two files as one archive
+php artisan acr:xacml:export storage/app/access.xml
 ```
 
-The policy is written as it is produced, one owner at a time, so a large export does not need a large memory.
+One file, written as it is produced, one owner at a time, so a large export does not need a large memory.
 
 The policy is one flat document. Its root combines four policy sets with `first-applicable`, which is the
 priority of the package word for word:
@@ -34,7 +33,8 @@ priority of the package word for word:
 | `inherited:permissions` | the same permissions of those owners | the same |
 
 So inheritance travels as the role attribute of the RBAC profile. The side that supplies attributes to the XACML
-engine fills it with the whole chain, not only direct parents; `roles` of the manifest lists the chain for every owner.
+engine fills it with the whole chain, not only direct parents; the `roles` items of the manifest set list the chain
+for every owner.
 
 A rule is the `action-id`: `orders.view`, with an option `orders.export.csv`. The suffix `.self` goes out as the main
 ability with the condition "the author of the record is the subject", which reads the attribute
@@ -71,6 +71,35 @@ and functions of the application. Such a part of a condition goes out as text in
 `urn:wnikk:access:function:dsl`. The package reads it back without loss, another engine cannot run it, and the
 export prints a warning for every one of them.
 
+### The manifest set
+
+XACML has no place for what a rule is called, how rules are grouped, what an owner is named or who inherits from
+whom. A fifth policy set at the end of the document, `urn:wnikk:access:manifest`, carries that. Its target names
+that id as the action, which no request does, and it holds no policy, so an engine never evaluates it and nothing of
+it reaches a response; the document stays valid by the schema of OASIS, and the test suite checks it against the schema.
+
+Every item is one `AdviceExpression` whose `AdviceId` is the id of the set and a kind, and every field is an
+`AttributeAssignmentExpression` whose `AttributeId` is the id of the set and the field name. A field that is null is
+left out, a list repeats the assignment:
+
+| kind | fields |
+|---|---|
+| `config` | `rule_tree_inheritance` |
+| `warning` | `text`, one per warning of the export |
+| `rule` | `guard_name`, `title`, `description`, `options`, `resource`, `origin`, `parent`, `condition` |
+| `owner` | `type`, `id`, `name` |
+| `inheritance` | `child`, `parent`, as `Type:id` |
+| `roles` | `owner`, then `role` for every owner in the chain of inheritance: the value of the role attribute for that subject |
+
+```xml
+<AdviceExpression AdviceId="urn:wnikk:access:manifest:rule" AppliesTo="Permit">
+  <AttributeAssignmentExpression AttributeId="urn:wnikk:access:manifest:guard_name"><AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">orders.view</AttributeValue></AttributeAssignmentExpression>
+  <AttributeAssignmentExpression AttributeId="urn:wnikk:access:manifest:title"><AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">View orders</AttributeValue></AttributeAssignmentExpression>
+  <AttributeAssignmentExpression AttributeId="urn:wnikk:access:manifest:resource"><AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">order</AttributeValue></AttributeAssignmentExpression>
+  <AttributeAssignmentExpression AttributeId="urn:wnikk:access:manifest:origin"><AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">code</AttributeValue></AttributeAssignmentExpression>
+</AdviceExpression>
+```
+
 ### What differs in XACML
 
 - **NULL.** A comparison with NULL is *unknown* for the package, and the permission is skipped. In XACML the attribute
@@ -89,12 +118,12 @@ export prints a warning for every one of them.
 ## Import
 
 ```bash
-php artisan acr:xacml:import storage/app/access.zip --check
-php artisan acr:xacml:import storage/app/access.zip
+php artisan acr:xacml:import storage/app/access.xml --check
+php artisan acr:xacml:import storage/app/access.xml
 ```
 
-The source is a directory of an export, `policy.xml`, an archive, or a foreign XACML document. `manifest.json` is found
-inside the archive or next to the policy.
+The source is an export of this package or a foreign XACML 3.0 document. An export is recognised by the id of its
+root and read together with its manifest set.
 
 ### First look, then import
 
@@ -106,7 +135,7 @@ compared with the database as it is now.
 | `create` | the database does not have it | creates it |
 | `same` | both agree (hidden unless `--all`) | does nothing |
 | `differs` | both have it, with another title, name or condition; both versions are shown | leaves the database as it is; with `--replace` brings it to the document |
-| `only in database` | an export with its manifest lacks it | does nothing: an import never deletes |
+| `only in database` | an export lacks it | does nothing: an import never deletes |
 
 The import executes that very plan, so what the check shows is what happens. An export restores everything: rules with
 titles, options, their tree and conditions, owners with names, inheritance, every permission with the text of its
@@ -117,7 +146,7 @@ Any other XACML 3.0 document is a foreign one. Every `Rule` becomes a permission
 - the owner comes from Targets above the rule: `subject-id` (with `--subject-type`, because XACML has no type
   of subject) or the role attribute (`Type:id`, or a bare name with `--role-type`, `Role` by default);
 - the ability is the `action-id`; several alternatives give several permissions; a missing rule is created with the
-  origin `import`, so an administrator can rename or remove it; rules of an export keep the origin from the manifest;
+  origin `import`, so an administrator can rename or remove it; rules of an export keep the origin from the manifest set;
 - other matches of Targets and the `Condition` become the condition. It is compiled like any condition of the package,
   so models have to be listed in `resources` and attributes mapped in `xacml.attributes`;
 - `VariableReference` is replaced by its definition; two `Permit` rules of one owner for one action become one permission with `||`;
@@ -140,8 +169,8 @@ A `DOCTYPE` or an entity declaration is refused before parsing, and the parser n
 ## From code
 
 `Wnikk\LaravelAccessRules\Xacml\Xacml` is the one entry point, and the console commands are thin wrappers over it.
-It writes to an open stream or to anything `fopen()` accepts, and reads an uploaded file, a path, a directory,
-an archive, a stream or the XML itself.
+It writes to an open stream or to anything `fopen()` accepts, and reads an uploaded file, a path, a stream or
+the XML itself.
 
 ```php
 use Wnikk\LaravelAccessRules\Xacml\Xacml;
@@ -149,21 +178,18 @@ use Wnikk\LaravelAccessRules\Xacml\Xacml;
 // a download
 public function download(Xacml $xacml)
 {
-    return response()->streamDownload(fn () => $xacml->exportArchive('php://output'), 'access-rules.zip');
+    return response()->streamDownload(fn () => $xacml->export('php://output'), 'access.xml', ['Content-Type' => 'application/xml']);
 }
-
-// without the zip extension, or for another engine: the policy alone
-return response()->streamDownload(fn () => $xacml->exportPolicy('php://output'), 'policy.xml', ['Content-Type' => 'application/xml']);
 
 // an upload: show the plan first
 public function preview(Request $request, Xacml $xacml)
 {
-    return view('access.import', ['report' => $xacml->check($request->file('policy'), options: ['subject_type' => User::class])]);
+    return view('access.import', ['report' => $xacml->check($request->file('policy'), ['subject_type' => User::class])]);
 }
 
 public function import(Request $request, Xacml $xacml)
 {
-    $report = $xacml->import($request->file('policy'), options: ['replace' => $request->boolean('replace')]);
+    $report = $xacml->import($request->file('policy'), ['replace' => $request->boolean('replace')]);
 }
 ```
 
@@ -182,5 +208,5 @@ Both `check()` and `import()` return the same report:
 ]
 ```
 
-An archive needs the PHP extension `zip`; the policy and the manifest are available as two files without it.
+`export()` returns the warnings of the export; they are written into the manifest set too, so a download carries them.
 An import reads the database whole and runs in one transaction, so put a large one on a queue.

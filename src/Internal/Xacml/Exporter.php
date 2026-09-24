@@ -26,7 +26,7 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
  * priority of the package, so the root needs no other logic. A policy of the first two sets is
  * addressed to a subject by type and id. A policy of the last two is addressed to everybody
  * whose role attribute holds the owner, and the side that supplies attributes fills that
- * attribute with the whole chain of inheritance; the manifest lists the chains.
+ * attribute with the whole chain of inheritance; the manifest set lists the chains.
  *
  * The earlier design gave every owner a policy set that referred to the sets of its parents.
  * It needed five sets per owner, a file per set, because engines resolve references between
@@ -35,7 +35,10 @@ use Wnikk\LaravelAccessRules\Internal\Conditions\ConditionCompiler;
  * ancestor inside every heir.
  *
  * XACML has no place for what a rule is called, how rules are grouped or who inherits from
- * whom. The manifest carries that, a JSON file next to the policy, and the importer reads both.
+ * whom. A fifth policy set at the end of the document carries that, addressed to an action no
+ * request names, so the export is one file and an engine never evaluates the set. The earlier
+ * design kept it in a JSON file next to the policy, and a download became two files or an
+ * archive that needed the zip extension.
  *
  * @internal Not part of the public API, it may change in any release. AGENTS.md lists what an application may rely on.
  */
@@ -50,7 +53,7 @@ final class Exporter
     ) {}
 
     /**
-     * Writes the policy into an open stream, one owner at a time.
+     * Writes the document into an open stream, one owner at a time.
      *
      * A stream and not a string, because the callers differ only in where the bytes go: a file
      * for the console, "php://output" for a download, memory for a test. A hundred thousand
@@ -61,9 +64,9 @@ final class Exporter
      * of three tiers in memory while the first is written, which the stream exists to avoid.
      *
      * @param  resource     $stream
-     * @return list<string> Warnings: parts of conditions that went out as text of the package, owners of unknown types.
+     * @return list<string> Warnings: parts of conditions that went out as text of the package, owners of unknown types. They are written into the manifest set too.
      */
-    public function policy($stream): array
+    public function document($stream): array
     {
         $warnings = [];
         $rules    = app(RuleContract::class)->newQuery()->get()->keyBy('id');
@@ -114,60 +117,73 @@ final class Exporter
             fwrite($stream, "  </PolicySet>\n");
         }
 
-        fwrite($stream, "</PolicySet>\n");
-
         if (config('access.rule_tree_inheritance')) {
             $warnings[] = 'config access.rule_tree_inheritance is on: a permission for "reports" also covers "reports.sales" inside the package, and the export names only "reports". Grant the rules below explicitly before exporting for another engine.';
         }
+        $warnings = array_values(array_unique($warnings));
 
-        return array_values(array_unique($warnings));
+        $this->manifest($stream, $warnings);
+        fwrite($stream, "</PolicySet>\n");
+
+        return $warnings;
     }
 
     /**
-     * Writes everything the policy cannot hold: what a rule is called and how rules are grouped,
-     * names of owners, who inherits from whom. "roles" is for the side that answers attribute
-     * requests of an XACML engine: the value of the role attribute for every owner that inherits.
+     * Everything the policy cannot hold, as the fifth policy set: what a rule is called and how
+     * rules are grouped, names of owners, who inherits from whom, the warnings of the export.
+     * "roles" is for the side that answers attribute requests of an XACML engine: the value of
+     * the role attribute for every owner that inherits.
      *
-     * The JSON is written by pieces for the same reason the policy is. Links of inheritance are
-     * the one thing held in memory at once, two integers per link, because chains cannot be
-     * followed otherwise.
+     * The set is addressed to an action no request names and holds no policy, so an engine never
+     * evaluates it and its advice never reaches a response; the schema allows both. One item is
+     * one AdviceExpression, its fields are the attribute assignments, a null field is left out.
+     *
+     * Written by pieces for the same reason the policy is. Links of inheritance are the one thing
+     * held in memory at once, two integers per link, because chains cannot be followed otherwise.
      *
      * @param resource     $stream
-     * @param list<string> $warnings Warnings of policy(), kept with the export so a download carries them too.
+     * @param list<string> $warnings Warnings of the four tiers, kept with the export so a download carries them too.
      */
-    public function manifest($stream, array $warnings = []): void
+    private function manifest($stream, array $warnings): void
     {
         $compiler = app(ConditionCompiler::class);
         $rules    = app(RuleContract::class)->newQuery()->get()->keyBy('id');
-        $line     = static fn (mixed $value) => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
-        fwrite($stream, "{\n".'  "format": "wnikk/laravel-access-rules manifest",'."\n".'  "version": 1,'."\n"
-            .'  "config": '.$line(['rule_tree_inheritance' => (bool) config('access.rule_tree_inheritance')]).",\n"
-            .'  "warnings": '.$line($warnings).",\n");
+        fwrite($stream, '  <PolicySet PolicySetId="'.Vocabulary::MANIFEST.'" Version="1.0" PolicyCombiningAlgId="'.Vocabulary::ALG_FIRST_APPLICABLE.'">'."\n"
+            .'    <Description>What the policy cannot hold: titles and tree of rules, names of owners, inheritance. Addressed to an action no request names, so an engine never evaluates it.</Description>'."\n"
+            .'    <Target><AnyOf><AllOf><Match MatchId="'.Vocabulary::FN.'string-equal">'
+            .'<AttributeValue DataType="'.Vocabulary::XS.'string">'.Vocabulary::MANIFEST.'</AttributeValue>'
+            .'<AttributeDesignator Category="'.Vocabulary::ACTION.'" AttributeId="'.Vocabulary::ACTION_ID.'" DataType="'.Vocabulary::XS.'string" MustBePresent="false"/>'
+            ."</Match></AllOf></AnyOf></Target>\n"
+            ."    <AdviceExpressions>\n");
 
-        $this->items($stream, 'rules', $rules->values()->map(fn ($rule) => [
-            'guard_name'  => $rule->guard_name,
-            'title'       => $rule->title,
-            'description' => $rule->description,
-            'options'     => $rule->options,
-            'resource'    => $rule->resource,
-            'origin'      => $rule->origin->value,
-            'parent'      => empty($rule->parent_id) ? null : ($rules[$rule->parent_id]->guard_name ?? null),
-            'condition'   => $rule->condition === null ? null : $compiler->describe($rule->condition, $rule->resource),
-        ]), $line);
+        $this->advice($stream, 'config', ['rule_tree_inheritance' => config('access.rule_tree_inheritance') ? 'true' : 'false']);
 
-        $keys   = [];
-        $owners = (function () use (&$keys) {
-            foreach (app(OwnerContract::class)->newQuery()->orderBy('id')->lazy(self::PORTION) as $owner) {
-                $type = $this->types->name((int) $owner->type);
-                if ($type !== null) {
-                    $keys[$owner->getKey()] = Vocabulary::ownerKey($type, $owner->original_id);
+        foreach ($warnings as $warning) {
+            $this->advice($stream, 'warning', ['text' => $warning]);
+        }
 
-                    yield ['type' => $type, 'id' => $owner->original_id, 'name' => $owner->name];
-                }
+        foreach ($rules as $rule) {
+            $this->advice($stream, 'rule', [
+                'guard_name'  => $rule->guard_name,
+                'title'       => $rule->title,
+                'description' => $rule->description,
+                'options'     => $rule->options,
+                'resource'    => $rule->resource,
+                'origin'      => $rule->origin->value,
+                'parent'      => empty($rule->parent_id) ? null : ($rules[$rule->parent_id]->guard_name ?? null),
+                'condition'   => $rule->condition === null ? null : $compiler->describe($rule->condition, $rule->resource),
+            ]);
+        }
+
+        $keys = [];
+        foreach (app(OwnerContract::class)->newQuery()->orderBy('id')->lazy(self::PORTION) as $owner) {
+            $type = $this->types->name((int) $owner->type);
+            if ($type !== null) {
+                $keys[$owner->getKey()] = Vocabulary::ownerKey($type, $owner->original_id);
+                $this->advice($stream, 'owner', ['type' => $type, 'id' => (string) $owner->original_id, 'name' => $owner->name]);
             }
-        })();
-        $this->items($stream, 'owners', $owners, $line);
+        }
 
         $parentsOf = [];
         foreach (app(InheritanceContract::class)->newQuery()->orderBy('id')->lazy(self::PORTION) as $link) {
@@ -176,16 +192,12 @@ final class Exporter
             }
         }
 
-        $this->items($stream, 'inheritance', (function () use ($parentsOf, $keys) {
-            foreach ($parentsOf as $child => $parents) {
-                foreach ($parents as $parent) {
-                    yield [$keys[$child], $keys[$parent]];
-                }
+        foreach ($parentsOf as $child => $parents) {
+            foreach ($parents as $parent) {
+                $this->advice($stream, 'inheritance', ['child' => $keys[$child], 'parent' => $keys[$parent]]);
             }
-        })(), $line);
+        }
 
-        fwrite($stream, '  "roles": {');
-        $first = true;
         foreach (array_keys($parentsOf) as $ownerId) {
             $seen  = [];
             $queue = $parentsOf[$ownerId];
@@ -197,44 +209,49 @@ final class Exporter
                 }
             }
 
-            fwrite($stream, ($first ? '' : ',')."\n    ".$line($keys[$ownerId]).': '.$line(array_map(static fn ($id) => $keys[$id], array_keys($seen))));
-            $first = false;
+            $this->advice($stream, 'roles', ['owner' => $keys[$ownerId], 'role' => array_map(static fn ($id) => $keys[$id], array_keys($seen))]);
         }
-        fwrite($stream, ($first ? '' : "\n  ")."}\n}\n");
+
+        fwrite($stream, "    </AdviceExpressions>\n  </PolicySet>\n");
     }
 
     /**
-     * Both parts as text, for tests and for callers that know the export is small.
+     * One item of the manifest set. A list value repeats the assignment, a null is left out.
      *
-     * @return array{policy:string, manifest:array, warnings:list<string>}
+     * @param resource                                $stream
+     * @param array<string, string|list<string>|null> $fields
+     */
+    private function advice($stream, string $kind, array $fields): void
+    {
+        $xml = '      <AdviceExpression AdviceId="'.Vocabulary::MANIFEST.':'.$kind.'" AppliesTo="Permit">'."\n";
+
+        foreach ($fields as $name => $value) {
+            foreach ((is_array($value) ? $value : [$value]) as $one) {
+                if ($one === null) {
+                    continue;
+                }
+
+                $xml .= '        <AttributeAssignmentExpression AttributeId="'.Vocabulary::MANIFEST.':'.$name.'">'
+                    .'<AttributeValue DataType="'.Vocabulary::XS.'string">'.htmlspecialchars((string) $one, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</AttributeValue>'
+                    ."</AttributeAssignmentExpression>\n";
+            }
+        }
+
+        fwrite($stream, $xml."      </AdviceExpression>\n");
+    }
+
+    /**
+     * The document as text, for tests and for callers that know the export is small.
+     *
+     * @return array{policy:string, warnings:list<string>}
      */
     public function export(): array
     {
-        $policy   = fopen('php://memory', 'w+');
-        $manifest = fopen('php://memory', 'w+');
+        $stream   = fopen('php://memory', 'w+');
+        $warnings = $this->document($stream);
+        rewind($stream);
 
-        $warnings = $this->policy($policy);
-        $this->manifest($manifest, $warnings);
-
-        rewind($policy);
-        rewind($manifest);
-
-        return [
-            'policy'   => (string) stream_get_contents($policy),
-            'manifest' => json_decode((string) stream_get_contents($manifest), true, 512, JSON_THROW_ON_ERROR),
-            'warnings' => $warnings,
-        ];
-    }
-
-    private function items($stream, string $key, iterable $items, callable $line): void
-    {
-        fwrite($stream, '  "'.$key.'": [');
-        $first = true;
-        foreach ($items as $item) {
-            fwrite($stream, ($first ? '' : ',')."\n    ".$line($item));
-            $first = false;
-        }
-        fwrite($stream, ($first ? '' : "\n  ")."],\n");
+        return ['policy' => (string) stream_get_contents($stream), 'warnings' => $warnings];
     }
 
     /**

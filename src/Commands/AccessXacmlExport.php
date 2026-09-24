@@ -16,16 +16,16 @@ use Wnikk\LaravelAccessRules\Xacml\Xacml;
 #[AsCommand(name: 'acr:xacml:export')]
 class AccessXacmlExport extends Command
 {
-    protected $signature = 'acr:xacml:export {target : A directory for policy.xml and manifest.json, or a name that ends with .zip for one archive}';
+    protected $signature = 'acr:xacml:export {target : The file to write, e.g. storage/app/access.xml}';
 
-    protected $description = 'Access rules and inheritance: export owners, rules and permissions as an XACML 3.0 policy with a manifest';
+    protected $description = 'Access rules and inheritance: export owners, rules and permissions as one XACML 3.0 policy document';
 
     public function handle(Xacml $xacml): int
     {
         $target = (string) $this->argument('target');
 
         try {
-            $warnings = str_ends_with(strtolower($target), '.zip') ? $xacml->exportArchive($target) : $xacml->exportDirectory(rtrim($target, '/'));
+            $warnings = $xacml->export($target);
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
 

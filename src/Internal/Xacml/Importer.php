@@ -38,7 +38,7 @@ use Wnikk\LaravelAccessRules\Models\RuleOrigin;
  * executes that same plan. A user interface shows the first and offers the second.
  *
  * Documents written by Exporter are recognised by the id of their root and restored exactly,
- * together with the manifest that carries names of rules and inheritance. Anything else is
+ * together with the manifest set that carries names of rules and inheritance. Anything else is
  * a foreign document: every Rule becomes a permission or a prohibition of the subject or the
  * role its Targets name.
  *
@@ -77,22 +77,21 @@ final class Importer
      * A dry run that only counted would hide
      * permissions that exist already with another condition.
      *
-     * @param array|null                                                                                       $manifest The manifest written by Exporter, when there is one.
      * @param array{subject_type?:?string, role_type?:string, everyone?:?string, partial?:bool, replace?:bool} $options
-     *                                                                                                                   subject_type: owner type of a subject-id that comes without a type, for foreign documents.
-     *                                                                                                                   role_type: owner type of a role named without one, "Role" by default.
-     *                                                                                                                   everyone: "Type:id" of the owner that receives rules addressed to nobody in particular.
-     *                                                                                                                   partial: import() writes what converts even when something does not.
-     *                                                                                                                   replace: import() brings what "differs" to the document; without it such rows stay as they are.
+     *                                                                                                                  subject_type: owner type of a subject-id that comes without a type, for foreign documents.
+     *                                                                                                                  role_type: owner type of a role named without one, "Role" by default.
+     *                                                                                                                  everyone: "Type:id" of the owner that receives rules addressed to nobody in particular.
+     *                                                                                                                  partial: import() writes what converts even when something does not.
+     *                                                                                                                  replace: import() brings what "differs" to the document; without it such rows stay as they are.
      * @return array{
      *     own:bool, errors:list<array{0:string,1:string}>, warnings:list<array{0:string,1:string}>,
      *     changes:list<array{kind:string, action:string, what:string, document:?string, database:?string}>,
      *     summary:array<string, array<string, int>>, written:bool, applied:array<string, int>
      * } "own" tells an export of this package from a foreign document. "summary" counts changes by kind and action.
      */
-    public function check(string $xml, ?array $manifest = null, array $options = []): array
+    public function check(string $xml, array $options = []): array
     {
-        return $this->run($xml, $manifest, $options, false);
+        return $this->run($xml, $options, false);
     }
 
     /**
@@ -101,19 +100,20 @@ final class Importer
      *
      * @return array The report of check() with "written" and "applied" filled in.
      */
-    public function import(string $xml, ?array $manifest = null, array $options = []): array
+    public function import(string $xml, array $options = []): array
     {
-        return $this->run($xml, $manifest, $options, true);
+        return $this->run($xml, $options, true);
     }
 
-    private function run(string $xml, ?array $manifest, array $options, bool $apply): array
+    private function run(string $xml, array $options, bool $apply): array
     {
         $this->errors  = $this->warnings = $this->statements = [];
         $this->options = ['subject_type' => $options['subject_type'] ?? null, 'role_type' => $options['role_type'] ?? 'Role', 'everyone' => $options['everyone'] ?? null];
         $applied       = ['rules' => 0, 'owners' => 0, 'permissions' => 0, 'inheritance' => 0, 'replaced' => 0];
 
-        $own  = false;
-        $root = $this->parse($xml);
+        $own      = false;
+        $manifest = null;
+        $root     = $this->parse($xml);
 
         if ($root !== null) {
             $own = $root->getAttribute('PolicySetId') === Vocabulary::ROOT;
@@ -125,13 +125,14 @@ final class Importer
                         $this->walk($tier, ['subjects' => null, 'actions' => null, 'when' => []], '', false);
                     }
                 }
+
+                $manifest = $this->manifest($root);
+                if ($manifest === null) {
+                    $this->warnings[] = ['/', 'the export has no manifest set: titles of rules, names of owners and inheritance are not restored'];
+                }
             } else {
                 $this->walk($root, ['subjects' => null, 'actions' => null, 'when' => []], '', true);
                 $this->warnAboutOwnAgainstRole();
-            }
-
-            if ($own && $manifest === null) {
-                $this->warnings[] = ['/', 'no manifest next to the policy: titles of rules, names of owners and inheritance are not restored'];
             }
         }
 
@@ -156,6 +157,63 @@ final class Importer
             'changes' => array_map(static fn (array $c) => array_intersect_key($c, array_flip(['kind', 'action', 'what', 'document', 'database'])), $plan),
             'summary' => $summary, 'written' => $written, 'applied' => $applied,
         ];
+    }
+
+    /**
+     * The manifest set of an export, read back: one item per AdviceExpression, its fields from
+     * the attribute assignments, a repeated field as a list. Null when the document has no such
+     * set, which a hand-edited export may lack; the plan then knows the permissions only.
+     *
+     * @return array{config:array<string, mixed>, warnings:list<string>, rules:list<array<string, string>>, owners:list<array<string, string>>, inheritance:list<array{0:string, 1:string}>, roles:array<string, list<string>>}|null
+     */
+    private function manifest(DOMElement $root): ?array
+    {
+        $advices = null;
+        foreach (Expressions::children($root, 'PolicySet') as $set) {
+            if ($set->getAttribute('PolicySetId') === Vocabulary::MANIFEST) {
+                $advices = Expressions::child($set, 'AdviceExpressions');
+            }
+        }
+        if ($advices === null) {
+            return null;
+        }
+
+        $manifest = ['config' => [], 'warnings' => [], 'rules' => [], 'owners' => [], 'inheritance' => [], 'roles' => []];
+        $prefix   = Vocabulary::MANIFEST.':';
+
+        foreach (Expressions::children($advices, 'AdviceExpression') as $item) {
+            $lists = [];
+            foreach (Expressions::children($item, 'AttributeAssignmentExpression') as $assignment) {
+                $value = Expressions::child($assignment, 'AttributeValue');
+                if ($value !== null) {
+                    $lists[substr($assignment->getAttribute('AttributeId'), strlen($prefix))][] = $value->textContent;
+                }
+            }
+            $fields = array_map(static fn (array $values): string => $values[0], $lists);
+
+            switch (substr($item->getAttribute('AdviceId'), strlen($prefix))) {
+                case 'config':
+                    $manifest['config'] = array_map(static fn (string $v): mixed => $v === 'true' ? true : ($v === 'false' ? false : $v), $fields);
+                    break;
+                case 'warning':
+                    $manifest['warnings'][] = $fields['text'] ?? '';
+                    break;
+                case 'rule':
+                    $manifest['rules'][] = $fields;
+                    break;
+                case 'owner':
+                    $manifest['owners'][] = $fields;
+                    break;
+                case 'inheritance':
+                    $manifest['inheritance'][] = [$fields['child'] ?? '', $fields['parent'] ?? ''];
+                    break;
+                case 'roles':
+                    $manifest['roles'][$fields['owner'] ?? ''] = $lists['role'] ?? [];
+                    break;
+            }
+        }
+
+        return $manifest;
     }
 
     /**
@@ -498,7 +556,7 @@ final class Importer
      * The database is read whole, a query per table. An import is rare and runs in a console or
      * a queue; a query per permission of a large document would take minutes.
      *
-     * @param  bool        $complete True for an export with its manifest: only then "the document lacks it" means anything.
+     * @param  bool        $complete True for an export with its manifest set: only then "the document lacks it" means anything.
      * @return list<array> Changes; each also carries what apply() needs to execute it.
      */
     private function plan(array $manifest, bool $complete): array
