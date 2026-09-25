@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 2.4.3 - 2026-09-25
+
+- Fix: support for Laravel 13.x
+
 ## 2.4.2 - 2026-09-18
 
 - Fix: cached permissions are flushed after the changes are written to the database, not before.
