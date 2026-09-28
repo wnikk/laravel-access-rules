@@ -1,0 +1,29 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+# Static analysis of the package alone. Level 5 is what the code holds today without a suppression;
+# a finding above it is a type the code cannot promise (Eloquent returns mixed). CI runs this on the
+# newest PHP of the matrix, so a deprecation of the language shows up here first.
+parameters:
+    level: 5
+    paths:
+        - src
+        # The traits are analysed where they are used; the fixtures are the models of the test suite.
+        - tests/Fixtures
+    tmpDir: .phpstan
+    reportUnmatchedIgnoredErrors: true
+    ignoreErrors:
+        # The contracts document their columns with @property, which PHPStan does not read on an
+        # interface, and a row that a query or a relation returns is typed as the base Model. Both
+        # are the price of models that config can swap; the columns are checked by the test suite.
+        -
+            identifier: property.notFound
+            message: '#(Contracts\\(Owner|Rule|Permission|Inheritance)|Eloquent\\Model)::\$#'
+        -
+            identifier: argument.type
+            message: '#expects Wnikk\\LaravelAccessRules\\Contracts\\[A-Za-z|\\]+, Illuminate\\Database\\Eloquent\\Model(\|null)? given#'
+        # GateEvaluated documents $result as bool|null, and Gate dispatches it with the Response an
+        # authorization callback returned. The check is right; the docblock of the framework is not.
+        -
+            message: '#Instanceof between bool\|null and Illuminate\\Auth\\Access\\Response will always evaluate to false#'
+            path: src/Protected/Authorization/Explainer.php
