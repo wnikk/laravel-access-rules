@@ -158,12 +158,13 @@ final class Evaluator
                 }
 
                 return match ($op) {
-                    '==' => $l == $r,
-                    '!=' => $l != $r,
-                    '>'  => $l > $r,
-                    '>=' => $l >= $r,
-                    '<'  => $l < $r,
-                    '<=' => $l <= $r,
+                    '=='    => $l == $r,
+                    '!='    => $l != $r,
+                    '>'     => $l > $r,
+                    '>='    => $l >= $r,
+                    '<'     => $l < $r,
+                    '<='    => $l <= $r,
+                    default => throw new LogicException('Unknown operator "'.$op.'" in condition'),
                 };
         }
 
@@ -190,10 +191,11 @@ final class Evaluator
         }
 
         return match ($node[1]) {
-            '+' => $values[0] + $values[1],
-            '-' => $values[0] - $values[1],
-            '*' => $values[0] * $values[1],
-            '/' => $values[1] == 0 ? null : $values[0] / $values[1],
+            '+'     => $values[0] + $values[1],
+            '-'     => $values[0] - $values[1],
+            '*'     => $values[0] * $values[1],
+            '/'     => $values[1] == 0 ? null : $values[0] / $values[1],
+            default => throw new LogicException('Unknown operator "'.$node[1].'" in condition'),
         };
     }
 
@@ -221,6 +223,7 @@ final class Evaluator
             'startsWith' => str_starts_with($subject, (string) $needle),
             'endsWith'   => str_ends_with($subject, (string) $needle),
             'contains'   => str_contains($subject, (string) $needle),
+            default      => throw new LogicException('Unknown function "'.$node[1].'" in condition'),
         };
     }
 
@@ -374,6 +377,7 @@ final class Evaluator
             'sum'    => $rows->sum($column),
             'min'    => Context::scalar($rows->min($column)),
             'max'    => Context::scalar($rows->max($column)),
+            default  => throw new LogicException('Unknown aggregate "'.$fn.'" in condition'),
         };
     }
 

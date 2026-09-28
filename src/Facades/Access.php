@@ -17,6 +17,7 @@ use Wnikk\LaravelAccessRules\Contracts\AccessManager;
  * @method static int|false                                            newRule(string|\BackedEnum $guardName, ?string $title = null, ?string $description = null, ?int $parentId = null, ?string $options = null, ?string $resource = null, string|\Wnikk\LaravelAccessRules\Conditions\Cond|array|null $when = null, \Wnikk\LaravelAccessRules\Models\RuleOrigin|string|null $origin = null)
  * @method static bool                                                 delRule(string|\BackedEnum $guardName, bool $force = false)
  * @method static void                                                 flush()
+ * @method static array<int, string>                                   ownerTypes()
  * @method static mixed                                                batch(\Closure $changes)
  * @method static void                                                 debug(bool $on = true)
  * @method static array                                                debugLog()

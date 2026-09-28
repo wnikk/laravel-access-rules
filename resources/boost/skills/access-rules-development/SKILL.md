@@ -156,13 +156,15 @@ $user->access()->explain('orders.view', $order);   // every permission that took
 php artisan acr:explain "App\Models\User" 7 orders.view order:4
 php artisan acr:lint            # exit code 1 when a stored condition no longer matches models or config
 php artisan acr:lint --fix      # saves again conditions whose column types changed
+php artisan acr:doctor          # exit code 1 for duplicate permissions, rows that point at nothing, loops of inheritance
+php artisan acr:doctor --fix    # deletes the duplicates and the orphans; loops need a person
 ```
 
 Debug mode for a support session (turn it on per request, never for ordinary users): `Access::debug()` in a middleware, then `Access::debugLog()` holds every refused check with its explanation under `text`, and for every `allowedTo()` the conditions and the SQL that narrowed the list. The mode only observes; it changes no decision. `Access::lastDenied()` names the last ability that was not permitted, in any mode.
 
-`app(\Wnikk\LaravelAccessRules\Administration\Linter::class)->run()` returns the findings of lint as data, for a health screen.
+`app(\Wnikk\LaravelAccessRules\Administration\Linter::class)->run()` and `Administration\Doctor::class` return the findings of lint and doctor as data, for a health screen.
 
-What an owner holds, as data for a screen or a console: `Access::for($user)->permissions()` lists every row that reaches the owner with rule, option, effect, condition text, own or inherited and from whom, strongest first inside a rule; `->sources()` and `->heirs()` list inheritance at any depth with the direct link each one came through. Never on the path of a request.
+What an owner holds, as data for a screen or a console: `Access::for($user)->permissions()` lists every row that reaches the owner with rule, option, effect, condition text, own or inherited and from whom, strongest first inside a rule; `->sources()` and `->heirs()` list inheritance at any depth with the direct link each one came through. `Access::ownerTypes()` maps the numbers of the owner table to the types of config. Never on the path of a request.
 
 ## Admin panels
 

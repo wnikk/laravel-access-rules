@@ -136,8 +136,12 @@ final class ResourceRegistry
      *
      * @return 'num'|'text'|null
      */
-    public function pivotColumnType(BelongsToMany $relation, string $column): ?string
+    public function pivotColumnType(?Relation $relation, string $column): ?string
     {
+        if (! $relation instanceof BelongsToMany) {
+            return null;
+        }
+
         return $this->typeIn($relation->getParent()->getConnection(), $relation->getTable(), $column);
     }
 

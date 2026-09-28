@@ -132,6 +132,7 @@ class AccessRulesServiceProvider extends ServiceProvider
             Commands\AccessCacheClear::class,
             Commands\AccessExplain::class,
             Commands\AccessLint::class,
+            Commands\AccessDoctor::class,
             Commands\AccessXacmlExport::class,
             Commands\AccessXacmlImport::class,
         ]);

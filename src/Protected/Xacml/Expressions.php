@@ -52,9 +52,9 @@ final class Expressions
     }
 
     /**
-     * @param array        $tree     A stored condition.
-     * @param string|null  $alias    Alias of the model the rule is about. Without it types are guessed from literals.
-     * @param list<string> $warnings Gets a line for every part that went out as text of the package.
+     * @param array       $tree     A stored condition.
+     * @param string|null $alias    Alias of the model the rule is about. Without it types are guessed from literals.
+     * @param array       $warnings Gets a line of text for every part that went out as text of the package.
      */
     public function toXml(DOMDocument $document, array $tree, ?string $alias, array &$warnings): DOMElement
     {

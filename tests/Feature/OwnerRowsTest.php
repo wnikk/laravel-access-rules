@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Config;
 use Tests\Fixtures\Shop\ShopSchema;
 use Tests\Fixtures\TestUser;
+use Wnikk\LaravelAccessRules\AccessRules;
 use Wnikk\LaravelAccessRules\Facades\Access;
 
 /**
@@ -99,5 +100,13 @@ class OwnerRowsTest extends FeatureTestCase
 
         $this->assertSame([], Access::for('Team', 'north')->sources());
         $this->assertSame([], Access::for('Role', 'nobody')->heirs());
+    }
+
+    public function test_owner_types_are_listed_with_their_numbers(): void
+    {
+        $types = Access::ownerTypes();
+
+        $this->assertSame([TestUser::class, 'Role', 'Team'], array_values($types));
+        $this->assertSame(AccessRules::getTypeID('Role'), array_search('Role', $types, true), 'the same numbers the tables carry');
     }
 }

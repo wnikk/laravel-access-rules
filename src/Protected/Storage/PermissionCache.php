@@ -283,7 +283,7 @@ final class PermissionCache
         try {
             $testKey = $this->config['key'].'.cache_test';
 
-            if ($this->store->get($testKey) === null) {
+            if (! $this->store->has($testKey)) {
                 $stamp = microtime(true);
                 $this->store->forever($testKey, $stamp);
                 if ($this->store->get($testKey) !== $stamp) {
@@ -300,7 +300,7 @@ final class PermissionCache
     private function storeFromConfig(): Repository
     {
         $manager = app(CacheManager::class);
-        $name    = $this->config['store'] ?? 'default';
+        $name    = $this->config['store'];
 
         if ($name === 'default') {
             return $manager->store();

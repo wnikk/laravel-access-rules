@@ -175,19 +175,37 @@ final class Owners
             throw new AccessRulesException('Rule "'.$ability.'" is absent in the database. Before adding a permission, add rule to DB.', AccessRulesException::RULE_NOT_FOUND);
         }
 
-        $option = $option === '' ? null : $option;
+        $option    = $option === '' ? null : $option;
+        $condition = $this->conditions->compile($when, $rule->resource);
 
-        if ($owner->permission()->where('rule_id', $rule->getKey())->where('option', $option)->where('permission', $permit)->exists()) {
-            throw new AccessRulesException('Rule "'.$rule->guard_name.'" has already been previously added to the owner.', AccessRulesException::DUPLICATE_PERMISSION);
-        }
+        // The unique index of the table cannot refuse a second row without an option: every
+        // database treats two NULLs as different values. So the check for a duplicate and the
+        // insert run with the row of the owner locked, and two requests that grant the same
+        // permission at once line up instead of both writing. A lock needs a transaction: the
+        // caller's when there is one (batch(), an import, a test), otherwise one of its own. A
+        // savepoint of our own inside a caller's transaction is avoided on purpose: MySQL commits
+        // the outer transaction on DDL, and a savepoint that follows then fails. SQLite has no row
+        // lock and serialises writers by itself.
+        $db    = $owner->getConnection();
+        $write = function () use ($owner, $rule, $option, $permit, $condition): PermissionContract {
+            $owner->newQuery()->whereKey($owner->getKey())->lockForUpdate()->first();
 
-        $permission             = app(PermissionContract::class);
-        $permission->owner_id   = $owner->getKey();
-        $permission->rule_id    = $rule->getKey();
-        $permission->permission = $permit;
-        $permission->option     = $option;
-        $permission->condition  = $this->conditions->compile($when, $rule->resource);
-        $saved                  = $permission->save();
+            if ($owner->permission()->where('rule_id', $rule->getKey())->where('option', $option)->where('permission', $permit)->exists()) {
+                throw new AccessRulesException('Rule "'.$rule->guard_name.'" has already been previously added to the owner.', AccessRulesException::DUPLICATE_PERMISSION);
+            }
+
+            $permission             = app(PermissionContract::class);
+            $permission->owner_id   = $owner->getKey();
+            $permission->rule_id    = $rule->getKey();
+            $permission->permission = $permit;
+            $permission->option     = $option;
+            $permission->condition  = $condition;
+            $permission->save();
+
+            return $permission;
+        };
+        $permission = $db->transactionLevel() > 0 ? $write() : $db->transaction($write);
+        $saved      = true;
 
         $this->changed(AccessChanged::PERMISSION_GRANTED, $permission, [
             'owner_type' => $type, 'owner_id' => $id, 'rule' => $rule->guard_name, 'option' => $option,
@@ -323,6 +341,7 @@ final class Owners
 
         $rows = app(PermissionContract::class)->newQuery()->with('rule')->whereIn('owner_id', $sources)->get();
 
+        /** @var array<int, list<array{rule:string, rule_id:int, option:?string, effect:string, when:?string, own:bool, from:array{type:string, id:string, name:?string, record:int}, via:?string, via_rule:?string}>> $byRule Rows by rule id; the tree pass below reads one rule while it adds to another. */
         $byRule = [];
         foreach ($rows as $row) {
             if ($row->rule === null || ! isset($names[(int) $row->owner_id])) {
@@ -330,7 +349,7 @@ final class Owners
             }
 
             $byRule[(int) $row->rule_id][] = [
-                'rule'     => $row->rule->guard_name,
+                'rule'     => (string) $row->rule->guard_name,
                 'rule_id'  => (int) $row->rule_id,
                 'option'   => $row->option,
                 'effect'   => $row->permission ? 'allow' : 'deny',
@@ -360,15 +379,22 @@ final class Owners
             }
         }
 
-        $strength = static fn (array $e): int => ($e['own'] ? 2 : 0) + ($e['effect'] === 'deny' ? 1 : 0);
-        $out      = [];
+        $out = [];
         foreach ($byRule as $entries) {
-            usort($entries, static fn (array $a, array $b): int => $strength($b) <=> $strength($a));
-            $out = [...$out, ...$entries];
+            usort($entries, static fn (array $a, array $b): int => self::strength($b) <=> self::strength($a));
+            array_push($out, ...$entries);
         }
-        usort($out, static fn (array $a, array $b): int => strcmp($a['rule'], $b['rule']) ?: ($strength($b) <=> $strength($a)));
+        usort($out, static fn (array $a, array $b): int => strcmp($a['rule'], $b['rule']) ?: (self::strength($b) <=> self::strength($a)));
 
         return $out;
+    }
+
+    /**
+     * The step of a row by the five steps of the core, as a number: own prohibition is the highest.
+     */
+    private static function strength(array $entry): int
+    {
+        return ($entry['own'] ? 2 : 0) + ($entry['effect'] === 'deny' ? 1 : 0);
     }
 
     /**
@@ -460,9 +486,9 @@ final class Owners
      * The package keeps no audit log of its own. AccessChanged carries enough to write one, and
      * what to store and for how long is a decision of the application.
      *
-     * @param Model $written Any model of the change. Only its connection matters: the cache repeats the drop after that connection commits.
+     * @param Model|OwnerContract|PermissionContract|InheritanceContract $written Any model of the change. Only its connection matters: the cache repeats the drop after that connection commits.
      */
-    private function changed(string $action, Model $written, array $details): void
+    private function changed(string $action, Model|OwnerContract|PermissionContract|InheritanceContract $written, array $details): void
     {
         $this->cache->bump($written->getConnection());
         $this->events->dispatch(new AccessChanged($action, $details));

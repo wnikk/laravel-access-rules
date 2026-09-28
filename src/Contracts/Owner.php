@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int         $type
  * @property string|null $original_id
  * @property string|null $name
+ *
+ * @mixin \Wnikk\LaravelAccessRules\Models\Owner The implementing class is an Eloquent model with these columns; the package calls its query, key and save methods through the contract. Analysis reads the default model for them.
  */
 interface Owner
 {

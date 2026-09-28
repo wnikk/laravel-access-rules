@@ -92,6 +92,7 @@ by indicating the list of possible types of users.
    Copy it to `database/migrations` as a `.php` file and edit it to the rules of your project.
 
 10. Optional: run `php artisan acr:lint` in CI and after migrations. It checks stored conditions, rules and owners
-   against models and config as they are now.
+   against models and config as they are now. After an upgrade from 2.x or a restore, `php artisan acr:doctor`
+   finds rows the package would never have written: duplicates, permissions and links that point at nothing, loops.
 
 Go on with [Basic Usage](basic-usage.md).

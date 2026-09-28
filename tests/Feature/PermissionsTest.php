@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Tests\Fixtures\Ability;
@@ -389,5 +390,33 @@ class PermissionsTest extends FeatureTestCase
 
         $this->expectException(\LogicException::class);
         $a->inheritFrom($c);
+    }
+
+    /**
+     * Two NULLs are different values for a unique index, so a permission without an option could
+     * be written twice by two requests that checked at the same moment. The insert runs with the
+     * row of the owner locked; SQLite has no row lock and serialises writers by itself.
+     */
+    public function test_a_permission_is_written_with_the_owner_locked(): void
+    {
+        $this->getAccessRules()->newRule('orders.lock', 'Lock');
+
+        DB::enableQueryLog();
+        $this->user->addPermission('orders.lock');
+        $sql = strtolower(implode("\n", array_column(DB::getQueryLog(), 'query')));
+        DB::disableQueryLog();
+
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $this->assertStringContainsString('for update', $sql, 'the row of the owner is locked before the check for a duplicate');
+        }
+        $before = DB::table(config('access.table_names.permission'))->count();
+
+        try {
+            $this->user->addPermission('orders.lock');
+            $this->fail('a second row without an option has to be refused');
+        } catch (AccessRulesException $e) {
+            $this->assertSame(AccessRulesException::DUPLICATE_PERMISSION, $e->getCode());
+        }
+        $this->assertSame($before, DB::table(config('access.table_names.permission'))->count(), 'the refused write left nothing behind');
     }
 }

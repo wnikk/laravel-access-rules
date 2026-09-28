@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.3.4 - 2026-09-27
+
+- PHP 8.5 in CI; PHPStan at level 5 on `src/`, `phpstan.neon`
+- `allow()` and `deny()` write inside a transaction with the owner row locked
+- `acr:doctor`: duplicate permissions, permissions and links that point to non-existing rules
+- `Access::ownerTypes()`: the configured owner types with their numbers
+- `AccessRules::getTypeID()`, `getListTypes()`, `getAllPermittedRule()` and `getAllProhibitedRule()` are deprecated, each names its form of 3.x
+
 ## 3.3.0 - 2026-09-25
 
 - Reading API for admin panels and consoles: `Access::for(...)->permissions()`, `->sources()`, `->heirs()`

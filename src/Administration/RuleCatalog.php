@@ -13,7 +13,6 @@ use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
 use Wnikk\LaravelAccessRules\Models\RuleOrigin;
 use Wnikk\LaravelAccessRules\Protected\Administration\AccessManager;
 use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
-use Wnikk\LaravelAccessRules\Protected\Storage\PermissionCache;
 
 /**
  * Holds the list of things that can be permitted at all, and matches an ability to its rule.
@@ -35,19 +34,18 @@ final class RuleCatalog
 {
     public function __construct(
         private ConditionCompiler $conditions,
-        private PermissionCache $cache,
         private Dispatcher $events,
     ) {}
 
     /**
-     * @param  array{guard_name:string, title?:?string, description?:?string, parent_id?:?int, options?:?string, resource?:?string, when?:mixed} $data "options" holds Laravel validation rules for the option, "resource" an alias from config access.resources, "when" a condition for every holder of the rule.
-     * @return int|false                                                                                                                         Id of the rule.
+     * @param  array{guard_name:string, title?:?string, description?:?string, parent_id?:?int, options?:?string, resource?:?string, when?:mixed, origin?:mixed} $data "options" holds Laravel validation rules for the option, "resource" an alias from config access.resources, "when" a condition for every holder of the rule.
+     * @return int|false                                                                                                                                        Id of the rule.
      */
     public function create(array $data): int|false
     {
         $rule = $this->model();
 
-        $rule->guard_name  = $data['guard_name'] ?? null;
+        $rule->guard_name  = $data['guard_name'];
         $rule->title       = $data['title'] ?? null;
         $rule->description = $data['description'] ?? null;
         $rule->options     = $data['options'] ?? null;

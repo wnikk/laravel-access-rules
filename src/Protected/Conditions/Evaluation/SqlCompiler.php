@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation;
 
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Expression;
+use LogicException;
 use Wnikk\LaravelAccessRules\Conditions\Context;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
 use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
@@ -242,11 +244,21 @@ final class SqlCompiler
      * ignores the scale of a cast, so it rounds with round(); PostgreSQL has no round() for
      * double precision, so everybody else casts.
      */
+    /**
+     * The interface of a connection does not name its driver; every connection Laravel makes does.
+     */
+    private static function driver(Builder $query): string
+    {
+        $db = $query->getConnection();
+
+        return $db instanceof Connection ? $db->getDriverName() : '';
+    }
+
     private static function rounded(array $node, Builder $query, Context $context): array
     {
         [$sql, $bindings] = self::math($node, $query, $context);
 
-        return [$query->getConnection()->getDriverName() === 'sqlite'
+        return [self::driver($query) === 'sqlite'
             ? 'round('.$sql.', '.Evaluator::SCALE.')'
             : 'cast('.$sql.' as decimal(30, '.Evaluator::SCALE.'))', $bindings];
     }
@@ -304,7 +316,7 @@ final class SqlCompiler
 
         $needle = (string) $needle;
         $length = mb_strlen($needle);
-        $driver = $query->getConnection()->getDriverName();
+        $driver = self::driver($query);
 
         // Every text starts with, ends with and contains the empty text, except the text that is not there.
         if ($length === 0) {
@@ -327,6 +339,7 @@ final class SqlCompiler
                 'sqlsrv' => 'charindex(?, '.$text.') > 0',
                 default  => 'instr('.$text.', '.$needed.') > 0',
             },
+            default => throw new LogicException('Unknown function "'.$node[1].'" in condition'),
         };
 
         // charindex() takes the needle first, so its binding goes before those of the subject.

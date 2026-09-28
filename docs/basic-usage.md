@@ -214,6 +214,7 @@ Access::for($user)->permissions();
 
 Access::for($user)->sources();   // whom it inherits from, at any depth: type, id, name, record, direct, link, through
 Access::for('Role', 'manager')->heirs();   // who inherits from it, the same shape
+Access::ownerTypes();                      // [1 => 'App\Models\User', 55693 => 'Role', ...]: the types of config with their numbers
 ```
 
 Rows are grouped by rule and ordered strongest first inside a rule, by the five steps. An indirect source or
@@ -329,9 +330,15 @@ The package keeps no audit log of its own; a listener of this event writes one.
 | `acr:not-inherit ...` | stop inheriting |
 | `acr:explain {owner_type} {owner_id} {ability} {record?}` | why a check answers what it answers |
 | `acr:lint --fix` | stored conditions against models and config as they are now; `--fix` saves again those whose column types changed |
+| `acr:doctor --fix` | rows the package would never have written: duplicate permissions, permissions and links that point at nothing, loops of inheritance; `--fix` deletes all but the loops |
 | `acr:cache:clear` | drop cached permissions |
 | `acr:xacml:export {target}` | permissions as one XACML 3.0 policy document, see [XACML](xacml.md) |
 | `acr:xacml:import {source} --check --all --replace --partial --subject-type= --role-type= --everyone=` | show what an XACML 3.0 policy would change, or convert it into permissions |
+
+`acr:lint` reads what is stored against the models of today; `acr:doctor` reads the four tables against each other.
+Every write of the package keeps them consistent, so what the doctor finds came from SQL typed by hand, a partial
+restore or a migration of 2.x. Both return their findings as data for a health screen:
+`app(Linter::class)->run()` and `app(Doctor::class)->run()`, from `Wnikk\LaravelAccessRules\Administration`.
 
 ## When access is refused and it is not clear why
 

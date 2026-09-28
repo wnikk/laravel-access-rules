@@ -13,6 +13,7 @@ composer install
 ./vendor/bin/phpunit                        # tests/Unit and tests/Feature, SQLite in memory
 ./vendor/bin/phpunit --testsuite Bench      # timings and query counts of the hot path
 ./vendor/bin/pint --test src/Some/File.php  # code style, only for files you created or edited; never the whole project
+./vendor/bin/phpstan analyse                # static analysis of src/ at level 5, what CI runs on PHP 8.5
 DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_DATABASE=acr_test DB_USERNAME=postgres ./vendor/bin/phpunit
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=acr_test DB_USERNAME=root ./vendor/bin/phpunit
 ```

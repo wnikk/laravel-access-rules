@@ -245,9 +245,9 @@ final class Explainer
             $report['owner'] === null ? '' : ' for '.class_basename($report['owner']['type']).' '.$report['owner']['id'],
             ['record' => 'a record', 'class' => 'records in general', 'nothing' => 'no record'][$report['asked']],
             match ($report['decision']) {
-                true  => 'PERMITTED',
-                false => 'PROHIBITED',
-                null  => 'NOTHING IS SAID, so access is denied unless a Laravel policy permits it',
+                true    => 'PERMITTED',
+                false   => 'PROHIBITED',
+                default => 'NOTHING IS SAID, so access is denied unless a Laravel policy permits it',
             }
         )];
 

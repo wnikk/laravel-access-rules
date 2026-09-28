@@ -50,6 +50,13 @@ interface AccessManager
     public function flush(): void;
 
     /**
+     * Owner types of config access.owner_types with the number the package keeps each one under.
+     *
+     * @return array<int, string> id => class or plain name
+     */
+    public function ownerTypes(): array;
+
+    /**
      * Debug mode for the rest of the request: every refusal carries the explanation of its cause, and
      * every list narrowed by allowedTo() is written down. Meant for a support session, when an
      * administrator looks at the application as the user who complains. Config access.debug turns it

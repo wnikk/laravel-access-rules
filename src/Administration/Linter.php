@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Wnikk\LaravelAccessRules\Administration;
 
-use Illuminate\Database\Eloquent\Model;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
@@ -118,7 +117,7 @@ final class Linter
 
         // An owner whose type left config can no longer be addressed: its permissions are dead weight,
         // and a type that comes back under another name will not find them.
-        $unknown = app(OwnerContract::class)->newQuery()->whereNotIn('type', array_keys($this->types->all()) ?: [-1])
+        $unknown = app(OwnerContract::class)->newQuery()->toBase()->whereNotIn('type', array_keys($this->types->all()) ?: [-1])
             ->selectRaw('type, count(*) as owners')->groupBy('type')->get();
 
         foreach ($unknown as $row) {
@@ -135,7 +134,7 @@ final class Linter
      *
      * @return int 1 when the condition was saved again.
      */
-    private function retype(Model $stored, ?string $resource, bool $fix, callable $found, array &$problems): int
+    private function retype(RuleContract|PermissionContract $stored, ?string $resource, bool $fix, callable $found, array &$problems): int
     {
         $fresh = $stored->condition === null ? null : $this->conditions->retyped($stored->condition, $resource);
         if ($fresh === null) {

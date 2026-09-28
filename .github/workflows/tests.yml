@@ -12,6 +12,7 @@ on:
       - 'database/**'
       - 'composer.json'
       - 'phpunit.xml'
+      - 'phpstan.neon'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
@@ -21,6 +22,7 @@ on:
       - 'database/**'
       - 'composer.json'
       - 'phpunit.xml'
+      - 'phpstan.neon'
       - '.github/workflows/tests.yml'
 
 jobs:
@@ -32,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.4']
+        php: ['8.4', '8.5']
         db: [sqlite, pgsql, mysql, mariadb]
 
     services:
@@ -72,3 +74,21 @@ jobs:
           DB_DATABASE: ${{ matrix.db == 'sqlite' && ':memory:' || 'acr_test' }}
           DB_USERNAME: ${{ matrix.db == 'pgsql' && 'postgres' || 'root' }}
           DB_PASSWORD: secret
+
+  analysis:
+    # Static analysis on the newest PHP of the matrix: a deprecation of the language shows up here first.
+    runs-on: ubuntu-24.04
+    name: PHPStan / PHP 8.5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: dom, pdo_sqlite
+          coverage: none
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G

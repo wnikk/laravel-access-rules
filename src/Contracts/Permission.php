@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool        $permission true - allowed, false - prohibited
  * @property string|null $option
  * @property array|null  $condition  condition of this assignment, on top of the condition of the rule
+ *
+ * @mixin \Wnikk\LaravelAccessRules\Models\Permission The implementing class is an Eloquent model with these columns; the package calls its query, key and save methods through the contract. Analysis reads the default model for them.
  */
 interface Permission
 {

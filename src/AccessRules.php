@@ -88,6 +88,8 @@ class AccessRules implements Contracts\AccessRules
     /**
      * Numeric id of a type of owners from config access.owner_types.
      *
+     * @deprecated 3.3.4 Use array_search($type, Facades\Access::ownerTypes(), true); the number is a detail of the tables.
+     *
      * @throws AccessRulesException when the type is not listed
      */
     public static function getTypeID(int|string $type): int
@@ -96,6 +98,8 @@ class AccessRules implements Contracts\AccessRules
     }
 
     /**
+     * @deprecated 3.3.4 Use Facades\Access::ownerTypes().
+     *
      * @return array<int, string> id => name
      */
     public static function getListTypes(): array
@@ -262,6 +266,8 @@ class AccessRules implements Contracts\AccessRules
      * Permissions with a condition are absent. Whether they apply depends on a record, and a
      * flat list of names cannot say that.
      *
+     * @deprecated 3.3.4 Use Facades\Access::for(...)->permissions(): every row with its condition and where it comes from.
+     *
      * @return list<string>
      */
     public function getAllPermittedRule(mixed $type = null, string|int|null $id = null): array
@@ -272,6 +278,8 @@ class AccessRules implements Contracts\AccessRules
     }
 
     /**
+     * @deprecated 3.3.4 Use Facades\Access::for(...)->permissions().
+     *
      * @return list<string>
      */
     public function getAllProhibitedRule(mixed $type = null, string|int|null $id = null): array

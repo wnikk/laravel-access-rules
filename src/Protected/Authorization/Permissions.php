@@ -126,7 +126,7 @@ final class Permissions
         }
 
         $compiled['owner']   = $ownId;
-        $compiled['roles']   = array_values($roles);
+        $compiled['roles']   = $roles;
         $compiled['tenants'] = $this->tenants($roles, $ownId);
 
         return $compiled;
@@ -137,7 +137,7 @@ final class Permissions
      * from the database, with the place it comes from. Nothing is cut and nothing is cached: this is
      * for Explainer, and an explanation built from the cache could only repeat what the cache believes.
      *
-     * @return list<array{0:bool, 1:?array, 2:bool, 3:array{owner:int, own:bool, rule:string, option:?string, via:string}}>
+     * @return list<array{0:bool, 1:?array, 2:bool, 3?:array{owner:int, own:bool, rule:string, option:?string, via:string}}> Every entry carries its origin; the shape marks it optional because entries() also serves build(), which asks for none.
      */
     public function trace(int $type, string|int|null $id, string $ability): array
     {
@@ -170,8 +170,8 @@ final class Permissions
     /**
      * Collects permissions of every ability into the four steps of priority and flattens them, strongest first.
      *
-     * @param  bool                                                 $withOrigin Adds to every entry where it comes from. Only trace() asks for it, compiled permissions stay lean.
-     * @return array<string, list<array{0:bool, 1:?array, 2:bool}>>
+     * @param  bool                                                                                                                         $withOrigin Adds to every entry where it comes from. Only trace() asks for it, compiled permissions stay lean.
+     * @return array<string, list<array{0:bool, 1:?array, 2:bool, 3?:array{owner:int, own:bool, rule:string, option:?string, via:string}}>>
      */
     private function entries(int $ownId, array $roles, bool $withOrigin = false): array
     {

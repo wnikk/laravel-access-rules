@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $options    validation rules of the dynamic option
  * @property string|null $resource   alias of the entity from config access.resources
  * @property array|null  $condition  condition valid for every holder of the rule
+ *
+ * @mixin \Wnikk\LaravelAccessRules\Models\Rule The implementing class is an Eloquent model with these columns; the package calls its query, key and save methods through the contract. Analysis reads the default model for them.
  */
 interface Rule
 {

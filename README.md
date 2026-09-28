@@ -48,7 +48,7 @@ so a check passes through little code.
 - **No queries after the first check of a request**: 4 µs per check against 62 µs and a query in version 2;
   permissions compile in 3 queries at any depth of inheritance. See [Performance](docs/performance.md).
 - **`acr:explain`** tells why a check answers what it answers, **`acr:lint`** finds stored conditions
-  that a migration or a refactoring has broken.
+  that a migration or a refactoring has broken, **`acr:doctor`** finds rows the package would never have written.
 - **Debug mode** for support sessions: `Access::debug()` explains every refusal and records what narrowed every
   `allowedTo()` list. It observes; decisions stay as they are.
 - **XACML 3.0**: export of permissions as a standard policy, import of policies with a plan of what would change.
@@ -241,7 +241,7 @@ Authentication, API tokens and social login belong to other packages. This one d
 The public API is the facade `Access`, the traits, `Administration`, `Conditions\Cond`, `Xacml\Xacml`, the
 commands, contracts, events, exceptions and models; [AGENTS.md](AGENTS.md) lists it, and it follows semantic
 versioning. `src/Protected` is the implementation and no entry point for an application. Every push runs
-[448 tests on SQLite, PostgreSQL, MySQL and MariaDB](https://github.com/wnikk/laravel-access-rules/actions/workflows/tests.yml).
+[452 tests on SQLite, PostgreSQL, MySQL and MariaDB](https://github.com/wnikk/laravel-access-rules/actions/workflows/tests.yml).
 
 ## For AI coding agents
 

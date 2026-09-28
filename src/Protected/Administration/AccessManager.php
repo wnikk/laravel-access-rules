@@ -75,6 +75,11 @@ final class AccessManager implements AccessManagerContract
         return $this->rules->delete($guardName instanceof BackedEnum ? $guardName->value : $guardName, $force);
     }
 
+    public function ownerTypes(): array
+    {
+        return app(TypeRegistry::class)->all();
+    }
+
     public function flush(): void
     {
         $this->cache->bump();

@@ -42,8 +42,10 @@ What new code uses instead:
 | `$acr->can('x')` | `Access::for(...)->can('x')` |
 | `AccessRules::getLastDisallowPermission()` | `Access::lastDenied()` |
 
-Methods of the trait `HasPermissions` are the same in both versions. `AccessRules::getTypeID()`, `getListTypes()`,
-`getAllPermittedRule()` and `getAllProhibitedRule()` are not deprecated: 3.x has no other public way to ask for them yet.
+| `AccessRules::getListTypes()`, `getTypeID('Role')` | `Access::ownerTypes()`, `array_search('Role', Access::ownerTypes(), true)` |
+| `$acr->getAllPermittedRule()`, `getAllProhibitedRule()` | `Access::for(...)->permissions()`, filtered by `effect` |
+
+Methods of the trait `HasPermissions` are the same in both versions.
 
 ## Changes of behaviour
 

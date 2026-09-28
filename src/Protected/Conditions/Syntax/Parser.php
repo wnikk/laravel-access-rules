@@ -209,10 +209,11 @@ final class Parser
             case 'false': return ['val', false];
             case 'null':  return ['val', null];
         }
-        if (($this->peek()[1] ?? null) === '(' && $this->peek()[0] === 'op') {
+        $token = $this->peek();
+        if ($token !== null && $token[1] === '(' && $token[0] === 'op') {
             $this->next();
             $args = [];
-            while (($this->peek()[1] ?? null) !== ')') {
+            while (($token = $this->peek()) !== null && $token[1] !== ')') {
                 $args[] = $this->expr(0);
                 if (($this->peek()[1] ?? null) === ',') {
                     $this->next();

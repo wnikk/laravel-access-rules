@@ -34,13 +34,13 @@ trait HasPermissions
      */
     public static function bootHasPermissions(): void
     {
-        static::created(static function (Model $model) {
+        static::created(static function (self $model) {
             if (config('access.auto_create_owner', true)) {
                 $model->getOwner();
             }
         });
 
-        static::deleted(static function (Model $model) {
+        static::deleted(static function (self $model) {
             // A soft deleted model can come back, and it has to come back with its permissions.
             // Version 2 deleted the owner on any delete, so a restored user returned with nothing.
             if (! method_exists($model, 'isForceDeleting') || $model->isForceDeleting()) {
