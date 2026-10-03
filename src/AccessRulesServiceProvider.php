@@ -8,6 +8,7 @@ use Illuminate\Auth\Access\Events\GateEvaluated;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 use Wnikk\LaravelAccessRules\Administration\Linter;
@@ -83,10 +84,46 @@ class AccessRulesServiceProvider extends ServiceProvider
     {
         $this->offerPublishing();
         $this->registerCommands();
+        $this->registerAboutSection();
 
         if (config('access.register_permission_check_method')) {
             $this->registerPermissionsToGate();
         }
+    }
+
+    /**
+     * One section of "php artisan about": the configuration a deploy wants to see at a glance, and
+     * two counts when a database answers. The closure runs only when somebody runs the command,
+     * so nothing here touches a request. Without a database the counts say so instead of failing:
+     * "about" is also run in CI and on a fresh checkout.
+     */
+    protected function registerAboutSection(): void
+    {
+        if (! $this->app->runningInConsole() || ! class_exists(AboutCommand::class)) {
+            return;
+        }
+
+        AboutCommand::add('Access rules', static function (): array {
+            $types = app(TypeRegistry::class)->all();
+            $cache = config('access.cache') ?? [];
+
+            try {
+                $counts = [
+                    'Rules'  => (string) app(RuleContract::class)->newQuery()->count(),
+                    'Owners' => (string) app(OwnerContract::class)->newQuery()->count(),
+                ];
+            } catch (Throwable) {
+                $counts = ['Rules' => 'no database', 'Owners' => 'no database'];
+            }
+
+            return [
+                'Owner types'           => implode(', ', array_map(static fn (int $id, string $name) => class_basename($name).' ('.$id.')', array_keys($types), $types)) ?: 'none',
+                'Tenant types'          => implode(', ', array_map('class_basename', config('access.tenant_types') ?? [])) ?: 'none',
+                'Rule tree inheritance' => config('access.rule_tree_inheritance') ? 'on' : 'off',
+                'Hierarchy'             => (string) (config('access.hierarchy') ?? 'auto'),
+                'Cache'                 => ($cache['enabled'] ?? true) ? 'on, store '.($cache['store'] ?? 'default') : 'off',
+            ] + $counts;
+        });
     }
 
     /**

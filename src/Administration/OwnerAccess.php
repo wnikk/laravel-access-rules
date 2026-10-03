@@ -15,6 +15,7 @@ use Wnikk\LaravelAccessRules\Protected\Administration\AccessManager;
 use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
 use Wnikk\LaravelAccessRules\Protected\Authorization\DecisionPoint;
 use Wnikk\LaravelAccessRules\Protected\Authorization\Explainer;
+use Wnikk\LaravelAccessRules\Protected\Authorization\Permissions;
 
 /**
  * Access of one owner: what it is permitted, what it inherits, what it may do.
@@ -168,6 +169,34 @@ final class OwnerAccess
     public function explain(string|BackedEnum $ability, mixed $record = null): array
     {
         return app(Explainer::class)->explain($this->type, $this->id, $this->subject, self::ability($ability), Arr::wrap($record));
+    }
+
+    /**
+     * Every ability of this owner at once, for a menu or a frontend: 'allowed' holds without a
+     * condition, 'forbidden' is prohibited outright, 'conditional' depends on the record, so ask
+     * can() with one. Read from the compiled permissions, which a check reads too, so it costs
+     * nothing on the path of a request. An option comes as "rule.option"; a rule below a granted
+     * one is listed when config rule_tree_inheritance is on. An owner without a record holds nothing.
+     *
+     * @return array<string, 'allowed'|'forbidden'|'conditional'> By ability name, sorted.
+     */
+    public function abilities(): array
+    {
+        $compiled = app(Permissions::class)->of($this->type, $this->id);
+
+        $out = [];
+        foreach (array_keys($compiled['permit']) as $ability) {
+            $out[$ability] = 'allowed';
+        }
+        foreach (array_keys($compiled['deny']) as $ability) {
+            $out[$ability] = 'forbidden';
+        }
+        foreach (array_keys($compiled['cond']) as $ability) {
+            $out[$ability] = 'conditional';
+        }
+        ksort($out);
+
+        return $out;
     }
 
     /**

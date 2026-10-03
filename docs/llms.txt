@@ -23,7 +23,7 @@ Version 2 (PHP 7.4 - 8.4, Laravel 8 - 13) is RBAC only and is documented in the 
 
 - [Installation](installation.md): requirements, publishing, config `owner_types`, traits
 - [Basic usage](basic-usage.md): rules and their origin, permissions and prohibitions, roles and inheritance, the five-step priority, options, the suffix `.self`, guests, cache, events, console commands
-- [Conditions (ABAC)](conditions.md): the whole language on one page, list filtering, NULL as in SQL, numbers and text, trees, pivot columns, three ways to ask (record, class, nothing), `acr:explain`, debug mode, `acr:lint`, `acr:doctor`
+- [Conditions (ABAC)](conditions.md): the whole language on one page, list filtering, NULL as in SQL, numbers and text, trees, pivot columns, three ways to ask (record, class, nothing), `acr:explain`, debug mode, `acr:lint`, `acr:doctor`, `abilities()` for a frontend, the section of `artisan about`
 - [Performance](performance.md): why a check is cheap, measured numbers, comparison with other packages, what is expensive
 - [XACML 3.0](xacml.md): export as a standard policy, import with a plan of changes, what does not convert
 - [Upgrade from 2.x to 3.x](upgrade-2-to-3.md)

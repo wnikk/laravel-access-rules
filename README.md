@@ -241,7 +241,7 @@ Authentication, API tokens and social login belong to other packages. This one d
 The public API is the facade `Access`, the traits, `Administration`, `Conditions\Cond`, `Xacml\Xacml`, the
 commands, contracts, events, exceptions and models; [AGENTS.md](AGENTS.md) lists it, and it follows semantic
 versioning. `src/Protected` is the implementation and no entry point for an application. Every push runs
-[452 tests on SQLite, PostgreSQL, MySQL and MariaDB](https://github.com/wnikk/laravel-access-rules/actions/workflows/tests.yml).
+[454 tests on SQLite, PostgreSQL, MySQL and MariaDB](https://github.com/wnikk/laravel-access-rules/actions/workflows/tests.yml).
 
 ## For AI coding agents
 

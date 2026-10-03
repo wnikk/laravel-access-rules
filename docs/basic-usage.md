@@ -201,6 +201,19 @@ $user->hasPermission('articles.edit');             // true, false, or null when 
 Access::for('Role', 'editor')->can('articles.edit');
 ```
 
+### Every ability at once
+
+For a menu or a frontend that wants one list instead of a check per item:
+
+```php
+Access::for($user)->abilities();
+// ['articles.edit' => 'allowed', 'articles.delete' => 'forbidden', 'orders.view' => 'conditional', 'orders.export.csv' => 'allowed']
+```
+
+`allowed` holds for every record, `forbidden` for none, `conditional` depends on the record: show the section and ask
+`can()` with the record. The list comes from the same compiled permissions a check reads, so it costs nothing after the
+first check of the request.
+
 ### Reading what an owner holds
 
 For an admin panel or a console: every row that reaches an owner with where it comes from, whom it inherits
@@ -339,6 +352,9 @@ The package keeps no audit log of its own; a listener of this event writes one.
 Every write of the package keeps them consistent, so what the doctor finds came from SQL typed by hand, a partial
 restore or a migration of 2.x. Both return their findings as data for a health screen:
 `app(Linter::class)->run()` and `app(Doctor::class)->run()`, from `Wnikk\LaravelAccessRules\Administration`.
+
+`php artisan about` has a section "Access rules": owner types with their numbers, tenant types, the tree and hierarchy
+settings, the cache, the number of rules and owners.
 
 ## When access is refused and it is not clear why
 

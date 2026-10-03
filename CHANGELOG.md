@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.3.5 - 2026-10-03
+
+- `Access::for(...)->abilities()`: every ability of an owner at once
+- A section in `php artisan about`
+
 ## 3.3.4 - 2026-09-27
 
 - PHP 8.5 in CI; PHPStan at level 5 on `src/`, `phpstan.neon`

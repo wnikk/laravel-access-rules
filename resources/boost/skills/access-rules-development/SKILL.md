@@ -164,6 +164,8 @@ Debug mode for a support session (turn it on per request, never for ordinary use
 
 `app(\Wnikk\LaravelAccessRules\Administration\Linter::class)->run()` and `Administration\Doctor::class` return the findings of lint and doctor as data, for a health screen.
 
+For a menu or a frontend: `Access::for($user)->abilities()` returns every ability at once as `allowed`, `forbidden` or `conditional` (ask `can()` with the record), from the compiled set a check reads, so it is fine on the path of a request.
+
 What an owner holds, as data for a screen or a console: `Access::for($user)->permissions()` lists every row that reaches the owner with rule, option, effect, condition text, own or inherited and from whom, strongest first inside a rule; `->sources()` and `->heirs()` list inheritance at any depth with the direct link each one came through. `Access::ownerTypes()` maps the numbers of the owner table to the types of config. Never on the path of a request.
 
 ## Admin panels

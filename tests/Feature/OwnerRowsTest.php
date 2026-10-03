@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\Shop\ShopSchema;
 use Tests\Fixtures\TestUser;
 use Wnikk\LaravelAccessRules\AccessRules;
@@ -100,6 +101,30 @@ class OwnerRowsTest extends FeatureTestCase
 
         $this->assertSame([], Access::for('Team', 'north')->sources());
         $this->assertSame([], Access::for('Role', 'nobody')->heirs());
+    }
+
+    /**
+     * What a menu or a frontend asks for: every ability at once, by the compiled set a check
+     * reads, so a conditional one says so instead of pretending to be a yes or a no.
+     */
+    public function test_every_ability_of_an_owner_at_once(): void
+    {
+        Access::for('Role', 'manager')->allow('orders');
+
+        $this->assertSame(
+            ['orders' => 'allowed', 'orders.export.csv' => 'allowed', 'orders.view' => 'conditional'],
+            Access::for('Role', 'manager')->abilities()
+        );
+        $this->assertSame(
+            ['orders' => 'allowed', 'orders.export.csv' => 'forbidden', 'orders.view' => 'conditional'],
+            Access::for(TestUser::class, 7)->abilities()
+        );
+        $this->assertSame([], Access::for(TestUser::class, 8)->abilities(), 'an owner without a record holds nothing');
+
+        // The same source as a check: no query once the set is compiled.
+        DB::enableQueryLog();
+        Access::for(TestUser::class, 7)->abilities();
+        $this->assertCount(0, DB::getQueryLog());
     }
 
     public function test_owner_types_are_listed_with_their_numbers(): void
