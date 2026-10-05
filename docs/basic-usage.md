@@ -43,7 +43,7 @@ Access::delRule('articles.edit', force: true);  // together with every permissio
 A rule that somebody holds is not deleted by accident: its prohibitions would vanish with it, and nothing
 brings them back. Children of a deleted rule move one level up in the tree.
 
-`newRule()` returns the id of the rule, or `false` when the name exists. Pass the id as the parent of another rule to group rules in an admin panel.
+`newRule()` returns the id of the rule, or `false` when the name exists. Pass the id as the parent of another rule to group rules in an admin panel. A rule cannot be placed under itself, at any depth: `AccessRulesException::RULE_TREE_LOOP`.
 With `'rule_tree_inheritance' => true` in config the tree also passes permissions down: a permission for `reports`
 covers `reports.sales`. The flag is read when permissions are compiled: run `php artisan acr:cache:clear` after changing it.
 
@@ -343,7 +343,7 @@ The package keeps no audit log of its own; a listener of this event writes one.
 | `acr:not-inherit ...` | stop inheriting |
 | `acr:explain {owner_type} {owner_id} {ability} {record?}` | why a check answers what it answers |
 | `acr:lint --fix` | stored conditions against models and config as they are now; `--fix` saves again those whose column types changed |
-| `acr:doctor --fix` | rows the package would never have written: duplicate permissions, permissions and links that point at nothing, loops of inheritance; `--fix` deletes all but the loops |
+| `acr:doctor --fix` | rows the package would never have written: duplicate permissions, permissions and links that point at nothing, loops of inheritance, rules whose parent is gone or whose chain of parents loops; `--fix` deletes the duplicates and the orphans and puts a rule whose parent is gone at the top, loops are left to a person |
 | `acr:cache:clear` | drop cached permissions |
 | `acr:xacml:export {target}` | permissions as one XACML 3.0 policy document, see [XACML](xacml.md) |
 | `acr:xacml:import {source} --check --all --replace --partial --subject-type= --role-type= --everyone=` | show what an XACML 3.0 policy would change, or convert it into permissions |

@@ -156,6 +156,7 @@ final class RuleCatalog
         }
         if (array_key_exists('parent_id', $fields)) {
             // The column is NOT NULL DEFAULT 0 since version 2; zero means "no parent".
+            $this->refuseLoop($rule, (int) ($fields['parent_id'] ?? 0));
             $rule->parent_id = empty($fields['parent_id']) ? 0 : $this->model()->newQuery()->findOrFail($fields['parent_id'])->getKey();
         }
 
@@ -218,6 +219,23 @@ final class RuleCatalog
             }
         } elseif ($option !== null && $option !== '') {
             throw new AccessRulesException('Rule "'.$rule->guard_name.'" has no permissible option "'.$option.'". Before adding a permission, adjust rule option validator.', AccessRulesException::INVALID_OPTION);
+        }
+    }
+
+    /**
+     * A rule may not be placed under itself, at any depth: the tree passes permissions down, and a
+     * loop would pass them around; deleting a rule in a loop would leave its children with no way up.
+     *
+     * @throws AccessRulesException With code RULE_TREE_LOOP.
+     */
+    private function refuseLoop(RuleContract $rule, int $parentId): void
+    {
+        $seen = [];
+        for ($at = $parentId; $at > 0 && ! isset($seen[$at]); $at = (int) ($this->model()->newQuery()->whereKey($at)->value('parent_id') ?? 0)) {
+            if ($at === (int) $rule->getKey()) {
+                throw new AccessRulesException('Rule "'.$rule->guard_name.'" cannot be placed under itself: the tree would make a loop.', AccessRulesException::RULE_TREE_LOOP);
+            }
+            $seen[$at] = true;
         }
     }
 

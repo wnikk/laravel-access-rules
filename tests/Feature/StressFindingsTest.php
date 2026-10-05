@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Facade;
 use Tests\Fixtures\Shop\Order;
 use Tests\Fixtures\Shop\ShopSchema;
 use Tests\Fixtures\TestUser;
+use Wnikk\LaravelAccessRules\Administration\Doctor;
 use Wnikk\LaravelAccessRules\Administration\Linter;
 use Wnikk\LaravelAccessRules\Administration\RuleCatalog;
 use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
@@ -139,6 +140,50 @@ class StressFindingsTest extends FeatureTestCase
         $problems = app(Linter::class)->run()['problems'];
         $this->assertSame([Linter::UNKNOWN_OWNER_TYPE], array_column($problems, 'code'));
         $this->assertStringContainsString('tenant type "Team"', $problems[0]['problem']);
+    }
+
+    public function test_a_rule_cannot_be_placed_under_itself_at_any_depth(): void
+    {
+        $reports = Access::newRule('reports', 'Reports', origin: 'custom');
+        $sales   = Access::newRule('reports.sales', 'Sales', null, $reports, origin: 'custom');
+        $north   = Access::newRule('reports.sales.north', 'North', null, $sales, origin: 'custom');
+
+        foreach ([$reports, $sales, $north] as $parent) {
+            try {
+                app(RuleCatalog::class)->edit('reports', ['parent_id' => $parent]);
+                $this->fail('a loop was accepted');
+            } catch (AccessRulesException $e) {
+                $this->assertSame(AccessRulesException::RULE_TREE_LOOP, $e->getCode());
+            }
+        }
+        $this->assertSame(0, (int) DB::table(config('access.table_names.rule'))->where('guard_name', 'reports')->value('parent_id'));
+
+        // Moving a rule next to its former child is fine
+        $this->assertTrue(app(RuleCatalog::class)->edit('reports.sales.north', ['parent_id' => $reports]));
+        $this->assertTrue(app(RuleCatalog::class)->edit('reports.sales', ['parent_id' => null]));
+    }
+
+    public function test_the_doctor_wants_every_chain_of_parents_to_end_at_zero(): void
+    {
+        $reports = Access::newRule('reports', 'Reports');
+        $sales   = Access::newRule('reports.sales', 'Sales', null, $reports);
+        $this->assertSame([], app(Doctor::class)->run()['problems']);
+
+        // A parent that is gone, written past the package
+        DB::table(config('access.table_names.rule'))->where('id', $sales)->update(['parent_id' => 999]);
+        $problems = app(Doctor::class)->run()['problems'];
+        $this->assertSame([Doctor::PARENT_MISSING], array_column($problems, 'code'));
+        $this->assertSame('rule reports.sales', $problems[0]['where']);
+        $this->assertSame(1, app(Doctor::class)->run(true)['fixed']);
+        $this->assertSame(0, (int) DB::table(config('access.table_names.rule'))->where('id', $sales)->value('parent_id'));
+
+        // A loop, written past the package: reported, left to a person
+        DB::table(config('access.table_names.rule'))->where('id', $sales)->update(['parent_id' => $reports]);
+        DB::table(config('access.table_names.rule'))->where('id', $reports)->update(['parent_id' => $sales]);
+        $problems = app(Doctor::class)->run(true)['problems'];
+        $this->assertCount(1, $problems);
+        $this->assertSame(Doctor::TREE_LOOP, $problems[0]['code']);
+        $this->assertStringContainsString('own ancestor', $problems[0]['problem']);
     }
 
     public function test_new_rule_answers_false_for_a_name_that_exists(): void

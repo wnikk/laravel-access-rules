@@ -39,4 +39,7 @@ class AccessRulesException extends LogicException
 
     /** The rule comes with code, see RuleOrigin. An admin panel may reword it and edit its options, nothing else. */
     public const RULE_MANAGED_BY_CODE = 10;
+
+    /** The place in the tree would make the rule its own ancestor. */
+    public const RULE_TREE_LOOP = 11;
 }

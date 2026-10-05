@@ -16,7 +16,7 @@ use Wnikk\LaravelAccessRules\Administration\Doctor;
 class AccessDoctor extends AccessCommand
 {
     protected $signature = 'acr:doctor
-        {--fix : Delete duplicate permissions past the first copy and rows that point at nothing}';
+        {--fix : Delete duplicate permissions past the first copy and rows that point at nothing; put rules whose parent is gone at the top of the tree}';
 
     protected $description = 'Access rules and inheritance: find permissions and links the package would never have written';
 
@@ -25,7 +25,7 @@ class AccessDoctor extends AccessCommand
         $result = $doctor->run((bool) $this->option('fix'));
 
         if ($result['fixed'] > 0) {
-            $this->info($result['fixed'].' row(s) deleted.');
+            $this->info($result['fixed'].' row(s) deleted or put right.');
         }
 
         if ($result['problems'] === []) {

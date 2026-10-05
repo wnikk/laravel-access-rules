@@ -156,7 +156,7 @@ $user->access()->explain('orders.view', $order);   // every permission that took
 php artisan acr:explain "App\Models\User" 7 orders.view order:4
 php artisan acr:lint            # exit code 1 when a stored condition no longer matches models or config
 php artisan acr:lint --fix      # saves again conditions whose column types changed
-php artisan acr:doctor          # exit code 1 for duplicate permissions, rows that point at nothing, loops of inheritance
+php artisan acr:doctor          # exit code 1 for duplicate permissions, rows that point at nothing, loops of inheritance and of the rule tree
 php artisan acr:doctor --fix    # deletes the duplicates and the orphans; loops need a person
 ```
 

@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.3.15 - 2026-10-05
+
+- A rule cannot be placed under itself at any depth: `RULE_TREE_LOOP`
+- `acr:doctor`: rules whose parent is gone or whose chain of parents loops; `--fix` puts the first at the top
+
 ## 3.3.14 - 2026-10-05
 
 - Rule tree: a new rule under a granted parent is covered at once

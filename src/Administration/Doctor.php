@@ -36,17 +36,21 @@ final class Doctor
 
     public const INHERITANCE_LOOP = 'loop';
 
+    public const PARENT_MISSING = 'parent_missing';
+
+    public const TREE_LOOP = 'tree_loop';
+
     public function __construct(
         private TypeRegistry $types,
         private PermissionCache $cache,
     ) {}
 
     /**
-     * @param bool $fix Delete the rows that point at nothing and every copy of a duplicate past the first. A loop needs a person: there is no telling which link is the wrong one.
+     * @param bool $fix Delete the rows that point at nothing and every copy of a duplicate past the first, and put a rule whose parent is gone at the top of the tree. A loop needs a person: there is no telling which link is the wrong one.
      * @return array{
      *     problems:list<array{code:string, subject:string, id:int|string|null, where:string, problem:string}>,
      *     fixed:int
-     * } "code" is one of the constants of this class. "subject" is "permission" or "inheritance", and "id" a key in that table, so a panel can link to it. "fixed" counts deleted rows.
+     * } "code" is one of the constants of this class. "subject" is "permission", "inheritance" or "rule", and "id" a key in that table, so a panel can link to it. "fixed" counts rows deleted or put right.
      */
     public function run(bool $fix = false): array
     {
@@ -104,6 +108,40 @@ final class Doctor
 
             $problems[] = ['code' => self::INHERITANCE_LOOP, 'subject' => 'inheritance', 'id' => $loop['link'], 'where' => 'inheritance #'.$loop['link'],
                 'problem'         => 'closes a loop: '.implode(' inherits from ', $names).'; a prohibition of any of them reaches all of them as inherited'];
+        }
+
+        // ---- the tree of rules: every chain of parents ends at zero, or a rule has no way up
+
+        $rules   = app(RuleContract::class)->newQuery()->getQuery();
+        $parents = (clone $rules)->pluck('parent_id', 'id')->map(static fn ($p) => (int) $p)->all();
+        $named   = (clone $rules)->pluck('guard_name', 'id')->all();
+        foreach ($parents as $id => $parent) {
+            if ($parent > 0 && ! isset($parents[$parent])) {
+                if ($fix) {
+                    $fixed += (clone $rules)->where('id', $id)->update(['parent_id' => 0]);
+
+                    continue;
+                }
+                $problems[] = ['code' => self::PARENT_MISSING, 'subject' => 'rule', 'id' => $id, 'where' => 'rule '.$named[$id],
+                    'problem'         => 'points at parent #'.$parent.' that does not exist: the row was left behind by a delete past the package'];
+            }
+        }
+        $reported = [];
+        foreach ($parents as $id => $parent) {
+            for ($at = $parent, $path = [$id]; $at > 0 && isset($parents[$at]); $at = $parents[$at]) {
+                if (in_array($at, $path, true)) {
+                    // One finding per loop, named by its lowest id, whichever rule the walk started from
+                    $loop = array_slice($path, array_search($at, $path, true));
+                    $key  = min($loop);
+                    if (! isset($reported[$key])) {
+                        $reported[$key] = true;
+                        $problems[]     = ['code' => self::TREE_LOOP, 'subject' => 'rule', 'id' => $key, 'where' => 'rule '.$named[$key],
+                            'problem'             => 'is its own ancestor in the tree ('.implode(' > ', array_map(static fn (int $i) => $named[$i], [...$loop, $key])).'); with rule_tree_inheritance the rules in the loop pass permissions around'];
+                    }
+                    break;
+                }
+                $path[] = $at;
+            }
         }
 
         if ($fixed > 0) {
