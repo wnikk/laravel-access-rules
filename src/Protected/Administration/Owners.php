@@ -220,8 +220,10 @@ final class Owners
      */
     public function revoke(int $type, string|int|null $id, string $ability, ?string $option, bool $permit): bool
     {
+        // The option is not validated on the way out: a row for a value the rule no longer allows
+        // keeps working until it is taken away, so taking it away has to be possible.
         $owner = $this->find($type, $id);
-        $rule  = $owner ? $this->rules->resolve($ability, $option) : null;
+        $rule  = $owner ? $this->rules->resolve($ability, $option, validate: false) : null;
         if (! $owner || ! $rule) {
             return false;
         }

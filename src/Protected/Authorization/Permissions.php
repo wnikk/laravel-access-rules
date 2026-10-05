@@ -7,6 +7,7 @@ namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 use Wnikk\LaravelAccessRules\Contracts\Owner as OwnerContract;
 use Wnikk\LaravelAccessRules\Contracts\Permission as PermissionContract;
 use Wnikk\LaravelAccessRules\Contracts\Rule as RuleContract;
+use Wnikk\LaravelAccessRules\Exceptions\AccessRulesException;
 use Wnikk\LaravelAccessRules\Protected\Administration\Owners;
 use Wnikk\LaravelAccessRules\Protected\Administration\TypeRegistry;
 use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
@@ -286,8 +287,14 @@ final class Permissions
      */
     private function tenants(array $roles, int $ownId): array
     {
-        $types = array_map(fn ($name) => $this->types->id($name), config('access.tenant_types') ?? []);
-        $ids   = array_values(array_diff($roles, [$ownId]));
+        $types = array_map(function ($name) {
+            try {
+                return $this->types->id($name);
+            } catch (AccessRulesException $e) {
+                throw new AccessRulesException('Tenant type "'.$name.'" of config access.tenant_types is not listed in access.owner_types.', AccessRulesException::UNKNOWN_OWNER_TYPE, $e);
+            }
+        }, config('access.tenant_types') ?? []);
+        $ids = array_values(array_diff($roles, [$ownId]));
 
         if ($types === [] || $ids === []) {
             return [];

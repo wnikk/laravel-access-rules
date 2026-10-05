@@ -74,6 +74,12 @@ final class ConditionCompiler
 
         $this->check($tree, 0);
 
+        // Lint says the same afterwards; saying it now keeps a stored condition from being one that
+        // lint rejects, and an export from naming a record whose model the rule does not declare.
+        if ($resource === null && self::readsColumns($tree)) {
+            throw new InvalidConditionException('The condition reads the record, and the rule has no resource: set it to one of config access.resources');
+        }
+
         if (strlen(json_encode($tree, JSON_THROW_ON_ERROR)) > self::MAX_BYTES) {
             throw new InvalidConditionException('Condition is too big');
         }
@@ -201,10 +207,24 @@ final class ConditionCompiler
      */
     public static function needsRecord(?array $node): bool
     {
+        return self::reads($node, ['res', 'agg', 'pivot', 'is-author']);
+    }
+
+    /**
+     * Tells whether a condition reads columns or relations of the record. ".self" compares the
+     * author on any model; a column can only be read from a model listed in config.
+     */
+    public static function readsColumns(?array $node): bool
+    {
+        return self::reads($node, ['res', 'agg', 'pivot']);
+    }
+
+    private static function reads(?array $node, array $kinds): bool
+    {
         if ($node === null) {
             return false;
         }
-        if (in_array($node[0], ['res', 'agg', 'pivot', 'is-author'], true)) {
+        if (in_array($node[0], $kinds, true)) {
             return true;
         }
         if ($node[0] === 'val') {
@@ -216,7 +236,7 @@ final class ConditionCompiler
         $children = $node[0] === 'call' ? $node[2] : array_slice($node, 1);
 
         foreach ($children as $child) {
-            if (is_array($child) && isset($child[0]) && is_string($child[0]) && self::needsRecord($child)) {
+            if (is_array($child) && isset($child[0]) && is_string($child[0]) && self::reads($child, $kinds)) {
                 return true;
             }
         }

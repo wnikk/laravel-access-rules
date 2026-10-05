@@ -2,6 +2,17 @@
 
 All notable changes to `laravel-access-rules` will be documented in this file
 
+## 3.3.14 - 2026-10-05
+
+- Rule tree: a new rule under a granted parent is covered at once
+- A change of the options of a rule switches the cache
+- `removeAllow()` and `removeDeny()` do not validate the option
+- A condition that reads the record needs a resource on the rule
+- `RuleCatalog::setCondition()` respects the origin of the rule
+- A tenant type outside `owner_types` is named by the error and by `acr:lint`
+- `newRule()` answers `false` for a name that exists
+- A record of a model outside `resources` is refused with `InvalidArgumentException`
+
 ## 3.3.5 - 2026-10-03
 
 - `Access::for(...)->abilities()`: every ability of an owner at once

@@ -43,9 +43,9 @@ Access::delRule('articles.edit', force: true);  // together with every permissio
 A rule that somebody holds is not deleted by accident: its prohibitions would vanish with it, and nothing
 brings them back. Children of a deleted rule move one level up in the tree.
 
-`newRule()` returns the id of the rule. Pass it as the parent of another rule to group rules in an admin panel.
+`newRule()` returns the id of the rule, or `false` when the name exists. Pass the id as the parent of another rule to group rules in an admin panel.
 With `'rule_tree_inheritance' => true` in config the tree also passes permissions down: a permission for `reports`
-covers `reports.sales`.
+covers `reports.sales`. The flag is read when permissions are compiled: run `php artisan acr:cache:clear` after changing it.
 
 ### Rules of code and rules of an admin panel
 
@@ -64,7 +64,7 @@ Access::newRule('news.edit.sport', 'Edit sport news', origin: RuleOrigin::Custom
 ```
 
 Code is trusted with everything: `newRule()`, `delRule()` and migrations do not look at the origin. An admin panel
-goes through two methods that do:
+goes through the methods that do, `edit()`, `setCondition()` and `discard()`:
 
 ```php
 use Wnikk\LaravelAccessRules\Administration\RuleCatalog;
@@ -75,8 +75,8 @@ $catalog->discard('orders.export');                                     // the s
 $catalog->discard('news.edit.sport');                                   // deleted, unless somebody holds it: RULE_IN_USE
 ```
 
-Options are validated when a permission is granted. After `in:csv,pdf` becomes `in:csv`, permissions for `pdf` keep
-working, and `php artisan acr:lint` reports them.
+Options are validated when a permission is granted, not when it is taken away. After `in:csv,pdf` becomes `in:csv`,
+permissions for `pdf` keep working, `php artisan acr:lint` reports them, and `removeAllow('orders.export', 'pdf')` removes them.
 
 Names of rules can be a backed enum, everywhere a name is accepted:
 
@@ -304,8 +304,8 @@ This is the subject of [Conditions (ABAC)](conditions.md).
 
 ## Cache
 
-Compiled permissions of an owner are cached, and every change through the package drops the cache by itself.
-Two cases need a hand:
+Compiled permissions of an owner are cached, and every change through the package drops the cache by itself:
+permissions, inheritance, rules, their conditions, options and places in the tree. Two cases need a hand:
 
 ```php
 // a seeder or an import with hundreds of changes: one drop after the last of them

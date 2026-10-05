@@ -43,6 +43,10 @@ final class RuleCatalog
      */
     public function create(array $data): int|false
     {
+        if ($this->model()->newQuery()->where('guard_name', $data['guard_name'])->exists()) {
+            return false;
+        }
+
         $rule = $this->model();
 
         $rule->guard_name  = $data['guard_name'];
@@ -168,10 +172,7 @@ final class RuleCatalog
      */
     public function setCondition(string $guardName, string|Cond|array|null $when): bool
     {
-        $rule            = $this->model()->newQuery()->where('guard_name', $guardName)->firstOrFail();
-        $rule->condition = $this->conditions->compile($when, $rule->resource);
-
-        return $rule->save();
+        return $this->edit($guardName, ['when' => $when]);
     }
 
     /**
@@ -182,7 +183,7 @@ final class RuleCatalog
      *
      * @throws AccessRulesException With code INVALID_OPTION.
      */
-    public function resolve(string $ability, &$option = null): ?RuleContract
+    public function resolve(string $ability, &$option = null, bool $validate = true): ?RuleContract
     {
         $query = $this->model()->newQuery();
 
@@ -195,7 +196,7 @@ final class RuleCatalog
             }
         }
 
-        if ($rule) {
+        if ($rule && $validate) {
             $this->checkOption($rule, $option);
         }
 

@@ -60,8 +60,15 @@ class Rule extends Model implements RuleContract
         };
 
         static::deleted($flush);
+        // A new rule under a parent is covered by permissions of the parent when the tree passes
+        // them down; a change of options re-issues what "rule.option" grants.
+        static::created(function (self $rule) use ($flush) {
+            if (! empty($rule->parent_id)) {
+                $flush($rule);
+            }
+        });
         static::updated(function (self $rule) use ($flush) {
-            if ($rule->wasChanged(['guard_name', 'condition', 'parent_id'])) {
+            if ($rule->wasChanged(['guard_name', 'condition', 'parent_id', 'options'])) {
                 $flush($rule);
             }
         });

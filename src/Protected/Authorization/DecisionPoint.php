@@ -6,11 +6,14 @@ namespace Wnikk\LaravelAccessRules\Protected\Authorization;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Throwable;
 use Wnikk\LaravelAccessRules\Conditions\Context;
 use Wnikk\LaravelAccessRules\Exceptions\UntranslatableConditionException;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ConditionCompiler;
 use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\Evaluator;
 use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\SqlCompiler;
+use Wnikk\LaravelAccessRules\Protected\Conditions\ResourceRegistry;
 
 /**
  * Answers "may this owner do that", for one record and for a whole query.
@@ -30,7 +33,7 @@ use Wnikk\LaravelAccessRules\Protected\Conditions\Evaluation\SqlCompiler;
  */
 final class DecisionPoint
 {
-    public function __construct(private Permissions $permissions) {}
+    public function __construct(private Permissions $permissions, private ResourceRegistry $resources) {}
 
     /**
      * An ability without conditions costs one isset(). Conditions run only for abilities that
@@ -96,6 +99,11 @@ final class DecisionPoint
                 }
 
                 continue;
+            }
+
+            // A record that no condition could read is a mistake of the caller, not a quiet refusal.
+            if ($hasRecord && $needsRecord && $context === null && ! $this->resources->allows($record::class) && ConditionCompiler::readsColumns($condition)) {
+                throw new InvalidArgumentException('Checked "'.$ability.'" against a '.$record::class.', which is not listed in config access.resources: no condition can read it.');
             }
 
             try {

@@ -125,6 +125,12 @@ final class Linter
                 'problem'         => $row->owners.' owner(s) of type #'.$row->type.' that is not in config access.owner_types'];
         }
 
+        // A tenant type that is not an owner type breaks every check at compile time.
+        foreach (array_diff(config('access.tenant_types') ?? [], $this->types->all()) as $name) {
+            $problems[] = ['code' => self::UNKNOWN_OWNER_TYPE, 'subject' => 'config', 'id' => null, 'where' => 'config access.tenant_types',
+                'problem'         => 'tenant type "'.$name.'" is not listed in access.owner_types; every check of an owner with ancestors fails until it is'];
+        }
+
         return ['problems' => $problems, 'fixed' => $fixed];
     }
 

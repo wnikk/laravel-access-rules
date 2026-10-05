@@ -46,6 +46,10 @@ List models conditions may work with in `config/access.php`. The key is the name
 ],
 ```
 
+A condition that reads the record needs the rule to name its resource; one about the user and the environment does not.
+A check that passes a record of a model that is not listed here is refused with `InvalidArgumentException`, except for
+`.self` and `isAuthor()`, which compare the author on any model.
+
 A condition can walk through relations only to models that are listed too. A relation is recognised
 by the declared return type of its method (`public function client(): BelongsTo`); a method without
 a return type has to be listed: `'order' => ['model' => Order::class, 'relations' => ['client']]`.
