@@ -1,0 +1,11 @@
+.DS_Store
+/.idea
+/.vscode
+/.phpstan
+/_dev
+/run_phpunit.sh
+/pint.json
+/composer.lock
+/.phpunit.result.cache
+/.phpunit.cache
+/vendor
