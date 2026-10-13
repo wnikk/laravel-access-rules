@@ -5,6 +5,9 @@ weight: 4
 
 ![ABAC in Laravel: permissions that look at your data. Roles, conditions and filtered lists with wnikk/laravel-access-rules 3.x](art/abac-00-cover.jpg)
 
+Originally posted on: [https://dev.to/wnikk/abac-in-laravel-13-permissions-that-look-at-your-data-36gh](https://dev.to/wnikk/abac-in-laravel-13-permissions-that-look-at-your-data-36gh)
+
+
 This is the second part. The first one, [How to use Access Control Rules step by step](tutorial-basic-step-by-step.md), built roles and permissions: **RBAC**.
 This one goes further: permissions that **look at the data**. That is **ABAC**, _Attribute-Based Access Control_, and it arrived in version **3.x** of "[**wnikk/laravel-access-rules**](https://github.com/wnikk/laravel-access-rules)".
 
